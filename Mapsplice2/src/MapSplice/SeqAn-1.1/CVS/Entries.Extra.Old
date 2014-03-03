@@ -1,0 +1,7 @@
+D/seqan////////
+/GPL.txt////*////
+/LGPL.txt////*////
+/README.txt////*////
+/platform_linux_gcc.h////*////
+/platform_windows_mingw.h////*////
+/platform_windows_vs.h////*////

@@ -1,0 +1,9 @@
+The index consists of two part:
+1). whole genome index 
+2). local index
+
+buildWholeGenomeIndex_final.cpp is used to build the 1st part of index and buildAll2ndLevelIndex.cpp is used to build the 2nd part.
+
+Phase 1 only need the 1st part of index.(i.e, if you run phase 1 only, no need to run buildAll2ndLevelIndex.cpp ) 
+
+And Phase 2 only need the 2nd part of index and the chromsome sequence files.

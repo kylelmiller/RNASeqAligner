@@ -10,3 +10,6 @@ target/
 
 # ignore metadata folders
 .metadata
+
+#ignore md5
+*.md5

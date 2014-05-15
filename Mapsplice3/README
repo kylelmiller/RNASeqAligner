@@ -1,0 +1,71 @@
+To run MPS3, you need to prebuild the index.
+
+
+************************************************** building index ****************************************************************
+
+The index consists of two part:
+1). whole genome index 
+2). local index
+
+buildWholeGenomeIndex_final.cpp is used to build the 1st part of index and buildAll2ndLevelIndex.cpp is used to build the 2nd part.
+
+Phase 1 only need the 1st part of index.(i.e, if you run phase 1 only, no need to run buildAll2ndLevelIndex.cpp ) 
+
+And Phase 2 only need the 2nd part of index and the chromsome sequence files.
+
+
+Examples to build the index:
+
+
+1. building whole genome wide index (will only be used in Phase 1 of the aligner)
+
+Compile: 
+
+g++ -o buildWholeGenomeIndex buildWholeGenomeIndex_final.cpp
+
+Run:
+
+./buildWholeGenomeIndex /data/homes/lxauky/chrom_fa/mm9_norandom /data/homes/lxauky/adSA_table/mm9_noRandom_table/index_0408/
+(  Executable <InputChromosomesFolder> <outputIndexFolder>  )
+
+
+2. building local idex (will only be used in Phase 2 of the aligner)
+
+Compile:
+
+g++ -o buildLocalIndex buildLocalIndex.cpp
+
+Run:
+
+./buildLocalIndex /data/homes/lxauky/adSA_table/mm9_noRandom_table/index_0408/  /data/homes/lxauky/adSA_table/mm9_noRandom_table/index_0408/localIndex/
+( Executable <InputIndexPrefix> <Output2ndLevelIndexPrefix> )
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> aligner >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+After building index, you can run the MPS3 aligner based on it.
+
+For the aligner, main function is in alignAll.cpp.
+
+In alignAll.cpp line 94, "Do_Phase1_only" is used to be a switch of running Phase 2 or not. 
+
+As Phase_2 is not completely implemented, I would recommend you to set "Do_Phase1_only" true.
+
+If you want to run Phase_2, just set it false.
+
+Note: for now, the aligner only support pair-end reads.
+
+
+Examples to run the aligner:
+
+Compile: 
+
+g++ -o alignAll alignAll.cpp -fopenmp
+
+Run: 
+
+./alignAll /data/homes/lxauky/GroundTruth2sam/synthetic_data/SIM1_TEST1/simulated_reads_forward_test1.fa /data/homes/lxauky/GroundTruth2sam/synthetic_data/SIM1_TEST1/simulated_reads_reverse_test1.fa /data/homes/lxauky/adSA_result/chrAll/result_0515/10M_sim1test1 16 Fasta /data/homes/lxauky/adSA_table/mm9_noRandom_table/index_0408 /data/homes/lxauky/adSA_table/mm9_noRandom_table/index_0408/2ndLevelIndex/ /data/homes/lxauky/chrom_fa/mm9_norandom
+
+( Executable <InputReads> <InputReads_PE> <OutputDir> <threads_num> <Fasta_or_Fastq> <wholeGenomeIndexPrefix> <localIndexPrefix> <chromsomeDir> )
+

@@ -34,6 +34,9 @@
 #include "unfixedHead.h"
 #include "unfixedTail.h"
 #include "sam2junc.h"
+#include "fixHeadTail.h"
+#include "fixOneEndUnmapped.h"
+#include "fixPhase1.h"
 
 #define PreIndexSize 268435456
 
@@ -66,6 +69,8 @@ int main(int argc, char**argv)
 	///////////////////////   switches of seperate processes    ///////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////
 	string outputDirStr = argv[2];
+   	string mkdirOutputCommand = "mkdir -p " + outputDirStr;
+   	system(mkdirOutputCommand.c_str());
 	string testClassFileStr = outputDirStr + "/output.sam";
 
 	string processLogStr = outputDirStr + "/process.log";
@@ -117,7 +122,7 @@ int main(int argc, char**argv)
 	}
 
 	int normalRecordNum_1stMapping = 1000000;
-	int normalRecordNum_fixOneEndUnmapped = 1000000;
+	int normalRecordNum_fixOneEndUnmapped = 1;//000000;
 	int normalRecordNum_fixHeadTail = 1000000;//000000;
 
 	log_ofs << "normalRecordNum_1stMapping: " << normalRecordNum_1stMapping << endl;
@@ -148,7 +153,7 @@ int main(int argc, char**argv)
     //string OutputSamFile = argv[2];
     //ofstream OutputSamFile_ofs(OutputSamFile.c_str());
 
-    string tmpAlignOneEndUnmapped = testClassFileStr + ".oneEndUnmapped.alignInfo";
+    string tmpAlignOneEndUnmapped = headTailSoftClippingFile;//testClassFileStr + ".oneEndUnmapped.alignInfo";
 	//ofstream tmpAlignOneEndUnmapped_ofs(tmpAlignOneEndUnmapped.c_str());
 
 	loadIndex_begin = clock();
@@ -266,6 +271,21 @@ int main(int argc, char**argv)
 				{
 					(indexInfo->invalidSecondLevelIndexNOset).insert(secondLevelIndexNO + 1);
 				}
+
+				bool No_ATGC_Bool = true;
+				for(int tmpMallocSpace = 0; tmpMallocSpace < sizeOfIndex; tmpMallocSpace++)
+				{
+					char ch = tmpSecondLevelChrom[tmpMallocSpace];
+					if((ch == 'A')||(ch == 'T')||(ch == 'G')||(ch == 'C'))
+					{
+						No_ATGC_Bool = false;
+						break;
+					}
+				}				
+				if(No_ATGC_Bool)
+				{
+					(indexInfo->invalidSecondLevelIndexNOset).insert(secondLevelIndexNO + 1);
+				}	
 
 				secondLevelChrom.push_back(tmpSecondLevelChrom);
 				
@@ -417,6 +437,8 @@ int main(int argc, char**argv)
 
 		vector<string> peAlignInfoVec_pair_complete(normalRecordNum);
 
+		int oneEndUnmappedRecordNum = 0;
+
 		for(tmpTurn = 0; /*tmpTurn < TurnNum*/; tmpTurn++)
 		{
 			if(EndOfRecord)
@@ -477,6 +499,11 @@ int main(int argc, char**argv)
 			#pragma omp parallel for
 			for(int tmpOpenMP = 0; tmpOpenMP < realRecordNum; tmpOpenMP++)
 			{
+				oneEndUnmappedRecordNum ++;
+				if(oneEndUnmappedRecordNum < 2202658)
+				{
+					continue;
+				}
 				////////////////  parse long head reads record after 1-mapping process  ///////////////////////////////////////
 				int Nor1Num = 0, Rcm1Num = 0, Nor2Num = 0, Rcm2Num = 0;
 				string readNameStr_1, readNameStr_2;
@@ -574,6 +601,7 @@ int main(int argc, char**argv)
 						int peAlignInfoVecOriSize = alignmentInfoVecSize_ori[tmpAlignInfoType - 1];
 
 						//cout << "peAlignInfoVectorSize: " << peAlignInfoVectorSize << endl;
+						//cout << "tmpAlignInfoType: " << tmpAlignInfoType << endl;
 						//cout << "peAlignInfoVecOriSize: " << peAlignInfoVecOriSize << endl;
 						for(int tmpAlignmentNO = 0; 
 							tmpAlignmentNO < peAlignInfoVecOriSize;//peAlignInfoVectorSize; 
@@ -636,6 +664,7 @@ int main(int argc, char**argv)
 								//cout << "finish doing mapMainSecondLevel_compressedIndex !" << endl;
 								//cout << "unmapEndMapBool: " << unmapEndMapBool << endl;
 							}
+							
 							//cout << seg2ndOriInfo->segInfoStr(indexInfo, unmapEndInfo->chrPosStartIn2ndLevelIndex, unmapEndInfo->chrNameStr) << endl;
 
 							if(!unmapEndMapBool)
@@ -655,6 +684,7 @@ int main(int argc, char**argv)
 							pathInfo->getPossiPathFromSeg(segInfo);
 
 							//cout << pathInfo->possiPathStr() << endl;
+							
 							int pathValidNum = pathInfo->pathValidNumInt();
 							if(pathValidNum > 10)
 							{

@@ -183,7 +183,6 @@ unsigned int getChildNextValue(unsigned int *child, BYTE *verifyChild, unsigned 
 	return ((verifyChild[index]>2)*child[index]);
 }
 
-
 void getFirstInterval(char ch, unsigned int *interval_begin, unsigned int *interval_end, 
 	unsigned int* child, BYTE* verifyChild)
 {
@@ -203,9 +202,11 @@ void getFirstInterval(char ch, unsigned int *interval_begin, unsigned int *inter
 	{
 		if (ch == 'G')
 		{
+			//cout << "ch: " << ch << endl;
 			//*interval_begin = child_next[child_next[0]];
 			//*interval_end = child_next[*interval_begin] - 1;
 			unsigned int child_next_tmp = ((verifyChild[0]>2)*child[0]);
+			//cout << "child_next_tmp: " << child_next_tmp << endl;
 			*interval_begin = ((verifyChild[child_next_tmp]>2)*child[child_next_tmp]);
 			*interval_end = ((verifyChild[*interval_begin]>2)*child[*interval_begin]) - 1;
 		}
@@ -338,7 +339,7 @@ void getInterval(unsigned int start, unsigned int end,
 				if ((*interval_end < start) || (*interval_end > end)) *interval_end = end;
 			}				
 		}
-		else //(ch == 'T')
+		else// if(ch == 'T')
 		{
 			//if ((start < child_up[end + 1]) && (end >= child_up[end +1]))
        		//	index_begin = child_up[end+1];
@@ -387,6 +388,8 @@ void getInterval(unsigned int start, unsigned int end,
 				}						
 			}
 		}
+		//else
+		//{}
 	}			
 }
 
@@ -475,7 +478,7 @@ void getInterval(unsigned int start, unsigned int end, unsigned int position, ch
 				//cout << "error in getInterval G" << endl;
 			}			
 		}
-		else //(ch == 'T')
+		else// if(ch == 'T')
 		{
 			if ((start < child_up[end + 1]) && (end >= child_up[end +1]))
        			index_begin = child_up[end+1];
@@ -516,6 +519,8 @@ void getInterval(unsigned int start, unsigned int end, unsigned int position, ch
 				}						
 			}
 		}
+		//else
+		//{}
 	}			
 }
 
@@ -645,7 +650,7 @@ bool mapMainSecondLevelForTargetMapping(char *read, unsigned int* sa, unsigned i
    	 	//" interval_end = " << interval_end << endl;
 
    	 	unsigned int iterateNum = 0;//debug;
-   	 	while((c < read_length) && (queryFound == true))
+   	 	while((c + stop_loc_overall< read_length) && (queryFound == true))
    	 	{
    	 		iterateNum++;
    	 		if(iterateNum>read_length)
@@ -659,7 +664,7 @@ bool mapMainSecondLevelForTargetMapping(char *read, unsigned int* sa, unsigned i
 
  				lcp_length = getlcp(interval_begin, interval_end, lcp, up, down);
 
-				Min = min(lcp_length, read_length);
+				Min = min(lcp_length, read_length - stop_loc_overall);
 				
 				unsigned int loc_pos = 0;
             	for(loc_pos = 0; loc_pos < Min - c_old; loc_pos++)
@@ -685,7 +690,7 @@ bool mapMainSecondLevelForTargetMapping(char *read, unsigned int* sa, unsigned i
             		break;
             	}
 				start = interval_begin; end = interval_end;
-				if (c == read_length)
+				if (c + stop_loc_overall== read_length)
 				{				
 					break;			
 				}	
@@ -720,7 +725,7 @@ bool mapMainSecondLevelForTargetMapping(char *read, unsigned int* sa, unsigned i
 			{
 				//cout << "interval_begin == interval_end " << endl;
 				unsigned int loc_pos = 0;
-            	for(loc_pos = 0; loc_pos < read_length - c; loc_pos++)
+            	for(loc_pos = 0; loc_pos < read_length - c - stop_loc_overall; loc_pos++)
             	{
             		queryFound = (*(read_local+c+loc_pos) == *(chrom+sa[interval_begin]+c+loc_pos));
             		if (!queryFound)
@@ -932,7 +937,7 @@ bool mapMainSecondLevelForTargetMapping_compressedIndex(char *read,
    	 	//" interval_end = " << interval_end << endl;
 
    	 	unsigned int iterateNum = 0;//debug;
-   	 	while((c < read_length) && (queryFound == true))
+   	 	while((c + stop_loc_overall< read_length) && (queryFound == true))
    	 	{
    	 		iterateNum++;
    	 		if(iterateNum>read_length)
@@ -947,7 +952,7 @@ bool mapMainSecondLevelForTargetMapping_compressedIndex(char *read,
  				//lcp_length = getlcp(interval_begin, interval_end, lcp, up, down);
 	 			lcp_length = getlcp(interval_begin, interval_end, lcpCompress, child, verifyChild);
 
-				Min = min(lcp_length, read_length);
+				Min = min(lcp_length, read_length - stop_loc_overall);
 				
 				unsigned int loc_pos = 0;
             	for(loc_pos = 0; loc_pos < Min - c_old; loc_pos++)
@@ -973,7 +978,7 @@ bool mapMainSecondLevelForTargetMapping_compressedIndex(char *read,
             		break;
             	}
 				start = interval_begin; end = interval_end;
-				if (c == read_length)
+				if (c + stop_loc_overall == read_length)
 				{				
 					break;			
 				}	
@@ -1010,7 +1015,7 @@ bool mapMainSecondLevelForTargetMapping_compressedIndex(char *read,
 			{
 				//cout << "interval_begin == interval_end " << endl;
 				unsigned int loc_pos = 0;
-            	for(loc_pos = 0; loc_pos < read_length - c; loc_pos++)
+            	for(loc_pos = 0; loc_pos < read_length - c - stop_loc_overall; loc_pos++)
             	{
             		queryFound = (*(read_local+c+loc_pos) == *(chrom+sa[interval_begin]+c+loc_pos));
             		if (!queryFound)

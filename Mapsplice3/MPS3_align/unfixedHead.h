@@ -331,7 +331,68 @@ public:
 	{
 		cout << readName << endl << alignDirection << endl << midPartMapPosInWholeGenome << endl << unfixedHeadLength << readSeqOriginal << endl; 
 	}
-	bool SJsearchInSJhash(SJhash_Info& SJinfo, const string& readSeqWithDirection, Index_Info* indexInfo)
+
+	bool SJsearchInAreaAndStringHash(SJhash_Info* SJinfo, 
+		const string& readSeqWithDirection, 
+		Index_Info* indexInfo, int areaSize)
+	{
+		bool SJfoundInSJhash = false;
+
+		int readLength = readSeqWithDirection.length();
+		int buffer = 4;
+		if(unfixedHeadLength + buffer >= readLength)
+			buffer = readLength - unfixedHeadLength - 1;
+
+		//string readPendingStr
+		//set<int> areaNOset;
+		int chromNameInt = indexInfo->convertStringToInt(midPartMapChrName);
+
+		int areaNOmin = (int)((midPartMapPosInChr - unfixedHeadLength - 1)/areaSize);
+		int areaNOmax = (int)((midPartMapPosInChr + buffer)/areaSize);
+
+		int areaCandidateNum = areaNOmax - areaNOmin + 1;
+
+		vector<int> SJacceptorSiteVec;
+
+		for(int tmpArea = areaNOmin; tmpArea <= areaNOmax; tmpArea ++)
+		{
+			SJareaHashIter tmpSJareaHashIter 
+				= ((SJinfo->SJendPosAreaHash)[chromNameInt]).find(tmpArea);
+			if(tmpSJareaHashIter != ((SJinfo->SJendPosAreaHash)[chromNameInt]).end())
+			{
+				for(set<int>::iterator intSetIter = (tmpSJareaHashIter->second).begin();
+					intSetIter != (tmpSJareaHashIter->second).end(); intSetIter ++)
+				{
+					int tmpSJacceptorPos = (*intSetIter);
+					if( (tmpSJacceptorPos >= midPartMapPosInChr - unfixedHeadLength - 1) 
+						&& (tmpSJacceptorPos <= midPartMapPosInChr + buffer) )
+					{
+						SJacceptorSiteVec.push_back(tmpSJacceptorPos);
+					}
+				}
+			}
+			else
+			{}
+		}
+		
+		if(SJacceptorSiteVec.size() > 0)
+		{
+			string readPendingStr = readSeqWithDirection.substr(
+				0, unfixedHeadLength + buffer + 1);
+			for(int tmp = 0; tmp < SJacceptorSiteVec.size(); tmp++)
+			{
+				int tmpSJacceptorSite = SJacceptorSiteVec[tmp];
+
+			}
+		}
+		else
+		{}	
+		
+		return SJfoundInSJhash;
+	}
+
+	bool SJsearchInSJhash(SJhash_Info* SJinfo, const string& readSeqWithDirection, 
+		Index_Info* indexInfo)
 	//without use of areaHash
 	{
 		bool SJfoundInSJhash = false;
@@ -348,31 +409,53 @@ public:
 			//cout << "chr: " << midPartMapChrInt << endl
 			//	<< "donerEndInRead: " << tmpSJdonerEndPosInRead << endl 
 			//	<< "acceptorStartPosInChr: " << tmpSJacceptorStartPosInChr << endl; 
+			if(tmpSJacceptorStartPosInChr < 2)
+			{
+				continue;
+			}
 
-			if( ((SJinfo.SJintHashReverse)[midPartMapChrInt]).find(tmpSJacceptorStartPosInChr)
-				== ((SJinfo.SJintHashReverse)[midPartMapChrInt]).end() )
+			if( ((SJinfo->SJintHashReverse)[midPartMapChrInt]).find(tmpSJacceptorStartPosInChr)
+				== ((SJinfo->SJintHashReverse)[midPartMapChrInt]).end() )
 			{}
 			else
 			{
 			//	cout << "found in SJintHashReverse" << endl;
-				for(set<int>::iterator tmp2 = ((((SJinfo.SJintHashReverse)[midPartMapChrInt]).find(tmpSJacceptorStartPosInChr))->second).begin(); 
-					tmp2 != ((((SJinfo.SJintHashReverse)[midPartMapChrInt]).find(tmpSJacceptorStartPosInChr))->second).end(); 
+				for(set<int>::iterator tmp2 = ((((SJinfo->SJintHashReverse)[midPartMapChrInt]).find(tmpSJacceptorStartPosInChr))->second).begin(); 
+					tmp2 != ((((SJinfo->SJintHashReverse)[midPartMapChrInt]).find(tmpSJacceptorStartPosInChr))->second).end(); 
 					tmp2++)
 				{
 					int tmpSJdonerEndPosInChr 
 						= *tmp2;
 					//string readPendingStr = readSeqWithDirection.substr(tmpSJdonerEndPosInRead + buffer - 1, readLength - (tmpSJdonerEndPosInRead + buffer) + 1)
-					string chromDonerEndStr = indexInfo->chromStr[midPartMapChrInt].substr(
-									tmpSJdonerEndPosInChr - tmpSJdonerEndPosInRead, tmpSJdonerEndPosInRead);
-			
-					string chromAcceptorStartStr = indexInfo->chromStr[midPartMapChrInt].substr(
-									tmpSJacceptorStartPosInChr - 1, unfixedHeadLength + 1 - tmpSJacceptorStartPosInRead + buffer + 1);
-					string chromPendingStr = chromDonerEndStr + chromAcceptorStartStr;
+					string chromDonerEndStr;
+					string chromAcceptorStartStr;
+					string chromPendingStr;
+					size_t max_append_mismatch;
+					size_t mismatch_bits;
+					bool matchBool;
 
-					size_t max_append_mismatch = (unfixedHeadLength + buffer + 1)/10 + 1;
-					size_t mismatch_bits = 0;
-					bool matchBool = score_string(readPendingStr, chromPendingStr,
-												max_append_mismatch, mismatch_bits);//append first
+					if(tmpSJdonerEndPosInChr - tmpSJdonerEndPosInRead >= 0)
+					{
+						chromDonerEndStr = indexInfo->chromStr[midPartMapChrInt].substr(
+										tmpSJdonerEndPosInChr - tmpSJdonerEndPosInRead, tmpSJdonerEndPosInRead);
+
+						chromAcceptorStartStr = indexInfo->chromStr[midPartMapChrInt].substr(
+										tmpSJacceptorStartPosInChr - 1, unfixedHeadLength + 1 - tmpSJacceptorStartPosInRead + buffer + 1);
+
+						chromPendingStr = chromDonerEndStr + chromAcceptorStartStr;
+
+						
+						max_append_mismatch = (unfixedHeadLength + buffer + 1)/10 + 1;
+						
+						mismatch_bits = 0;
+						
+						matchBool = score_string(readPendingStr, chromPendingStr,
+													max_append_mismatch, mismatch_bits);//append first
+					}
+					else
+					{
+						matchBool = false;
+					}
 					//cout << "readPendingStr: "  << endl << readPendingStr << endl; 
 					//cout << "chroPendingStr: "  << endl << chromPendingStr << endl;
 

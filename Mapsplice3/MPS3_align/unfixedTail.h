@@ -190,7 +190,7 @@ public:
 		}
 	}
 
-	bool SJsearchInSJhash(SJhash_Info& SJinfo, const string& readSeqWithDirection, Index_Info* indexInfo)
+	bool SJsearchInSJhash(SJhash_Info* SJinfo, const string& readSeqWithDirection, Index_Info* indexInfo)
 	//without use of areaHash
 	{
 		bool SJfoundInSJhash = false;
@@ -223,32 +223,59 @@ public:
 			int tmpSJdonerEndPosInRead = readLength - unfixedTailLength + tmp;
 			int tmpSJacceptorStartPosInRead = tmpSJdonerEndPosInRead + 1;
 			int tmpSJdonerEndPosInChr = midPartMapPosInChr + tmp;
-			if( ((SJinfo.SJintHashNormal)[midPartMapChrInt]).find(tmpSJdonerEndPosInChr)
-				== ((SJinfo.SJintHashNormal)[midPartMapChrInt]).end() )
+
+			if(tmpSJdonerEndPosInChr > (indexInfo->chromLength)[midPartMapChrInt] - 2)
+			{
+				continue;
+			}
+
+			if( ((SJinfo->SJintHashNormal)[midPartMapChrInt]).find(tmpSJdonerEndPosInChr)
+				== ((SJinfo->SJintHashNormal)[midPartMapChrInt]).end() )
 			{}
 			else
 			{
-				for(set<int>::iterator tmp2 = ((((SJinfo.SJintHashNormal)[midPartMapChrInt]).find(tmpSJdonerEndPosInChr))->second).begin(); 
-					tmp2 != ((((SJinfo.SJintHashNormal)[midPartMapChrInt]).find(tmpSJdonerEndPosInChr))->second).end(); 
+				for(set<int>::iterator tmp2 = ((((SJinfo->SJintHashNormal)[midPartMapChrInt]).find(tmpSJdonerEndPosInChr))->second).begin(); 
+					tmp2 != ((((SJinfo->SJintHashNormal)[midPartMapChrInt]).find(tmpSJdonerEndPosInChr))->second).end(); 
 					tmp2++)
 				{
 					int tmpSJacceptorStartPosInChr 
 						= *tmp2;
 					//string readPendingStr = readSeqWithDirection.substr(tmpSJdonerEndPosInRead + buffer - 1, readLength - (tmpSJdonerEndPosInRead + buffer) + 1)
-					string chromDonerEndStr = indexInfo->chromStr[midPartMapChrInt].substr(
-									midPartMapPosInChr - buffer - 1, tmpSJdonerEndPosInRead - readLength + unfixedTailLength + buffer + 1);
-			
-					string chromAcceptorStartStr = indexInfo->chromStr[midPartMapChrInt].substr(
-									tmpSJacceptorStartPosInChr - 1, readLength - tmpSJacceptorStartPosInRead + 1);
-					string chromPendingStr = chromDonerEndStr + chromAcceptorStartStr;
+					string chromDonerEndStr;
+					string chromAcceptorStartStr;
+					string chromPendingStr;
+					size_t max_append_mismatch;
+					size_t mismatch_bits;
+					bool matchBool;
 
-					size_t max_append_mismatch = (unfixedTailLength + buffer + 1)/10 + 1;
-					size_t mismatch_bits = 0;
-					bool matchBool = score_string(readPendingStr, chromPendingStr,
-												max_append_mismatch, mismatch_bits);//append first
-					//cout << "readPendingStr: "  << endl << readPendingStr << endl; 
-					//cout << "chroPendingStr: "  << endl << chromPendingStr << endl;
+					if((midPartMapPosInChr + tmpSJdonerEndPosInRead - readLength + unfixedTailLength > ((indexInfo->chromLength)[midPartMapChrInt] - 1))
+						||
+						(tmpSJacceptorStartPosInChr  + readLength - tmpSJacceptorStartPosInRead > ((indexInfo->chromLength)[midPartMapChrInt] - 1)))
+					{
+						matchBool = false;
+					}	
+					else
+					{
+						chromDonerEndStr = indexInfo->chromStr[midPartMapChrInt].substr(
+										midPartMapPosInChr - buffer - 1, tmpSJdonerEndPosInRead - readLength + unfixedTailLength + buffer + 1);
+				
+						
+						chromAcceptorStartStr = indexInfo->chromStr[midPartMapChrInt].substr(
+										tmpSJacceptorStartPosInChr - 1, readLength - tmpSJacceptorStartPosInRead + 1);
+						
+						chromPendingStr = chromDonerEndStr + chromAcceptorStartStr;
 
+						
+						max_append_mismatch = (unfixedTailLength + buffer + 1)/10 + 1;
+						
+						mismatch_bits = 0;
+						
+						matchBool = score_string(readPendingStr, chromPendingStr,
+													max_append_mismatch, mismatch_bits);//append first
+						//cout << "readPendingStr: "  << endl << readPendingStr << endl; 
+						//cout << "chroPendingStr: "  << endl << chromPendingStr << endl;
+					}
+					
 					if(matchBool)
 					{
 						SJfoundInSJhash = true;

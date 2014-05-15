@@ -10,7 +10,12 @@
 #include <fstream>
 #include <stack>
 #include <vector>
+#include <hash_map>
 #include <map>
+#include <set>
+#include <sstream>
+#include <omp.h>
+#include <time.h>
 
 using namespace std;
 
@@ -20,6 +25,18 @@ inline string int_to_str(int numerical)
 		sprintf(c,"%d",numerical);
 		string str(c);
 		return str;
+}
+
+inline string int_to_str_sstream(int numerical)
+{
+	//char c[12];
+	//char* intStr = itoa(numerical);
+	//string str = string(intStr);
+	//return str;
+	stringstream ss;
+	ss << numerical;
+	string str = ss.str();
+	return str;
 }
 
 inline char complement(int i) 

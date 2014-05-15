@@ -177,11 +177,12 @@ public:
 		//pathInfo->getFinalPath(indexInfo, segInfo, readLength);
 		pathInfo->getFinalPath_extend2HeadTail(indexInfo, segInfo, readLength, readSeq_inProcess);
 
+		//cout << "finish getting finalPath" << endl;
 		fixGapInPathBool = true;
 		return fixGapInPathBool;
 	}
 
-	bool fixDoubleAnchor(Splice_Info* cigarInfo, int relation, int segmentLocInRead_1, int segmentLocInRead_2,
+	/*bool fixDoubleAnchor(Splice_Info* cigarInfo, int relation, int segmentLocInRead_1, int segmentLocInRead_2,
 		int segmentLength_1, int segmentLength_2, int segmentMapPos_1, int segmentMapPos_2,
 		const string& readSeq_inProcess, Index_Info* indexInfo, const string& chromName, int* mismatchNum
 		)
@@ -221,7 +222,7 @@ public:
 			cout << "error in fixDoubleAnchor ... " << endl;
 		}
 		return fixDoubleAnchorBool;
-	}
+	}*/
 
 	bool fixDoubleAnchor_extendBack(Splice_Info* cigarInfo, int relation, int segmentLocInRead_1, int segmentLocInRead_2,
 		int segmentLength_1, int segmentLength_2, int segmentMapPos_1, int segmentMapPos_2,

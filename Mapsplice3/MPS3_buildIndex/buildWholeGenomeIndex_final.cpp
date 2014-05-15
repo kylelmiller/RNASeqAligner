@@ -526,6 +526,7 @@ int main(int argc, char** argv)
 
 	string InputChrFolder = argv[1];
 	string OutputIndexFolder = argv[2];
+	OutputIndexFolder += "/";
 
 	///////////// initiate index files //////////////
 	//string outputIndexFileStr = OutputIndexFolder + "/WholeGenomeIndex";

@@ -34,28 +34,6 @@
 #include "unfixedTail.h"
 #include "sam2junc.h"
 
-/*
-#include "index_info.h"
-#include "constantDefinitions.h"
-#include "segmentMapping.h"
-#include "segmentMapping_secondLevel.h"
-#include "read_block_test.h"
-#include "bwtmap_info.h"
-#include "DoubleAnchorScore.h"
-#include "sbndm.h"
-#include "splice_info.h"
-#include "remapping_shortAnchorCharHash.h"
-#include "otherFunc.h"
-#include "fixGapRelationParameters.h"
-#include "read_info.h"
-
-#include "seg_info.h"
-#include "gap_info.h"
-#include "align_info.h"
-#include "spliceJunction_info.h"
-#include "unfixedHead.h"
-#include "unfixedTail.h"*/
-
 using namespace std;  
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -431,10 +409,12 @@ int main(int argc, char**argv)
 
 		//string headTailSoftClippingFile = headTailSoftClippingFile;
 		FILE *fp_HeadTail = fopen(headTailSoftClippingFile.c_str(), "r");
+		//ifstream headTail_ifs(headTailSoftClippingFile.c_str());
 
+		/*
 		char line1Char[200], line2Char[500], line3Char[500], line4Char[200], line5Char[500],
 			 line6Char[500], line7Char[2000], line8Char[2000], line9Char[2000], line10Char[2000],
-			 line11Char[200], readNameChar_1[100], readNameChar_2[100], othersChar[100];
+			 line11Char[200], readNameChar_1[100], readNameChar_2[100], othersChar[100];*/
 
 		string line1, line2, line3, line4, line5, line6, line7, 
 			line8, line9, line10, line11;
@@ -491,9 +471,8 @@ int main(int argc, char**argv)
 					EndOfRecord = true;
 					break;
 				}
-
+				
 				fgets(line1Char, sizeof(line1Char), fp_HeadTail); line1 = line1Char;
-				//line1StrVec.push_back(line1);
 				line1StrVec[recordNumTmp] = line1;
 
 				fgets(line2Char, sizeof(line2Char), fp_HeadTail); line2 = line2Char;
@@ -519,6 +498,17 @@ int main(int argc, char**argv)
 				line10StrVec[recordNumTmp] = line10;
 
 				fgets(line11Char, sizeof(line11Char), fp_HeadTail); 
+				/*getline(headTail_ifs, line1);
+				getline(headTail_ifs, line2);
+				getline(headTail_ifs, line3);
+				getline(headTail_ifs, line4);
+				getline(headTail_ifs, line5);
+				getline(headTail_ifs, line6);
+				getline(headTail_ifs, line7);			
+				getline(headTail_ifs, line8);
+				getline(headTail_ifs, line9);
+				getline(headTail_ifs, line10);
+				getline(headTail_ifs, line11);*/
 			}	
 		
 			//cout << "realRecordNum: " << realRecordNum << " turn: " << tmpTurn+1 << endl;
@@ -533,10 +523,10 @@ int main(int argc, char**argv)
 			for(int tmpOpenMP = 0; tmpOpenMP < realRecordNum; tmpOpenMP++)
 			{
 
-				tmpRecordNum ++;
-				//if(tmpRecordNum < )
+				//tmpRecordNum ++;
+				//if(tmpRecordNum < 8761628)
 				//	continue;
-				cout << "tmpRecordNum: " << tmpRecordNum << endl;
+				//cout << "tmpRecordNum: " << tmpRecordNum << endl;
 				////////////////  parse long head reads record after 1-mapping process  ///////////////////////////////////////
 				int Nor1Num = 0, Rcm1Num = 0, Nor2Num = 0, Rcm2Num = 0;
 				string readNameStr_1, readNameStr_2;
@@ -928,7 +918,7 @@ int main(int argc, char**argv)
 					for(int tmpAlignmentNO = 0; tmpAlignmentNO < (peAlignInfo->fixHeadTail_getAlignInfoVecSize(tmpAlignInfoType)); 
 						tmpAlignmentNO++)
 					{
-						//cout << "tmpAlignmentNO: " << tmpAlignmentNO << endl;
+					//	cout << "tmpAlignmentNO: " << tmpAlignmentNO << endl;
 						//tmpAlignmentInfo = (peAlignInfo->norAlignmentInfo_PE_1)[tmpAlignmentNO];
 						tmpAlignmentInfo = (peAlignInfo->fixHeadTail_getAlignInfo(tmpAlignInfoType, tmpAlignmentNO));
 						int cigarStringJumpCodeSize = (tmpAlignmentInfo->cigarStringJumpCode).size();
@@ -938,11 +928,11 @@ int main(int argc, char**argv)
 							continue;
 						}
 
-						//cout << "start to getUnfixedTailInfoFromRecordWithAlignInfoType !" << endl;
+					//	cout << "start to getUnfixedTailInfoFromRecordWithAlignInfoType !" << endl;
 						Unfixed_Tail unfixedTailInfo;
 						//unfixedTailInfo.getUnfixedTailInfoFromRecord(peReadInfo, true, tmpAlignmentInfo, indexInfo);
 						unfixedTailInfo.getUnfixedTailInfoFromRecordWithAlignInfoType(peReadInfo, tmpAlignInfoType, tmpAlignmentInfo, indexInfo);
-						//cout << "finish getUnfixedTailInfoFromRecordWithAlignInfoType !" << endl;
+					//	cout << "finish getUnfixedTailInfoFromRecordWithAlignInfoType !" << endl;
 						string readSeqWithDirection;
 						if(unfixedTailInfo.alignDirection == "+")
 						{
@@ -956,7 +946,7 @@ int main(int argc, char**argv)
 						///////////////////////////////////////////////////////////////////////////////////////////	
 						/////////////////////////  try remapping with splice junction hash ////////////////////////
 						///////////////////////////////////////////////////////////////////////////////////////////	
-						//cout << "start SJsearchInSJhash " << endl;
+					//	cout << "start SJsearchInSJhash " << endl;
 						bool spliceJunctionFoundInHash;
 
 						if(spliceJunctionHashExists)
@@ -968,7 +958,7 @@ int main(int argc, char**argv)
 							spliceJunctionFoundInHash = false;
 						}
 
-						//cout << "spliceJunctionFoundInHash: " << spliceJunctionFoundInHash << endl;
+					//	cout << "spliceJunctionFoundInHash: " << spliceJunctionFoundInHash << endl;
 						if(spliceJunctionFoundInHash)
 						{
 							//if((unfixedTailInfo.SJposFromRemapping).size() == 1)

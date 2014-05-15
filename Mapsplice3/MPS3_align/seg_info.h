@@ -34,7 +34,7 @@ public:
 		//input : read, sa, up, down, next, chrom; 
 		//output: segmentNum, segmentLength, segmentLocInread, segmentAlignNum, segmentAlignLoc 
 		//cout << "sa[0] = " << sa[0] << endl;
-
+		//*(read + readLength) = 'Y';
 		bool mapMain = false;
 		int norSegmentNum = 0;	
 		//(norSegmentNum) = 0;
@@ -114,7 +114,7 @@ public:
 	   	 	//" interval_end = " << interval_end << endl;
 
 	   	 	unsigned int iterateNum = 0;//debug;
-	   	 	while((c < read_length) && (queryFound == true))
+	   	 	while((c + stop_loc_overall< read_length) && (queryFound == true))
 	   	 	{
 	   	 		iterateNum++;
 	   	 		if(iterateNum>read_length)
@@ -129,7 +129,7 @@ public:
 
 	 				lcp_length = getlcp(interval_begin, interval_end, lcp, up, down);
 
-					Min = min(lcp_length, read_length);
+					Min = min(lcp_length, read_length - stop_loc_overall);
 					
 					unsigned int loc_pos = 0;
 	            	for(loc_pos = 0; loc_pos < Min - c_old; loc_pos++)
@@ -156,7 +156,7 @@ public:
 	            		break;
 	            	}
 					start = interval_begin; end = interval_end;
-					if (c == read_length)
+					if (c + stop_loc_overall == read_length)
 					{				
 						break;			
 					}	
@@ -187,7 +187,7 @@ public:
 				{
 					//cout << "interval_begin == interval_end " << endl;
 					unsigned int loc_pos = 0;
-	            	for(loc_pos = 0; loc_pos < read_length - c; loc_pos++)
+	            	for(loc_pos = 0; loc_pos < read_length - c - stop_loc_overall; loc_pos++)
 	            	{
 	            		queryFound = (*(read_local+c+loc_pos) == *(chrom+sa[interval_begin]+c+loc_pos));
 	            		if (!queryFound)
@@ -288,6 +288,9 @@ public:
 	{
 		//input : read, sa, up, down, next, chrom; 
 		//output: segmentNum, segmentLength, segmentLocInread, segmentAlignNum, segmentAlignLoc 
+		
+		//cout << "start to mapMainSecondLevel_compressedIndex " << endl;
+		//*(read + readLength) = 'Y';
 		unsigned int norSegmentNum;
 
 		(norSegmentNum) = 0;
@@ -347,6 +350,7 @@ public:
 	   	 	unsigned int start = 0, end = n-1;
 	   	 	unsigned int Min;
 	   	 	unsigned int c = 0;
+	   	 	//cout << "char: " << (*read_local) << endl;
 	   	 	getFirstInterval(*read_local, &interval_begin, &interval_end, child, verifyChild);
 	   	 	//cout << "new Segment: " << segment_num << endl;
 	   	 	//cout << "char: " << (*read_local) << " firstInterval: " << interval_begin << " ~ " << interval_end << endl;
@@ -355,7 +359,7 @@ public:
 	   	 	segment_align_rangeNum = interval_end - interval_begin + 1;
 
 	   	 	unsigned int iterateNum = 0;//debug;
-	   	 	while((c < read_length) && (queryFound == true))
+	   	 	while((c + stop_loc_overall< read_length) && (queryFound == true))
 	   	 	{
 	   	 		iterateNum++;
 	   	 		if(iterateNum>read_length)
@@ -371,8 +375,8 @@ public:
 	 				lcp_length = getlcp(interval_begin, interval_end, lcpCompress, child, verifyChild//child_up, child_down
 	 					);
 	 				//cout << "lcp_length: " << lcp_length << endl;
-					Min = min(lcp_length, read_length);
-					
+					//Min = min(lcp_length, read_length);
+					Min = min(lcp_length, read_length - stop_loc_overall);
 					unsigned int loc_pos = 0;
 	            	for(loc_pos = 0; loc_pos < Min - c_old; loc_pos++)
 	            	{
@@ -397,7 +401,7 @@ public:
 	            		break;
 	            	}
 					start = interval_begin; end = interval_end;
-					if (c == read_length)
+					if (c + stop_loc_overall== read_length)
 					{				
 						break;			
 					}	
@@ -425,7 +429,7 @@ public:
 				else 
 				{
 					unsigned int loc_pos = 0;
-	            	for(loc_pos = 0; loc_pos < read_length - c; loc_pos++)
+	            	for(loc_pos = 0; loc_pos < read_length - c- stop_loc_overall; loc_pos++)
 	            	{
 	            		queryFound = (*(read_local+c+loc_pos) == *(chrom+sa[interval_begin]+c+loc_pos));
 	            		if (!queryFound)
@@ -454,12 +458,19 @@ public:
 
 	    	if (queryFound && (interval_end >= interval_begin)) 
 	    	{
-	   	 		if(norSegmentNum >= SEGMENTNUM)
+	    		(norSegmentNum) ++;
+	   	 		if(norSegmentNum > SEGMENTNUM)
 	   	 		{
 	   	 			segmentNum = SEGMENTNUM;
 	   	 			return false;
 	   	 		}
-	    		(norSegmentNum) ++;
+	   	 		if(norSegmentNum > (int)(read_length/5))
+	   	 		{
+	   	 			segmentNum = (int)(read_length/5);
+	   	 			return false;
+	   	 		}
+
+	    		
 	    		unsigned int tmpSegLength = read_length - stop_loc_overall;
 
 				//if(tmpSegLength >= minValSegLength)
@@ -468,9 +479,7 @@ public:
 				//}
 
 	    		norSegmentLength[norSegmentNum - 1] = tmpSegLength;//READ_LENGTH - stop_loc_overall;
-	    		#ifdef SEGLENGTH
-	    			segmentLength1[stop_loc]++;
-	    		#endif
+
 	    		*(norSegmentLocInRead + norSegmentNum - 1) = stop_loc_overall + 1;
 	    		*(norSegmentAlignNum + norSegmentNum - 1) = segment_align_rangeNum;				
 				
@@ -482,26 +491,21 @@ public:
 
 				segment_length = read_length-stop_loc_overall;
 				
-				#ifdef DEBUG
-				if(segment_length_max < segment_length)
-				{
-					norAlignLoc = align_chr_location - stop_loc_overall;					
-					segment_length_max = segment_length;
-				}
-				#endif
 
 				break;
 			}
 			else 
 			{    
-	   	 		if(norSegmentNum >= SEGMENTNUM)
+				(norSegmentNum) ++;
+	   	 		if(norSegmentNum > SEGMENTNUM)
 	   	 		{
 	   	 			segmentNum = SEGMENTNUM;
 	   	 			return false;
 	   	 		}
-				(norSegmentNum) ++;
+				
 				if(norSegmentNum > (int)(read_length/5))
 				{
+					segmentNum = (int)(read_length/5);
 					//debugln("map error, too many segments, there may exist too many Ns");
 					return false;
 				}
@@ -530,14 +534,7 @@ public:
 				stop_loc_overall = stop_loc_overall + stop_loc + 1;
 
 	    		segment_length = stop_loc;
-				
-				#ifdef DEBUG 		
-				if (segment_length_max < segment_length)
-				{
-					norAlignLoc = align_chr_location - stop_loc_overall_ori;
-					segment_length_max = segment_length;
-				}
-				#endif
+ 
 			}		
 	   	}
 
@@ -780,6 +777,7 @@ public:
 	{
 		//input : read, sa, up, down, next, chrom; 
 		//output: segmentNum, segmentLength, segmentLocInread, segmentAlignNum, segmentAlignLoc 
+		//*(read + readLength) = 'Y';
 		unsigned int norSegmentNum;
 
 		(norSegmentNum) = 0;
@@ -850,7 +848,7 @@ public:
 	   	 	segment_align_rangeNum = interval_end - interval_begin + 1;
 
 	   	 	unsigned int iterateNum = 0;//debug;
-	   	 	while((c < read_length) && (queryFound == true))
+	   	 	while((c + stop_loc_overall< read_length) && (queryFound == true))
 	   	 	{
 	   	 		iterateNum++;
 	   	 		if(iterateNum>read_length)
@@ -866,7 +864,7 @@ public:
 	 				lcp_length = getlcp_originalSize(interval_begin, interval_end, lcpCompress, //child, verifyChild//child_up, child_down
 	 					child_up, child_down, child_next);
 	 				//cout << "lcp_length: " << lcp_length << endl;
-					Min = min(lcp_length, read_length);
+					Min = min(lcp_length, read_length - stop_loc_overall);
 					
 					unsigned int loc_pos = 0;
 	            	for(loc_pos = 0; loc_pos < Min - c_old; loc_pos++)
@@ -892,7 +890,7 @@ public:
 	            		break;
 	            	}
 					start = interval_begin; end = interval_end;
-					if (c == read_length)
+					if (c + stop_loc_overall == read_length)
 					{				
 						break;			
 					}	
@@ -921,7 +919,7 @@ public:
 				else 
 				{
 					unsigned int loc_pos = 0;
-	            	for(loc_pos = 0; loc_pos < read_length - c; loc_pos++)
+	            	for(loc_pos = 0; loc_pos < read_length - c - stop_loc_overall; loc_pos++)
 	            	{
 	            		queryFound = (*(read_local+c+loc_pos) == *(chrom+sa[interval_begin]+c+loc_pos));
 	            		if (!queryFound)
@@ -1047,6 +1045,7 @@ public:
 	{
 		//input : read, sa, up, down, next, chrom; 
 		//output: segmentNum, segmentLength, segmentLocInread, segmentAlignNum, segmentAlignLoc 
+		//*(read + readLength) = 'Y';
 		unsigned int norSegmentNum;
 
 		(norSegmentNum) = 0;
@@ -1114,7 +1113,7 @@ public:
 	   	 	segment_align_rangeNum = interval_end - interval_begin + 1;
 
 	   	 	unsigned int iterateNum = 0;//debug;
-	   	 	while((c < read_length) && (queryFound == true))
+	   	 	while((c + stop_loc_overall< read_length) && (queryFound == true))
 	   	 	{
 	   	 		iterateNum++;
 	   	 		if(iterateNum>read_length)
@@ -1130,7 +1129,7 @@ public:
 	 				lcp_length = getlcp(interval_begin, interval_end, lcpCompress, child, verifyChild//child_up, child_down
 	 					);
 	 				//cout << "lcp_length: " << lcp_length << endl;
-					Min = min(lcp_length, read_length);
+					Min = min(lcp_length, read_length - stop_loc_overall);
 					
 					unsigned int loc_pos = 0;
 	            	for(loc_pos = 0; loc_pos < Min - c_old; loc_pos++)
@@ -1156,7 +1155,7 @@ public:
 	            		break;
 	            	}
 					start = interval_begin; end = interval_end;
-					if (c == read_length)
+					if (c + stop_loc_overall== read_length)
 					{				
 						break;			
 					}	
@@ -1184,7 +1183,7 @@ public:
 				else 
 				{
 					unsigned int loc_pos = 0;
-	            	for(loc_pos = 0; loc_pos < read_length - c; loc_pos++)
+	            	for(loc_pos = 0; loc_pos < read_length - c - stop_loc_overall; loc_pos++)
 	            	{
 	            		queryFound = (*(read_local+c+loc_pos) == *(chrom+sa[interval_begin]+c+loc_pos));
 	            		if (!queryFound)
@@ -1331,7 +1330,7 @@ public:
 		//debugln("mapMain ended!!!");
 		return mapMain;
 	}
-
+	/*
 	bool mapMain_SegInfo_toCheck(char *read, unsigned int* sa, 
 		BYTE* lcpCompress, unsigned int* child, char* chrom, 
 		unsigned int* valLength, BYTE* verifyChild, 
@@ -1902,7 +1901,7 @@ public:
 		//debugln("mapMain ended!!!");
 		return mapMain;
 	}
-
+	*/
 	bool mapMain_SegInfo_preIndex(char *read, unsigned int* sa, BYTE* lcpCompress, 
 		unsigned int* child, char* chrom, 
 		unsigned int* valLength, BYTE* verifyChild, int readLength, Index_Info* indexInfo,
@@ -1912,6 +1911,8 @@ public:
 		//cout << "mapMain_SegInfo_preIndex function starts ...... "<< endl; 
 		//input : read, sa, up, down, next, chrom; 
 		//output: segmentNum, segmentLength, segmentLocInread, segmentAlignNum, segmentAlignLoc 
+		//cout << "readLength: " << readLength << endl;
+		//*(read+readLength) = 'Y';
 		unsigned int norSegmentNum;
 
 		string readStringStr = read;
@@ -1921,7 +1922,7 @@ public:
 		unsigned int stop_loc = 0; // location in one segment for iterations
 		unsigned int stop_loc_overall = 0; //location in the whole read for iterations
 		unsigned int segment_num = 0;
-		unsigned int segment_length = 0; 
+		//unsigned int segment_length = 0; 
 		unsigned int segment_length_max = 0;//used to compare with segment_length for eache segment to get the maximum length segment
 		unsigned int segment_align_SArange[2] = {0,0};//legal align location in SA
 		unsigned int segment_align_rangeNum = 0;
@@ -1949,15 +1950,19 @@ public:
 			unsigned int KmerSearchIndexIntervalStart = 0;
 			unsigned int KmerSearchIndexIntervalEnd = 0;			
 			
-			//cout << "stop_loc_overall: " << stop_loc_overall << endl;
+			//cout << "$$-1\nnew segment ! segment_num: " << segment_num << endl;
+			//cout << "stop_loc_overall: " << stop_loc_overall << endl << endl;
 
 			if(read_length - stop_loc_overall < INDEX_KMER_LENGTH)
 			{
+				//cout << "read_length - stop_loc_overall: " << read_length-stop_loc_overall << endl;
+				//cout << "< INDEX_KMER_LENGTH" << endl;
 				KmerSearchFound = false;
 			}
 			else
 			{
-
+				//cout << "read_length - stop_loc_overall: " << read_length-stop_loc_overall << endl;
+				//cout << "> INDEX_KMER_LENGTH" << endl;
 				KmerToSearchInIndexStr = readStringStr.substr(stop_loc_overall, INDEX_KMER_LENGTH);
 				//cout << "KmerToSearchInIndexStr: " << KmerToSearchInIndexStr << endl;
 				KmerSearchFound = this->getIndexInterval_PreIndex(KmerToSearchInIndexStr, &KmerMappedLength,
@@ -1967,7 +1972,7 @@ public:
 
 			}
 
-			//cout << "KmerSearchFound: " << KmerSearchFound << endl;
+			//cout << "$$-2\nKmerSearchFound: " << KmerSearchFound << endl << endl;
 
 			///////////////////////////////////////////////////////////////////////////
 			///////////////////////////////////////////////////////////////////////////
@@ -1982,12 +1987,34 @@ public:
 	   	 	{	
 		   	 	if((*read_local != 'A')&&(*read_local != 'C')&&(*read_local != 'G')&&(*read_local != 'T')) 
 		   	 	{
+		   	 		//cout << "read_local: " << (*read_local) << endl;
 		   	 		queryFound = false;
 		   	 		stop_loc = 0;
 		   	 		segment_align_SArange[0] = 1;
 		   	 		segment_align_SArange[1] = 0;
 		   	 		segment_align_rangeNum = 0;
 		   	 		queryFound = false;   	 			
+		   	 		
+		   	 		if(norSegmentNum >= SEGMENTNUM)
+		   	 		{
+		   	 			segmentNum = SEGMENTNUM;
+		   	 			return false;
+		   	 		}
+		   	 		
+		   	 		(norSegmentNum) ++;
+
+		   	 		norSegmentLength[norSegmentNum - 1] = 1;
+					norSegmentLocInRead[norSegmentNum - 1] = stop_loc_overall + 1;
+					norSegmentAlignNum[norSegmentNum - 1] = 0;
+					
+					//cout << "norSegmentNum: " << norSegmentNum << endl;
+					//cout << "norSegmentLength: " << norSegmentLength[norSegmentNum - 1] << endl;
+					//cout << "norSegmentLocInRead: "<< norSegmentLocInRead[norSegmentNum - 1] << endl;
+					//cout << "norSegmentAlignNum: " << norSegmentAlignNum[norSegmentNum - 1] << endl << endl;
+					stop_loc = 1;	
+					read_local = read_local + stop_loc + 1; // if read-align failed at some location, then restart from that location //align_length[c] ++;
+					stop_loc_overall = stop_loc_overall + stop_loc + 1;   	 		
+		   	 		continue;		   	 		
 		   	 	}
 	   	 		lcp_length = 0;
 	   	 		start = 0, end = n-1;
@@ -2011,61 +2038,75 @@ public:
 	   	 		iterateNum = 0;//debug;  	 		
 	   	 	}
 
-	   	 	//cout << "interval_begin: " << interval_begin << endl << 
-	   	 	//	"interval_end: " << interval_end << endl;
+	   	 	//cout << "$$-3\ninterval_begin: " << interval_begin << endl << 
+	   	 	//	"interval_end: " << interval_end << endl << endl;
 
-	   	 	while((c < read_length) && (queryFound == true))
+	   	 	while((c + stop_loc_overall < read_length) && (queryFound == true))
 	   	 	{
+	   	 		//cout << "$$-4\n c: " << c << endl << endl;
 	   	 		iterateNum++;
-	   	 		if(iterateNum>read_length)
+	   	 		if(iterateNum + stop_loc_overall >read_length)
 	   	 		{
 	   	 			return false;
 	   	 		}
 	   	 		unsigned int c_old = c;
+
+	   	 		//cout << "c_old: " << c_old << endl;
+			    //cout << "interval_begin: " << interval_begin << endl;
+			   	//cout << "interval_end: " << interval_end << endl;
 				
 				if(interval_begin != interval_end)
 				{ 
+					//cout << "$$-5\ninterval_begin != interval_end" << endl;
 	           		//Xinan: COMPRESS INDEX
 	           		//lcp_length = getlcp(interval_begin, interval_end, lcp, child_up, child_down);
 	 				lcp_length = getlcp(interval_begin, interval_end, lcpCompress, child, verifyChild//child_up, child_down
 	 					);
-					Min = min(lcp_length, read_length);
-					
+					//cout << "lcp_length: " << lcp_length << endl;
+					//cout << "read_length - stop_loc_overall: " << read_length - stop_loc_overall << endl;
+					//Min = min(lcp_length, read_length);
+					Min = min(lcp_length, read_length - stop_loc_overall);
+					//cout << "Min: " << Min << endl;
 					unsigned int loc_pos = 0;
 
+					//cout << "c_old: " << c_old << endl;
 					//////////////////////////// changed for preIndex  ///////////////////////////////
 	    	   	 	//if(!KmerSearchFound)
 	   	 			//{
 		            	for(loc_pos = 0; loc_pos < Min - c_old; loc_pos++)
 		            	{
+		            		//cout << "loc_pos: " << loc_pos << endl;
+		            		//cout << "...*(read_local+c_old+loc_pos): " << *(read_local+c_old+loc_pos) << endl;
+		            		//cout << "...*(chrom+sa[interval_begin]+c_old+loc_pos): " << *(chrom+sa[interval_begin]+c_old+loc_pos) << endl;
 		            		queryFound = (*(read_local+c_old+loc_pos) == *(chrom+sa[interval_begin]+c_old+loc_pos));
+		            		//cout << "...queryFound: " << queryFound << endl;
 		            		if (!queryFound)
 		            		{	
+		            			//cout << "......queryFound false! " << endl;
+		            			//cout << "......stop at loc_pos: " << loc_pos << endl;
 		            			break;
 		            		}
 		            	}
-	            	//}
-	            	/*else
-	            	{
-		            	for(loc_pos = KmerMappedLength-1; loc_pos < Min - c_old; loc_pos++)
-		            	{
-		            		queryFound = (*(read_local+c_old+loc_pos) == *(chrom+sa[interval_begin]+c_old+loc_pos));
-		            		if (!queryFound)
-		            		{	
-		            			break;
-		            		}
-		            	}	            		
-	            	}*/
-
-
-
+		            
+		            //cout << "$$-A\nstop at loc_pos: " << loc_pos << endl;
+		            //cout << "---- queryFound: " << queryFound << endl;
+	            	
 	            	if(!queryFound)
 	            	{
+	            		//cout << "$$-B\n! if (!queryFound)" << endl;
+	            		//cout << "---- c_old: " << c_old << 
+	            		//	 "---- loc_pos: " << loc_pos << endl;
+
 	            		stop_loc = c_old + loc_pos;
+	            		
+	            		//cout << "---- stop_loc: " << stop_loc << endl;
+	            		
 	            		break;
 	            	}
 	            	
 	            	c = Min;
+	            	//cout << "** c = Min: " << c << endl << endl;
+
 	            	if(*(read_local+c) == 'N')
 	            	{
 	            		queryFound = false; 
@@ -2073,66 +2114,83 @@ public:
 	            		break;
 	            	}
 					start = interval_begin; end = interval_end;
-					if (c == read_length)
-					{				
+					//cout << "start: " << start << " end: " << end << endl << endl;
+
+					if (c + stop_loc_overall == read_length)
+					{	
+						//cout << "** c==read_length  break !!!" << endl << endl; 			
 						break;			
 					}	
+					//cout << " +++ c: " << c << endl << endl;
 					unsigned int interval_begin_ori = interval_begin;
 					unsigned int interval_end_ori = interval_end;
+					//cout << "*(read_local+c): " << *(read_local+c) << endl;
 			    	getInterval(start, end, c, *(read_local+c), &interval_begin, &interval_end, sa, child,//child_up, child_down, child_next, 
 			    		chrom, verifyChild);
-
+			    	//cout << "+++ interval_begin: " << interval_begin << endl;
+			    	//cout << "+++ interval_end: " << interval_end << endl << endl;
 			    	if(interval_begin > interval_end)
 			    	{
+			    		//cout << "$$-8\ninterval_begin > interval_end" << endl;
 			    		queryFound = false;
 			    		stop_loc = c-1;
 	          			segment_align_SArange[0] = interval_begin_ori;
 	            		segment_align_SArange[1] = interval_end_ori;
+	            		
+	            		//cout << endl << "segment_align_SArange[0]: " << segment_align_SArange[0] 
+	            		//	<< " segment_align_SArange[1]: " << segment_align_SArange[1] << endl;
+	            		//cout << "........ break happens !!!!" << endl;
 	            		segment_align_rangeNum = interval_end_ori - interval_begin_ori + 1;		    			
 			    		break;
 			    	}
 			    	else
 			    	{
+			    		//cout << "$$-9\ninterval_begin <= interval_end" << endl;
 	          			segment_align_SArange[0] = interval_begin;
 	            		segment_align_SArange[1] = interval_end;
+	            		
+	            		//cout << endl << "segment_align_SArange[0]: " << segment_align_SArange[0] 
+	            		//	<< " segment_align_SArange[1]: " << segment_align_SArange[1] << endl;
+
 	            		segment_align_rangeNum = interval_end - interval_begin + 1;
 			    	}
 				}//end if
 				else 
 				{
+					//cout << "$$-C\nelse! interval_begin == interval_end" << endl;
 					unsigned int loc_pos = 0;
-
-	    	   	 	//if(!KmerSearchFound)
-	   	 			//{
-		            	for(loc_pos = 0; loc_pos < read_length - c; loc_pos++)
+					//cout << "read_length: " << read_length << endl;
+					//cout << "read_length - c - stop_loc_overall " << read_length - c - stop_loc_overall << endl; 
+		            	//for(loc_pos = 0; loc_pos < read_length - c; loc_pos++) // readLength - c -x = 21
+		            	for(loc_pos = 0; loc_pos < read_length - c - stop_loc_overall; loc_pos++)
 		            	{
+		            		//cout << "loc_pos: " << loc_pos << endl;
+		            		//cout << "*(read_local+c+loc_pos): " << *(read_local+c+loc_pos) << endl;
+		            		//cout << "*(chrom+sa[interval_begin]+c+loc_pos)" << *(chrom+sa[interval_begin]+c+loc_pos) << endl; 
 		            		queryFound = (*(read_local+c+loc_pos) == *(chrom+sa[interval_begin]+c+loc_pos));
 		            		if (!queryFound)
 		            			break;
 		            	}
-		            //}
-		            /*else
-		            {
-		            	for(loc_pos = KmerMappedLength-1; loc_pos < read_length - c; loc_pos++)
-		            	{
-		            		queryFound = (*(read_local+c+loc_pos) == *(chrom+sa[interval_begin]+c+loc_pos));
-		            		if (!queryFound)
-		            			break;
-		            	}
-		            }*/
 
-
+		            //cout << "..... queryFound: " << queryFound << endl;
+		            //cout << "..... stop at loc_pos: " << loc_pos << endl; 
 		    		if(queryFound) 
 		    		{
+		    			//cout << "queryFound !!!!!!!!!!!!!!" << endl;
 		    		}
 		    		else 
 		    		{ 
+		    			//cout << " not query Found !!!!!!!!!!!" << endl;
+		    			//cout << "c: " << c << " loc_pos: " << loc_pos << endl;
 		    			stop_loc = c+loc_pos;
+		    			//cout << "stop_loc: " << stop_loc << endl;
 		    		}	
 	          		segment_align_SArange[0] = interval_begin;
 	            	segment_align_SArange[1] = interval_end;
 	            	segment_align_rangeNum = interval_end - interval_begin + 1;   	
-
+			    	//cout << "/////// interval_begin: " << interval_begin << endl;
+			    	//cout << "/////// interval_end: " << interval_end << endl;
+			    	//cout << "break happens !!!!!!!!!!!!" << endl;
 		    		break;
 		    	}
 			} //end while
@@ -2141,10 +2199,25 @@ public:
 			/////////////////////////////////////////SEGMENT MAP RESULT////////////////////////////////////////////
 			///////////////////////////////////////////////////////////////////////////////////////////////
 			///////////////////////////////////////////////////////////////////////////////////////////////
+			//cout << "queryFound: " << queryFound << endl;
+			//cout << "interval_begin: " << interval_begin << endl;
+			//cout << "interval_end: " << interval_end << endl;
 
 	    	if (queryFound && (interval_end >= interval_begin)) 
 	    	{
+	    		//cout << "\n$$-01\nqueryFound && (interval_end >= interval_begin)" << endl;
 	    		(norSegmentNum) ++;
+	    		if(norSegmentNum > SEGMENTNUM)
+	    		{
+	    			segmentNum = (SEGMENTNUM);
+	    			return false;
+	    		}
+	   	 		if(norSegmentNum > (int)(read_length/5))
+	   	 		{
+	   	 			segmentNum = (int)(read_length/5);
+	   	 			return false;
+	   	 		}
+	    		//cout << "segmentNum: " << norSegmentNum << endl;
 	    		unsigned int tmpSegLength = read_length - stop_loc_overall;
 
 				if(tmpSegLength >= minValSegLength)
@@ -2157,24 +2230,35 @@ public:
 	    		*(norSegmentLocInRead + norSegmentNum - 1) = stop_loc_overall + 1;
 	    		*(norSegmentAlignNum + norSegmentNum - 1) = segment_align_rangeNum;				
 				
+	    		//cout << "...SegLength: " << tmpSegLength << endl;
+	    		//cout << "...SegLocInRead: " << stop_loc_overall + 1 << endl;
+	    		//cout << "...SegAlignment_num: " << segment_align_rangeNum << endl << endl;
 
 				for (unsigned int alignment_num = 0; alignment_num < min(segment_align_rangeNum,CANDALILOC); alignment_num++)
 				{    			
 	    			*(norSegmentAlignLoc + (norSegmentNum - 1) * CANDALILOC + alignment_num) = sa[segment_align_SArange[0] + alignment_num] + 1;
 	    		}
 
-				segment_length = read_length-stop_loc_overall;
+				//segment_length = read_length-stop_loc_overall;
 
 				break;
 			}
 			else 
 			{    
 				(norSegmentNum) ++;
-				if(norSegmentNum > (int)(read_length/5))
+				//cout << "\n$$-02\nelse !" << endl;
+				//cout << "segmentNum: " << norSegmentNum << endl;
+				if((norSegmentNum > (int)(read_length/5)) || (norSegmentNum > SEGMENTNUM))
 				{
 					//debugln("map error, too many segments, there may exist too many Ns");
+					if((int)(read_length/5) > SEGMENTNUM)
+						segmentNum = (SEGMENTNUM);
+					else
+						segmentNum = (int)(read_length/5);
+
 					return false;
 				}
+				//cout << "stop_loc: " << stop_loc << endl;
 				norSegmentLength[norSegmentNum - 1] = stop_loc;
 
 				if(stop_loc >= minValSegLength )
@@ -2185,6 +2269,10 @@ public:
 				norSegmentLocInRead[norSegmentNum - 1] = stop_loc_overall + 1;
 				norSegmentAlignNum[norSegmentNum - 1] = segment_align_rangeNum;
 
+	    		//cout << "...SegLength: " << stop_loc << endl;
+	    		//cout << "...SegLocInRead: " << stop_loc_overall + 1 << endl;
+	    		//cout << "...SegAlignment_num: " << segment_align_rangeNum << endl;
+
 				for (unsigned int alignment_num = 0; alignment_num < min(segment_align_rangeNum,CANDALILOC); alignment_num++)
 			    {    			
 	    			*(norSegmentAlignLoc + (norSegmentNum - 1) * CANDALILOC + alignment_num) = sa[segment_align_SArange[0] + alignment_num] + 1;
@@ -2192,34 +2280,14 @@ public:
 
 				unsigned int stop_loc_overall_ori = stop_loc_overall;
 				read_local = read_local + stop_loc + 1; // if read-align failed at some location, then restart from that location //align_length[c] ++;
+				//cout << "stop_loc + 1: " << stop_loc +1 << endl;
 				stop_loc_overall = stop_loc_overall + stop_loc + 1;
-
-	    		segment_length = stop_loc;
-
+				//cout << "stop_loc_overall: " << stop_loc_overall << endl << endl;
+	    		//segment_length = stop_loc;
+	    		//cout << "segment_length: " << segment_length << endl;
 			}		
 	   	}
-	   	/*
-	    cout << endl << "# of Segments = " << norSegmentNum << endl;//; debugln();
 
-	   	for(unsigned int k1 = 0; k1 < norSegmentNum; k1++)
-	   	{
-	  		cout << "... segment "<< k1+1 << ": " << norSegmentLocInRead[k1] << "~"   
-	  		<< (norSegmentLocInRead[k1] + norSegmentLength[k1] - 1) 
-	  		<< "  Length: " << norSegmentLength[k1] << " Num: " << norSegmentAlignNum[k1] << endl;
-	      	if((norSegmentLength[k1]>=10)&&(norSegmentAlignNum[k1] < CANDALILOC))
-	      	{
-	      		cout << "...... Align Location: " << endl;
-	      		for(unsigned int k2 = 0; k2 < norSegmentAlignNum[k1]; k2++)
-	      		{
-	      			indexInfo->getChrLocation(*(norSegmentAlignLoc + k1*CANDALILOC + k2), &align_chr, &align_chr_location);
-	      			cout << "\t" 
-	      			//<< *(norSegmentAlignLoc + k1*CANDALILOC + k2) 
-	      			<<  " " 
-	      			<< (indexInfo->chrNameStr)[align_chr] << " " << align_chr_location << endl;
-	      		}
-	      	}
-	   	}
-		*/
 		segmentNum = (norSegmentNum);
 		mapMain = true;
 		//cout << "mapMain_SegInfo_preIndex function ends ...... "<< endl; 
@@ -2255,7 +2323,7 @@ public:
 		return segInfoStr;//+"\n";
 	}
 
-	bool mapMain_SegInfo_preIndex_toCheck(char *read, unsigned int* sa, BYTE* lcpCompress, 
+	/*bool mapMain_SegInfo_preIndex_toCheck(char *read, unsigned int* sa, BYTE* lcpCompress, 
 		unsigned int* child, char* chrom, 
 		unsigned int* valLength, BYTE* verifyChild, int readLength, Index_Info* indexInfo,
 		int* PreIndexMappedLengthArray, unsigned int* PreIndexIntervalStartArray,
@@ -2582,7 +2650,7 @@ public:
 		//cout << "mapMain_SegInfo_preIndex function ends ...... "<< endl; 
 		//debugln("mapMain ended!!!");
 		return mapMain;
-	}
+	}*/
 
 	unsigned int getPreIndexNO(const string& readPreStr)
 	{
@@ -3147,7 +3215,7 @@ public:
 	{
 		//cout << "start to get Final path" << endl;
 
-		int mismatchNumToAdd = 0;
+		
 		if(segInfo->segmentNum < 1)
 		{
 			return;
@@ -3155,7 +3223,7 @@ public:
 		//int readLength = segInfo->norSegmentLocInRead[segInfo->segmentNum - 1] + segInfo->norSegmentLength[segInfo->segmentNum - 1] - 1;
 		for(int tmpPath = 0; tmpPath < fixedPathVec.size(); tmpPath++)
 		{
-
+			int mismatchNumToAdd = 0;
 			int fixedPathNO = fixedPathVec[tmpPath].first;
 
 			int tmpPath1stSegGroupNO = (PathVec_seg[fixedPathNO])[0].first;
@@ -3234,6 +3302,9 @@ public:
 			//int readLength = segInfo->norSegmentLocInRead[segInfo->segmentNum - 1] + segInfo->norSegmentLength[segInfo->segmentNum - 1] - 1;
 			int tmpUnfixedTailLength = readLength - (segInfo->norSegmentLocInRead[tmpPathLastSegGroupNO] 
 										+ segInfo->norSegmentLength[tmpPathLastSegGroupNO] - 1);
+		
+			//cout << "tmpUnfixedTailLength: " << tmpUnfixedTailLength << endl;
+			//cout << "readLength - tmpUnfixedTailLength: " << readLength - tmpUnfixedTailLength << endl;
 			string readSubSeqInProcess_tail 
 				= readSeq_inProcess.substr(readLength - tmpUnfixedTailLength, tmpUnfixedTailLength);
 
@@ -3244,12 +3315,17 @@ public:
 			size_t mismatch_bits_tail = 0;
 			size_t comb_bits_tail = 0;
 
+
 			if(endMappedBaseMapPos + tmpUnfixedTailLength >= indexInfo->chromLength[tmpChrNameInt])
 			{
+				//cout << "here 1" << endl;
 				scoreStringBool_tail = false;
 			}
 			else
 			{
+				//cout << "here 2" << endl;
+				//cout << "endMappedBaseMapPos: " << endMappedBaseMapPos << endl;
+				//cout << "tmpUnf"
 				chromSubSeqInProcess_tail = (indexInfo->chromStr[tmpChrNameInt]).substr(endMappedBaseMapPos, tmpUnfixedTailLength);
 
 				scoreStringBool_tail 
@@ -3287,8 +3363,14 @@ public:
 				tmpPathFinalMapPos = tmpPathFinalMapPos - tmpUnfixedHeadLength;
 			}
 
+			//cout << "tmpPath: " << tmpPath + 1 << endl;
+
 			int oldMismatchNum = fixedPathMismatchVec[tmpPath];
 			int newMismatchNum = oldMismatchNum + mismatchNumToAdd;
+
+			//cout << "oldMismatchNum: " << oldMismatchNum << endl;
+			//cout << "newMismatchNum: " << newMismatchNum << endl;
+
 
 			fixedPathMismatchVec[tmpPath] = newMismatchNum;
 

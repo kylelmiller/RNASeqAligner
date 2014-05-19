@@ -11,9 +11,11 @@
 #include <dirent.h>    
 #include <stdio.h>    
 #include <errno.h>
+#include <execinfo.h>
+#include <signal.h>
+#include <unistd.h>
 #include <set>
 #include "buildIndexParameter.h"
-//#include "buildIndex_info.h"
 
 #define Range 6
 #define LONGLCP 255
@@ -37,6 +39,20 @@ int baseChar2intArray[26] = {0, 100, 1, 100, 100, 100, 2,
 			100, 100, 100, 100, 100, 3, 
 			100, 100, 100, 100, 100, 100};
 
+// used to catch exceptions for custom processing
+void handler(int sig)
+{
+	void *array[10];
+	size_t size;
+
+	// get void's for all entries on the stack
+	size = backtrace(array, 10);
+
+	// print out all the frames to stderr
+	fprintf(stderr, "Error: %s\n", strsignal(sig));
+	backtrace_symbols_fd(array, size, STDERR_FILENO);
+	raise (SIGABRT);
+}
 
 inline string int_to_str(int numerical)
 {
@@ -516,7 +532,11 @@ void da(unsigned int *r,unsigned int *sa,unsigned int n,unsigned int m)
 
 int main(int argc, char** argv)
 {
-	if(argc < 3)
+	// Installs our error handler
+	signal(SIGSEGV, handler);
+
+	// Validating Input
+	if(argc != 3)
 	{
 		cout << "Executable <InputChromosomesFolder> <outputIndexFolder>" << endl;
 		exit(0);

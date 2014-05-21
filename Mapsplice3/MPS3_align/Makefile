@@ -1,6 +1,6 @@
-all: alignAll alignHeadTail alignMid alignOneEndUnmapped compareJunction
+all: alignAll 
 
-OPTFLAGS = -O3
+OPTFLAGS = -O0 -g -rdynamic
 OUTPUTDIR = bin/
 
 CFLAGS += $(OPTFLAGS) -fopenmp

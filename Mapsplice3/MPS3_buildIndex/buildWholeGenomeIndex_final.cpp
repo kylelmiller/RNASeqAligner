@@ -17,6 +17,7 @@
 #include <set>
 #include "buildIndexParameter.h"
 
+// Constants
 #define Range 6
 #define LONGLCP 255
 #define NULL_NUM 4294967290 
@@ -26,18 +27,19 @@
 #define minValSegLength 20
 #define PreIndexSize 268435456
 
+#define EXPECTED_ARGUMENT_COUNT 3
+
+// End Constants
+
 using namespace std; 
-
 typedef unsigned char BYTE;
-
 int read_num = 0; // to calculate the read num;
-
-//#include "seg_info.h"
 
 int baseChar2intArray[26] = {0, 100, 1, 100, 100, 100, 2,
 			100, 100, 100, 100, 100, 100, 100,
 			100, 100, 100, 100, 100, 3, 
 			100, 100, 100, 100, 100, 100};
+
 
 // used to catch exceptions for custom processing
 void handler(int sig)
@@ -56,10 +58,10 @@ void handler(int sig)
 
 inline string int_to_str(int numerical)
 {
-		char c[100];
-		sprintf(c,"%d",numerical);
-		string str(c);
-		return str;
+	char c[100];
+	sprintf(c,"%d",numerical);
+	string str(c);
+	return str;
 }
 
 
@@ -73,10 +75,6 @@ unsigned int getPreIndexNO(const string& readPreStr)
 
 	for(int tmp = preIndexStrSize - 1; tmp >= 0; tmp--)
 	{
-		//char tmpChar = readPreStr.at(tmp);
-		//unsigned int tmpArrayIndex = tmpChar - 'A';
-		//baseChar2int(tmpChar);
-		//preIndexNO = preIndexNO + baseChar2int(tmpChar) * baseForCount;
 		preIndexNO = preIndexNO + baseChar2intArray[(readPreStr.at(tmp) - 'A')] * baseForCount;
 		baseForCount = baseForCount * 4;
 	}		
@@ -107,45 +105,38 @@ unsigned int getChildNextValue(unsigned int *child, BYTE *verifyChild, unsigned 
 void getFirstInterval(char ch, unsigned int *interval_begin, unsigned int *interval_end, 
 	unsigned int* child, BYTE* verifyChild)
 {
-	if (ch == 'C')
+	unsigned int child_next_tmp = ((verifyChild[0]>2)*child[0]);
+	switch(ch)
 	{
-		*interval_begin = ((verifyChild[0]>2)*child[0]);
-		*interval_end = ((verifyChild[*interval_begin]>2)*child[*interval_begin])-1;//getChildNextValue(child, verifyChild, *interval_begin) - 1;
-	}
-	else if(ch == 'A') //ch == 'A'
-	{
-		*interval_begin = 0;
-		*interval_end = ((verifyChild[0]>2)*child[0]) - 1;
-	}
-	else //ch == 'G' or ch == 'T'
-	{
-		if (ch == 'G')
-		{
-			unsigned int child_next_tmp = ((verifyChild[0]>2)*child[0]);
+		case 'C':
+			*interval_begin = child_next_tmp;
+			*interval_end = ((verifyChild[*interval_begin]>2)*child[*interval_begin])-1;
+			break;
+		case 'A':
+			*interval_begin = 0;
+			*interval_end = child_next_tmp - 1;
+			break;
+		case 'G':
 			*interval_begin = ((verifyChild[child_next_tmp]>2)*child[child_next_tmp]);
 			*interval_end = ((verifyChild[*interval_begin]>2)*child[*interval_begin]) - 1;
-		}
-		else
-		{
-			//cout << " Yes ! T " << endl;
-			unsigned int child_next_tmp = ((verifyChild[0]>2)*child[0]);
+			break;
+		default: // case 'T'
 			unsigned int child_next_tmp2 = ((verifyChild[child_next_tmp]>2)*child[child_next_tmp]);
 			*interval_begin = ((verifyChild[child_next_tmp2]>2)*child[child_next_tmp2]);
 			*interval_end = ((verifyChild[*interval_begin]>2)*child[*interval_begin]) - 1;
-		}
+			break;
 	}
 }
 
-void getInterval(unsigned int start, unsigned int end, unsigned int position, char ch, unsigned int *interval_begin, unsigned int *interval_end, 
-	unsigned int* sa, 
-	unsigned int* child,
-	char* chrom,
-	BYTE* verifyChild)
+void getInterval(unsigned int start, unsigned int end, unsigned int position, char ch,
+	unsigned int *interval_begin, unsigned int *interval_end, unsigned int* sa,
+	unsigned int* child, char* chrom, BYTE* verifyChild)
 {   
 	unsigned int index_begin;
 	unsigned int pos;
 	*interval_end = 0;
 	*interval_begin = 1;
+
 	if(ch == 'C')
 	{
 		unsigned int child_up_value_tmp = ((verifyChild[end]==1)*child[end]);
@@ -272,31 +263,20 @@ unsigned int getlcp(unsigned int start, unsigned int end, BYTE* lcpCompress, uns
 	return lcpCompress[tmpIndex];
 }
 
-unsigned int min(unsigned int a, unsigned int b)
-{
-   unsigned int min;
-   if(a >= b)
-      min = b;
-   else
-	  min = a;
-   return min;
-}
-
-
+//input : read, sa, up, down, next, chrom;
+//output: segmentNum, segmentLength, segmentLocInread, segmentAlignNum, segmentAlignLoc
 bool mapMainForIndexStringHash(
 	char *read, unsigned int* sa, BYTE* lcpCompress, unsigned int* child, char* chrom, int* mappedLength, 
 	unsigned int* indexIntervalStart, unsigned int* indexIntervalEnd, BYTE* verifyChild, int readLength, int MAX)
 {
-	//input : read, sa, up, down, next, chrom; 
-	//output: segmentNum, segmentLength, segmentLocInread, segmentAlignNum, segmentAlignLoc 
 	bool mapMain = false;	
 	unsigned int stop_loc = 0; // location in one segment for iterations
 	unsigned int read_length = readLength; //READ_LENGTH;
 	unsigned int interval_begin, interval_end;
-	//unsigned int align_length[102] = {0}; 
-	unsigned int n = MAX;//size of SA
+
+	unsigned int n = MAX; //size of SA
 	char* read_local = read;
-	bool queryFound = true;
+	bool queryFound = false;
 
    	if((*read_local != 'A')&&(*read_local != 'C')&&(*read_local != 'G')&&(*read_local != 'T')) 
    	{
@@ -313,33 +293,24 @@ bool mapMainForIndexStringHash(
 
    	unsigned int iterateNum = 0;//debug;
     //cout << "interval_begin = " << interval_begin << endl << "interval_end = " << interval_end << endl; 
-   	while((c < read_length) && (queryFound == true))
+   	while(c < read_length)
     {
    	 	iterateNum++;
    	 	//cout << "iterateNum: " << iterateNum << endl;
    	 	if(iterateNum>read_length)
-   	 	{
-   	 			//debugln("error: interateNum > readLength");
-   	 			return false;
-   	 	}
+			return false;
+
    	 	unsigned int c_old = c;
 			
 		if(interval_begin != interval_end)
 		{ 
  			lcp_length = getlcp(interval_begin, interval_end, lcpCompress, child, verifyChild);
 			Min = min(lcp_length, read_length);
-			//cout << "lcp: " << lcp_length << endl;
-
 
 			unsigned int loc_pos = 0;
-            for(loc_pos = 0; loc_pos < Min - c_old; loc_pos++)
-            {
+            for(loc_pos = 0; loc_pos < Min - c_old && !queryFound; loc_pos++)
             	queryFound = (*(read_local+c_old+loc_pos) == *(chrom+sa[interval_begin]+c_old+loc_pos));
-            	if (!queryFound)
-            	{	
-            		break;
-            	}
-            }
+
             //cout << "queryFound: " << queryFound << endl;
             if(!queryFound)
             {
@@ -348,13 +319,11 @@ bool mapMainForIndexStringHash(
             	(*indexIntervalStart) = interval_begin;
             	(*indexIntervalEnd) = interval_end;
             	return true;
-            	//break;
             }
             	
             c = Min;
             if(*(read_local+c) == 'N')
             {
-            	//queryFound = false;             	
             	stop_loc = c;
             	(*mappedLength) = stop_loc;
             	(*indexIntervalStart) = interval_begin;
@@ -367,13 +336,12 @@ bool mapMainForIndexStringHash(
 				(*mappedLength) = read_length;		
             	(*indexIntervalStart) = interval_begin;
             	(*indexIntervalEnd) = interval_end;
-            	return true;	
-				//break;			
+            	return true;
 			}	
 			unsigned int interval_begin_ori = interval_begin;
 			unsigned int interval_end_ori = interval_end;
-		    getInterval(start, end, c, *(read_local+c), &interval_begin, &interval_end, sa, child,//child_up, child_down, child_next, 
-		    		chrom, verifyChild);
+		    getInterval(start, end, c, *(read_local+c), &interval_begin, &interval_end,
+		    		sa, child, chrom, verifyChild);
 
 		    //cout << "firstInterval: " << interval_begin << " ~ " << interval_end << endl;
 		    if(interval_begin > interval_end)
@@ -386,20 +354,13 @@ bool mapMainForIndexStringHash(
             	(*indexIntervalEnd) = interval_end_ori;
             	return true;	          		 			
 		    }
-		    else
-		    {
-		    
-		    }
- 		}//end if
+ 		} //end if(interval_begin != interval_end)
 		else 
 		{
 			unsigned int loc_pos = 0;
-           	for(loc_pos = 0; loc_pos < read_length - c; loc_pos++)
-           	{
+           	for(loc_pos = 0; loc_pos < read_length - c && !queryFound; loc_pos++)
            		queryFound = (*(read_local+c+loc_pos) == *(chrom+sa[interval_begin]+c+loc_pos));
-           		if (!queryFound)
-           			break;
-           	}
+
 	    	if(queryFound) 
 	    	{
 	    		(*mappedLength) = read_length;
@@ -417,7 +378,7 @@ bool mapMainForIndexStringHash(
 	    		return true;
 	    	}	
 	    }
-	} //end while
+	} //end while((c < read_length))
 
 	return true;
 }
@@ -468,25 +429,50 @@ void build_next(unsigned int *lcptab, unsigned int *next, unsigned int n)
 	return;
 }
 
-void build_lcp(unsigned int *r, unsigned int *sa, unsigned int *lcp, unsigned int *rank, unsigned int n)
+///////
+// Builds the longest common prefix array for the chromosome
+// A LCP augments the suffix array and allows the LCP array to efficiently
+// simulate top-down and bottom-up traversals of the suffix tree, speeds up pattern
+// matching on the suffix array and is a prerequisite for compressed suffix trees.
+///////
+void build_LongestCommonPrefix(const unsigned int *r, const unsigned int *sa, unsigned int *lcp,
+		unsigned int *rank, const unsigned int n)
 {
 
 	unsigned int i, j; 
 	int k=0;
-	for (i = 0; i < n; i++) rank[sa[i]] = i;
-		cout << "stop10_new" << endl;
-	for (i = 0; i < n; lcp[rank[i++]] = k) 
-	for (k?k--:0, (rank[i] == 0)?(j=0):(j=sa[rank[i]-1]); r[i+k] == r[j+k]; k++);
+	for (i = 0; i < n; i++)
+		rank[sa[i]] = i;
+	cout << "stop10_new" << endl;
+
+	for (i = 0; i < n; i++)
+	{
+		if(k)
+			k--;
+
+		if(rank[i] == 0)
+			j = 0;
+		else
+			j = sa[rank[i]-1];
+
+		while(r[i+k] == r[j+k])
+			k++;
+
+		lcp[rank[i]] = k;
+	}
+
 	lcp[0] = 0;
-		cout << "stop11" << endl; 
+	cout << "stop11" << endl;
 	return;
 }
 
-unsigned int cmp(unsigned int *r,unsigned int a,unsigned int b,unsigned int l)
-{return r[a]==r[b]&&r[a+l]==r[b+l];}  
+const unsigned int compare(unsigned int *r,unsigned int a,unsigned int b,unsigned int l)
+{
+	return r[a]==r[b] && r[a+l]==r[b+l];
+}
 
 void da(unsigned int *r,unsigned int *sa,unsigned int n,unsigned int m)
-{   
+{
 	unsigned int maxn = n;
 
     unsigned int *wa = (unsigned int*)malloc(maxn * sizeof(unsigned int));
@@ -494,41 +480,39 @@ void da(unsigned int *r,unsigned int *sa,unsigned int n,unsigned int m)
     unsigned int *wv = (unsigned int*)malloc(maxn * sizeof(unsigned int));
     unsigned int *ws = (unsigned int*)malloc(maxn * sizeof(unsigned int));
     unsigned int i,j,p,*x=wa,*y=wb,*t;
-   
+
     for(i=0;i<m;i++) ws[i]=0;
 
-    for(i=0;i<n;i++) ws[x[i]=r[i]]++; 
+    for(i=0;i<n;i++) ws[x[i]=r[i]]++;
 
 	for(i=1;i<m;i++) ws[i]+=ws[i-1];
 
-    for(i=n-1;i>=0;i--) 
+    for(i=n-1;i>=0;i--)
     {
-    	sa[--ws[x[i]]]=i; 
+    	sa[--ws[x[i]]]=i;
 		if(i == 0)
 			break;
 	}
 
     for(j=1,p=1;p<n;j*=2,m=p)
     {
-        for(p=0,i=n-j;i<n;i++) y[p++]=i;  
-        for(i=0;i<n;i++) if(sa[i]>=j) y[p++]=sa[i]-j; 
-        for(i=0;i<n;i++) wv[i]=x[y[i]];  
+        for(p=0,i=n-j;i<n;i++) y[p++]=i;
+        for(i=0;i<n;i++) if(sa[i]>=j) y[p++]=sa[i]-j;
+        for(i=0;i<n;i++) wv[i]=x[y[i]];
         for(i=0;i<m;i++) ws[i]=0;
         for(i=0;i<n;i++) ws[wv[i]]++;
         for(i=1;i<m;i++) ws[i]+=ws[i-1];
-        for(i=n-1;i>=0;i--) 
+        for(i=n-1;i>=0;i--)
         {
-        	sa[--ws[wv[i]]]=y[i];  
+        	sa[--ws[wv[i]]]=y[i];
 			if(i == 0)
 				break;
 		}
 		for(t=x,x=y,y=t,p=1,x[sa[0]]=0,i=1;i<n;i++)
-        x[sa[i]]=cmp(y,sa[i-1],sa[i],j)?p-1:p++; 
+        x[sa[i]]=compare(y,sa[i-1],sa[i],j)?p-1:p++;
     }
     return;
 }
-
-//set<string> chrNameSet;
 
 int main(int argc, char** argv)
 {
@@ -536,67 +520,47 @@ int main(int argc, char** argv)
 	signal(SIGSEGV, handler);
 
 	// Validating Input
-	if(argc != 3)
+	if(argc != EXPECTED_ARGUMENT_COUNT)
 	{
-		cout << "Executable <InputChromosomesFolder> <outputIndexFolder>" << endl;
+		cout << "Correct execution is: Executable <InputChromosomesFolder> <outputIndexFolder>" << endl;
 		exit(0);
 	}	
 	
-	BuildIndexParameter_info* buildIndexInfo = new BuildIndexParameter_info();
+	BuildIndexParameter_info* buildIndexInfo = new BuildIndexParameter_info(argv[1], argv[2]);
 
-	string InputChrFolder = argv[1];
-	string OutputIndexFolder = argv[2];
-	OutputIndexFolder += "/";
+	string chrom_file_str = buildIndexInfo->GetOutputIndexFolder() + "_chromMerge";
 
-	///////////// initiate index files //////////////
-	//string outputIndexFileStr = OutputIndexFolder + "/WholeGenomeIndex";
-	buildIndexInfo->InputChromFolderStr = InputChrFolder;
-	buildIndexInfo->OutputIndexFolderStr = OutputIndexFolder;
-	
-	string parameter_file = buildIndexInfo->OutputIndexFolderStr + "_parameter";
-	ofstream parameter_file_ofs(parameter_file.c_str());
-	string chrom_file = buildIndexInfo->OutputIndexFolderStr + "_chromMerge";
-	ofstream chrom_file_ofs(chrom_file.c_str(),ios::binary);	
-	//buildIndexInfo->initiateAllOutputIndexFile();
+	ofstream chrom_file_ofs(chrom_file_str.c_str(),ios::binary);
+	ofstream parameter_file_ofs((buildIndexInfo->GetOutputIndexFolder() + "_parameter").c_str());
 
 	/////////////////////////////////////////////////////////////////////////////////
 	////////////// scan all chromosomes, generate index_parameter, index_chrom //////
 	/////////////////////////////////////////////////////////////////////////////////
 
-	//set<string> chrNameSet;
 	DIR *dp;    
     struct dirent *dirp;    
-    if((dp=opendir(argv[1])) == NULL)    
+    if((dp=opendir(buildIndexInfo->GetInputChromFolder().c_str())) == NULL)
     {
-        printf("can't open %s",argv[1]);   
+        printf("can't open %s", buildIndexInfo->GetInputChromFolder().c_str());
     }
-    while ((dirp=readdir(dp))!=NULL)    
-    {     
-    	if (dirp->d_type==8)
-	    {  
-	    	(buildIndexInfo->chrNameStrSet).insert((dirp->d_name));
-    	}
-    }    
-    closedir(dp);    
 
-    //cout << "chromFileSetNum: " << (buildIndexInfo->chrNameStrSet).size() << endl;
-    for(set<string>::iterator tmpIter = (buildIndexInfo->chrNameStrSet).begin(); 
-   		 	tmpIter != (buildIndexInfo->chrNameStrSet).end(); tmpIter++)
-    {   
-		//cout << "chromNameStr: " << (*tmpIter) << endl;
-		(buildIndexInfo->chrNameStrVec).push_back((*tmpIter));
-	}
+    while ((dirp=readdir(dp))!=NULL)
+    	if (dirp->d_type==8)
+	    	buildIndexInfo->AddChromName(dirp->d_name);
+
+    closedir(dp);    
 
 	char chrFileLine[100];
 	string chrFileLineStr;
 	int lineNum = 0;
 	int tmpChromEndPosInGenome = 0;
-	for(int tmpChromNum = 0; tmpChromNum < (buildIndexInfo->chrNameStrVec).size();
-		tmpChromNum ++)
+
+	for(vector<string>::iterator myIterator = buildIndexInfo->begin();
+		myIterator != buildIndexInfo->end();
+		myIterator++)
 	{
 		lineNum = 0;
-		string tmpChromFileName = buildIndexInfo->InputChromFolderStr 
-			+ "/" + (buildIndexInfo->chrNameStrVec)[tmpChromNum];
+		string tmpChromFileName = buildIndexInfo->GetInputChromFolder() + "/" + *myIterator;
 
 		FILE *fp_tmpChr = fopen(tmpChromFileName.c_str(), "r");
 		//cout << endl << "readFileName " << tmpChromNum + 1 << ": " << tmpChromFileName << endl;
@@ -617,16 +581,14 @@ int main(int argc, char** argv)
 			if(feof(fp_tmpChr))
 			{
 				if(chrBaseNum == 0)
-				{
 					chrBaseNum = 50;
-				}
-				(buildIndexInfo->chromLengthVec).push_back((lineNum-2)*50 + chrBaseNum);
+
+				buildIndexInfo->AddChromLength((lineNum - 2) * 50 + chrBaseNum);
 				break;		
 			}
+
 			if(chrFileLineStr.length() != 51)
-			{
 				chrBaseNum = chrFileLineStr.length()-1;
-			}	
 
 		}
 		fclose(fp_tmpChr);
@@ -641,39 +603,71 @@ int main(int argc, char** argv)
 	//////generate original size index
 	/////////////////////////////////////////////////
 
-	unsigned int MAX = (buildIndexInfo->chrEndPosInGenomeVec)[(buildIndexInfo->chrNameStrVec).size()-1] + 1 + 1;
-	
+	int MAX = buildIndexInfo->GetMax();
 	cout << "MAX: " << MAX << endl;
 
-	string chrom_file_str = chrom_file;
-
-	string SA_file = argv[2]; SA_file.append("_SA"); ofstream SA_file_ofs(SA_file.c_str(),ios::binary); 
-	string lcp_file = argv[2]; lcp_file.append("_lcp"); ofstream lcp_file_ofs(lcp_file.c_str(),ios::binary);
-	string up_file = argv[2]; up_file.append("_up"); ofstream up_file_ofs(up_file.c_str(),ios::binary);
-	string down_file = argv[2]; down_file.append("_down"); ofstream down_file_ofs(down_file.c_str(),ios::binary);
-	string next_file = argv[2]; next_file.append("_next"); ofstream next_file_ofs(next_file.c_str(),ios::binary);
-	string chrom_bit_file = argv[2]; chrom_bit_file.append("_chrom"); ofstream chrom_bit_file_ofs(chrom_bit_file.c_str(),ios::binary);
+	ofstream SA_file_ofs((buildIndexInfo->GetOutputIndexFolder() + "_SA").c_str(),ios::binary);
+	ofstream lcp_file_ofs((buildIndexInfo->GetOutputIndexFolder() + "_lcp").c_str(),ios::binary);
+	ofstream up_file_ofs((buildIndexInfo->GetOutputIndexFolder() + "_up").c_str(),ios::binary);
+	ofstream down_file_ofs((buildIndexInfo->GetOutputIndexFolder() + "_down").c_str(),ios::binary);
+	ofstream next_file_ofs((buildIndexInfo->GetOutputIndexFolder() + "_next").c_str(),ios::binary);
+	ofstream chrom_bit_file_ofs((buildIndexInfo->GetOutputIndexFolder() + "_chrom").c_str(),ios::binary);
 	
   	FILE *fp = fopen(chrom_file_str.c_str(), "r");
     unsigned int *r = (unsigned int*)malloc(MAX * sizeof(unsigned int));
 	char ch;
 	char head[100];
 	char base[Range] = {'X','A','C','G','T','N'};
-	char *chrom = (char*)malloc(MAX * sizeof(char));	
+	char *chrom = (char*)malloc(MAX * sizeof(char));
 
 	unsigned int chrom_base_num = 0;
+
+	// Read from the chromosome file and build two chromosome arrays
 	while((ch = fgetc(fp)) != EOF)
 	{   
-		//printf("ch = %c\n",ch); 
-		if((ch == 'A')||(ch == 'a')) {chrom[chrom_base_num] = 'A'; r[chrom_base_num] = 1; chrom_base_num++;}
-		else if((ch == 'C')||(ch == 'c')) {chrom[chrom_base_num] = 'C'; r[chrom_base_num] = 2; chrom_base_num++;}
-		else if((ch == 'G')||(ch == 'g')) {chrom[chrom_base_num] = 'G'; r[chrom_base_num] = 3; chrom_base_num++;}
-		else if((ch == 'T')||(ch == 't')) {chrom[chrom_base_num] = 'T'; r[chrom_base_num] = 4; chrom_base_num++;}
-		else if((ch == 'N')||(ch == 'n')) {chrom[chrom_base_num] = 'N'; r[chrom_base_num] = 5; chrom_base_num++;}
-		else if((ch == 'X')) {chrom[chrom_base_num] = 'X'; r[chrom_base_num] = 6; chrom_base_num++;}
-		else if((ch == '\t')||(ch == '\n')) {continue;}
-		else {printf("\n illegal input is '%c'",ch); break;}
+		switch(ch)
+		{
+			case 'A':
+			case 'a':
+				chrom[chrom_base_num] = 'A';
+				r[chrom_base_num] = 1;
+				break;
+			case 'C':
+			case 'c':
+				chrom[chrom_base_num] = 'C';
+				r[chrom_base_num] = 2;
+				break;
+			case 'G':
+			case 'g':
+				chrom[chrom_base_num] = 'G';
+				r[chrom_base_num] = 3;
+				break;
+			case 'T':
+			case 't':
+				chrom[chrom_base_num] = 'T';
+				r[chrom_base_num] = 4;
+				break;
+			case 'N':
+			case 'n':
+				chrom[chrom_base_num] = 'N';
+				r[chrom_base_num] = 5;
+				break;
+			case 'X':
+				chrom[chrom_base_num] = 'X';
+				r[chrom_base_num] = 6;
+				break;
+			case '\t':
+			case '\n':
+				continue;
+			default:
+				printf("\n illegal input is '%c'",ch);
+				exit(1);
+				break;
+
+		}
+		chrom_base_num++;
 	}
+
 	cout << "the number of bases in Chromo is "<< chrom_base_num << endl;
 	cout << "chrom is ready" << endl;
 	r[MAX-1] = Range;
@@ -684,10 +678,6 @@ int main(int argc, char** argv)
 	cout << "chrom[MAX-1]: " << chrom[MAX-1] << endl;
 
 	chrom_bit_file_ofs.write((const char*) chrom, MAX * sizeof(char));
-	//free(chrom);
-
-
-
 	
     unsigned int *sa = (unsigned int*)malloc(MAX * sizeof(unsigned int));
    
@@ -704,7 +694,7 @@ int main(int argc, char** argv)
     unsigned int *next = (unsigned int*)malloc(MAX * sizeof(unsigned int));
 
     cout << "start to build LCP array"<< endl;
-	build_lcp(r, sa, lcp, rank, MAX); //build lcp array
+    build_LongestCommonPrefix(r, sa, lcp, rank, MAX); //build lcp array
 	free(r); free(rank);
 
 
@@ -730,10 +720,8 @@ int main(int argc, char** argv)
 
 	unsigned int indexSize = MAX;
 
-	string childTab_file = buildIndexInfo->OutputIndexFolderStr; 
-	childTab_file.append("_childTab"); ofstream childTab_file_ofs(childTab_file.c_str(),ios::binary);
-	string detChild_file = buildIndexInfo->OutputIndexFolderStr; 
-	detChild_file.append("_detChild"); ofstream detChild_file_ofs(detChild_file.c_str(), ios::binary);
+	ofstream childTab_file_ofs((buildIndexInfo->GetOutputIndexFolder() + "_childTab").c_str(),ios::binary);
+	ofstream detChild_file_ofs((buildIndexInfo->GetOutputIndexFolder() + "_detChild").c_str(), ios::binary);
 
     unsigned int *childTab;
     childTab = (unsigned int*)malloc(indexSize * sizeof(unsigned int));
@@ -754,10 +742,9 @@ int main(int argc, char** argv)
 	detChild_file_ofs.close();
 
 	cout << "finish compressing index" << endl; 
-	free(up); free(down); free(next); //free(childTab); free(verifyChild);
+	free(up); free(down); free(next);
 
-	string lcpCompress_file = buildIndexInfo->OutputIndexFolderStr; 
-	lcpCompress_file.append("_lcpCompress"); ofstream lcpCompress_file_ofs(lcpCompress_file.c_str(),ios::binary);
+	ofstream lcpCompress_file_ofs((buildIndexInfo->GetOutputIndexFolder() + "_lcpCompress").c_str(),ios::binary);
 
 	//BuildIndex_Info* tmpBuildIndexInfo = new BuildIndex_Info();
 	cout << "start to compress Lcp array" << endl;
@@ -776,13 +763,13 @@ int main(int argc, char** argv)
 	////////////////////////////////////////////////////////
 
 	int preIndexStringLength = PREINDEX_STRINGLENGTH;
-	string generateStringFilePrefix = buildIndexInfo->OutputIndexFolderStr + "_preIndexString";
+	string generateStringFilePrefix = buildIndexInfo->GetOutputIndexFolder() + "_preIndexString";
 	int stringLengthInHash = preIndexStringLength;
 	cout << "start to write preIndex string files" << endl;
 
 	string baseStr[4] = {"A", "C", "G", "T"};
-	string generateStringFile[stringLengthInHash];// = argv[1];
-	//string generateStringFilePrefix = argv[1];
+	string generateStringFile[stringLengthInHash];
+
 	generateStringFile[0] = generateStringFilePrefix + ".1";
 
 	ofstream GenerateStringFile_ofs(generateStringFile[0].c_str());
@@ -813,7 +800,7 @@ int main(int argc, char** argv)
     		}
     	}  fclose(fp_in);
     	GenerateStringFile_ofs.close();
-    	//remove(generateStringFile[tmp-1].c_str());
+
 	}
 	cout << "finish writing preIndex string files" << endl;
 
@@ -821,9 +808,7 @@ int main(int argc, char** argv)
 	string preIndexStringFileStr = generateStringFilePrefix + "." + int_to_str(preIndexStringLength);
 	FILE *fp_in_2 = fopen(preIndexStringFileStr.c_str(), "r"); 
 
-	string stringHashRecordFile = buildIndexInfo->OutputIndexFolderStr;
-	stringHashRecordFile += "_preIndexRecord";
-	ofstream StringHashRecordFile_ofs(stringHashRecordFile.c_str());
+	ofstream StringHashRecordFile_ofs((buildIndexInfo->GetOutputIndexFolder() + "_preIndexRecord").c_str());
 
 	char read[20];
 	int readLength = stringLengthInHash;
@@ -857,24 +842,14 @@ int main(int argc, char** argv)
 	cout << "finish writing preIndex string mapping record !" << endl;
 
 	cout << "start to generate preIndex array" << endl;
-	string preIndexFileStr = argv[2];//"/data/homes/lxauky/adSA_result/chrAll/result_0222/preIndexRecord";
-	preIndexFileStr.append("_preIndexRecord");
-	FILE* fp_in_preIndex = fopen(preIndexFileStr.c_str(), "r"); 
+
+	FILE* fp_in_preIndex = fopen((buildIndexInfo->GetOutputIndexFolder() + "_preIndexRecord").c_str(), "r");
 
 	cout << "start to creat mapLength, intervalBegin, intervalEnd files" << endl;
-	string preIndexArrayPreStr = argv[2];
 
-	string preIndexMapLengthArrayStr = preIndexArrayPreStr;
-	preIndexMapLengthArrayStr.append("_MapLength"); 
-	ofstream preIndexMapLengthArray_ofs(preIndexMapLengthArrayStr.c_str(), ios::binary);
-
-	string preIndexIntervalStartArrayStr = preIndexArrayPreStr;
-	preIndexIntervalStartArrayStr.append("_IntervalStart");
-	ofstream preIndexIntervalStartArray_ofs(preIndexIntervalStartArrayStr.c_str(), ios::binary);
-
-	string preIndexIntervalEndArrayStr = preIndexArrayPreStr;
-	preIndexIntervalEndArrayStr.append("_IntervalEnd");
-	ofstream preIndexIntervalEndArray_ofs(preIndexIntervalEndArrayStr.c_str(), ios::binary);
+	ofstream preIndexMapLengthArray_ofs((buildIndexInfo->GetOutputIndexFolder() + "_MapLength").c_str(), ios::binary);
+	ofstream preIndexIntervalStartArray_ofs((buildIndexInfo->GetOutputIndexFolder() + "_IntervalStart").c_str(), ios::binary);
+	ofstream preIndexIntervalEndArray_ofs((buildIndexInfo->GetOutputIndexFolder() + "_IntervalEnd").c_str(), ios::binary);
 
 	cout << "finish creating mapLength, intervalBegin, intervalEnd files" << endl;
 

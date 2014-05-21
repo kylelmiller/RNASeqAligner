@@ -73,7 +73,7 @@ void build_lcp(unsigned int *r, unsigned int *sa, unsigned int *lcp, unsigned in
 	return;
 }
 
-unsigned int cmp(unsigned int *r,unsigned int a,unsigned int b,unsigned int l)
+unsigned int compare(unsigned int *r,unsigned int a,unsigned int b,unsigned int l)
 {return r[a]==r[b]&&r[a+l]==r[b+l];}  
 
 void da(unsigned int *r,unsigned int *sa,unsigned int n,unsigned int m)
@@ -114,7 +114,7 @@ void da(unsigned int *r,unsigned int *sa,unsigned int n,unsigned int m)
 				break;
 		}
 		for(t=x,x=y,y=t,p=1,x[sa[0]]=0,i=1;i<n;i++)
-        x[sa[i]]=cmp(y,sa[i-1],sa[i],j)?p-1:p++; 
+        x[sa[i]]=compare(y,sa[i-1],sa[i],j)?p-1:p++; 
     }
     return;
 }

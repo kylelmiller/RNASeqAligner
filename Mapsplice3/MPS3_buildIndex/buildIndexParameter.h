@@ -299,21 +299,40 @@ public:
 
 class BuildIndexParameter_info
 {
-public:
+private:
+
 	string InputChromFolderStr;
 	string OutputIndexFolderStr;
-	vector<string> chrNameStrVec;
 	string wholeGenomeStr;
 
 	set<string> chrNameStrSet;
+	vector<string> chrNameStrVec;
+
 	vector<int> chromLengthVec;
 	vector<unsigned int> chrEndPosInGenomeVec;
 
 	int secondLevelIndexSize;
 
-	BuildIndexParameter_info()
+public:
+
+	// Setting up an iterator
+	typedef std::vector<string>::iterator iterator;
+	typedef std::vector<string>::const_iterator const_iterator;
+
+	iterator begin() { return chrNameStrVec.begin(); }
+	const_iterator begin() const { return chrNameStrVec.begin(); }
+    iterator end() { return chrNameStrVec.end(); }
+    const_iterator end() const { return chrNameStrVec.end(); }
+    // End of iterator
+
+    // Constructor
+    // Input - input chromosome folder
+    // Output - indexes generated from the chromosome
+	BuildIndexParameter_info(char* inputChromFolder, char* outputIndexFolder)
 	{
 		secondLevelIndexSize = 3000000;
+		InputChromFolderStr = inputChromFolder;
+		OutputIndexFolderStr = ((string)outputIndexFolder) + "/";
 	}
 
 	void printChromLength(ofstream& OutputStream)
@@ -499,5 +518,33 @@ public:
 			parameterFileOfs << chromLengthVec[tmp] << ",";
 		}		
 		parameterFileOfs << endl;
+	}
+
+	// Getters
+	string const GetInputChromFolder()
+	{
+		return InputChromFolderStr;
+	}
+
+	string const GetOutputIndexFolder()
+	{
+		return OutputIndexFolderStr;
+	}
+
+	int GetMax()
+	{
+		return chrEndPosInGenomeVec[chrNameStrVec.size()-1] + 1 + 1;
+	}
+
+	// Setters
+	void AddChromName(string newName)
+	{
+		chrNameStrSet.insert(newName);
+		chrNameStrVec.push_back(newName);
+	}
+
+	void AddChromLength(int length)
+	{
+		chromLengthVec.push_back(length);
 	}
 };

@@ -25,11 +25,22 @@ public:
 	vector<int> possiGTAGpos; // only AG end checked
 	vector<int> possiCTACpos; // only AC end checked
 
+	vector<int> possiGTAGpos_mismatch;
+	vector<int> possiCTACpos_mismatch;
+
 	vector< pair<int,int> > GTAGsjPos; // sequence around the SJ has been checked including short anchor and midpart
 	vector< pair<int,int> > CTACsjPos; // sequence around the SJ has been checked 
 
-	vector< pair<int,int> > SJposFromRemapping;
+	vector< int > GTAGsjPos_mismatch; // sequence around the SJ has been checked including short anchor and midpart
+	vector< int > CTACsjPos_mismatch; // sequence around the SJ has been checked 
+
+	vector< pair<int, int> > SJposFromRemappingVec;
+	vector< int > SJposFromRemappingVec_mismatch;
 	
+	vector< pair<int, int> > SJposFromRemappingVec_candi;
+	vector< int > SJposFromRemappingVec_candi_mismatch;	
+
+
 	Unfixed_Head()
 	{//readLength = 100;
 	}
@@ -43,6 +54,22 @@ public:
 
 	~Unfixed_Head()
 	{}
+
+	int countMismatchNumInBufferSeq(int buffer, const string& readSeqWithDirection, Index_Info* indexInfo)
+	{
+		int countNum = 0;
+		int chromNameInt = indexInfo->convertStringToInt(midPartMapChrName);
+		for(int tmp = 0; tmp < buffer + 1; tmp ++)
+		{
+			if(readSeqWithDirection.at(unfixedHeadLength + 1 + tmp - 1) != indexInfo->chromStr[chromNameInt].at(midPartMapPosInChr + tmp - 1) )
+			{
+				countNum ++;
+			}
+			else
+			{}
+		}
+		return countNum;
+	}
 
 	void getUnfixedHeadInfoFromRecord(PE_Read_Info* readInfo, bool end1, Alignment_Info* alignInfo, Index_Info* indexInfo)
 	{
@@ -183,14 +210,21 @@ public:
 			{
 				size_t max_append_mismatch = (unfixedHeadLength-foundPos-2)/10 + 1;
 				size_t mismatch_bits = 0;
+				size_t comb_bits = 0;
 				bool matchBool = score_string(pendingReadSeq.substr(foundPos+2, unfixedHeadLength-foundPos-2), 
 												pendingChroSeq.substr(foundPos+2, unfixedHeadLength-foundPos-2), 
-												max_append_mismatch, mismatch_bits);//append first
+												max_append_mismatch, mismatch_bits, comb_bits);//append first
 				if(matchBool)
+				{
 					possiGTAGpos.push_back(foundPos+3);
+					possiGTAGpos_mismatch.push_back(mismatch_bits);
+				}
 			}
 			else
+			{
 				possiGTAGpos.push_back(foundPos+3);	
+				possiGTAGpos_mismatch.push_back(0);
+			}
 
 			startSearchPos = foundPos+1;
 			//cout << "found at foundPos " << endl;
@@ -209,14 +243,21 @@ public:
 			{
 				size_t max_append_mismatch = (unfixedHeadLength-foundPos-2)/10;
 				size_t mismatch_bits = 0;
+				size_t comb_bits = 0;
 				bool matchBool = score_string(pendingReadSeq.substr(foundPos+2, unfixedHeadLength-foundPos-2), 
 												pendingChroSeq.substr(foundPos+2, unfixedHeadLength-foundPos-2), 
-												max_append_mismatch, mismatch_bits);//append first
+												max_append_mismatch, mismatch_bits, comb_bits);//append first
 				if(matchBool)
+				{
 					possiCTACpos.push_back(foundPos+3);
+					possiCTACpos_mismatch.push_back(mismatch_bits);
+				}
 			}
 			else
+			{
 				possiCTACpos.push_back(foundPos+3);	
+				possiCTACpos_mismatch.push_back(0);
+			}
 
 			startSearchPos = foundPos+1;
 			//cout << "found at foundPos " << endl;
@@ -224,7 +265,7 @@ public:
 		return;
 	}
 
-	void getPossibleSJpos_test(const string& readSeqWithDirection,/* const string& chromSeq,*/ Index_Info* indexInfo)
+	/*void getPossibleSJpos_test(const string& readSeqWithDirection, Index_Info* indexInfo)
 	{
 		int bufferLength = 4;
 		if(bufferLength > midPartLength)
@@ -308,7 +349,7 @@ public:
 			//cout << "found at foundPos " << endl;
 		}
 		return;
-	}
+	}*/
 
 
 	void printSJ()
@@ -332,7 +373,7 @@ public:
 		cout << readName << endl << alignDirection << endl << midPartMapPosInWholeGenome << endl << unfixedHeadLength << readSeqOriginal << endl; 
 	}
 
-	bool SJsearchInAreaAndStringHash(SJhash_Info* SJinfo, 
+	bool SJsearchInSJhash_areaStringHash(SJhash_Info* SJinfo, 
 		const string& readSeqWithDirection, 
 		Index_Info* indexInfo, int areaSize)
 	{
@@ -340,17 +381,20 @@ public:
 
 		int readLength = readSeqWithDirection.length();
 		int buffer = 4;
-		if(unfixedHeadLength + buffer >= readLength)
-			buffer = readLength - unfixedHeadLength - 1;
+		if(buffer > midPartLength - 1)
+			buffer = midPartLength - 1;
+
+		//if(unfixedHeadLength + buffer >= readLength)
+		//	buffer = readLength - unfixedHeadLength - 1;
 
 		//string readPendingStr
 		//set<int> areaNOset;
 		int chromNameInt = indexInfo->convertStringToInt(midPartMapChrName);
 
-		int areaNOmin = (int)((midPartMapPosInChr - unfixedHeadLength - 1)/areaSize);
+		int areaNOmin = (int)((midPartMapPosInChr - unfixedHeadLength + 1)/areaSize);
 		int areaNOmax = (int)((midPartMapPosInChr + buffer)/areaSize);
 
-		int areaCandidateNum = areaNOmax - areaNOmin + 1;
+		//int areaCandidateNum = areaNOmax - areaNOmin + 1;
 
 		vector<int> SJacceptorSiteVec;
 
@@ -364,7 +408,7 @@ public:
 					intSetIter != (tmpSJareaHashIter->second).end(); intSetIter ++)
 				{
 					int tmpSJacceptorPos = (*intSetIter);
-					if( (tmpSJacceptorPos >= midPartMapPosInChr - unfixedHeadLength - 1) 
+					if( (tmpSJacceptorPos >= midPartMapPosInChr - unfixedHeadLength + 1) 
 						&& (tmpSJacceptorPos <= midPartMapPosInChr + buffer) )
 					{
 						SJacceptorSiteVec.push_back(tmpSJacceptorPos);
@@ -381,14 +425,176 @@ public:
 				0, unfixedHeadLength + buffer + 1);
 			for(int tmp = 0; tmp < SJacceptorSiteVec.size(); tmp++)
 			{
-				int tmpSJacceptorSite = SJacceptorSiteVec[tmp];
+				vector<int> tmpDonerSiteVec;
 
+				int tmpSJacceptorSite = SJacceptorSiteVec[tmp];
+				int tmpHeadLength = unfixedHeadLength + tmpSJacceptorSite - midPartMapPosInChr;
+				
+				SplicePosHashIter tmpPosHashIter 
+					= (SJinfo->spliceJunctionReverse)[chromNameInt].find(tmpSJacceptorSite);
+				
+				if(tmpPosHashIter != ((SJinfo->spliceJunctionReverse)[chromNameInt]).end())
+				{
+					if( tmpHeadLength >= (SJinfo->anchorStringLength) )
+					{
+						string tmpAnchorString = readSeqWithDirection.substr(tmpHeadLength - (SJinfo->anchorStringLength) , (SJinfo->anchorStringLength));
+
+						SpliceEndStrHashIter tmpEndStrHashIter = (tmpPosHashIter->second).find(tmpAnchorString);
+						if(tmpEndStrHashIter != (tmpPosHashIter->second).end())
+						{
+							for(set<int>::iterator tmpIntSetIter = (tmpEndStrHashIter->second).begin(); 
+								tmpIntSetIter != (tmpEndStrHashIter->second).end(); tmpIntSetIter ++)
+							{
+								tmpDonerSiteVec.push_back(*tmpIntSetIter);
+							}
+						}
+						else
+						{
+							//cout << "error! * should be found in endStrHash" << endl;
+							tmpEndStrHashIter = (tmpPosHashIter->second).find("*");
+							if(tmpEndStrHashIter != (tmpPosHashIter->second).end())
+							{
+								for(set<int>::iterator tmpIntSetIter = (tmpEndStrHashIter->second).begin(); 
+									tmpIntSetIter != (tmpEndStrHashIter->second).end(); tmpIntSetIter ++)
+								{
+									tmpDonerSiteVec.push_back(*tmpIntSetIter);
+								}
+							}
+							else
+							{
+								cout << "error! * should be found in endStrHash" << endl; 
+							}							
+						}
+					}
+					else
+					{
+						SpliceEndStrHashIter tmpEndStrHashIter = (tmpPosHashIter->second).find("*");
+						if(tmpEndStrHashIter != (tmpPosHashIter->second).end())
+						{
+							for(set<int>::iterator tmpIntSetIter = (tmpEndStrHashIter->second).begin(); 
+								tmpIntSetIter != (tmpEndStrHashIter->second).end(); tmpIntSetIter ++)
+							{
+								tmpDonerSiteVec.push_back(*tmpIntSetIter);
+							}
+						}
+						else
+						{
+							cout << "error! * should be found in endStrHash" << endl; 
+						}
+					}
+				}
+				else
+				{
+					cout << "error in SJsearchInAreaAndStringHash ! tmpSJacceptorSite should be found in hash ! " << endl;
+				}
+
+				for(int tmpVecNO = 0; tmpVecNO < tmpDonerSiteVec.size(); tmpVecNO ++)
+				{
+					//int tmpSJdonerSite = tmpDonerSiteVec[tmpVec];
+					//int tmpDonerLocInRead = tmpHeadLength;
+					//int tmpAcceptorLocInRead = tmpDonerLocInRead + 1;
+					int tmpSJdonerEndPosInRead = tmpHeadLength;
+					int tmpSJacceptorStartPosInRead = tmpSJdonerEndPosInRead + 1;
+
+					int tmpSJdonerEndPosInChr = tmpDonerSiteVec[tmpVecNO];
+					int tmpSJacceptorStartPosInChr = tmpSJacceptorSite;
+
+					string chromDonerEndStr;
+					string chromAcceptorStartStr;
+					string chromPendingStr;
+					size_t max_append_mismatch;
+					size_t mismatch_bits;
+					size_t comb_bits;
+					bool matchBool;
+
+					if(tmpSJdonerEndPosInChr - tmpSJdonerEndPosInRead >= 0)
+					{
+						chromDonerEndStr = indexInfo->chromStr[chromNameInt].substr(
+										tmpSJdonerEndPosInChr - tmpSJdonerEndPosInRead, tmpSJdonerEndPosInRead);
+
+						chromAcceptorStartStr = indexInfo->chromStr[chromNameInt].substr(
+										tmpSJacceptorStartPosInChr - 1, unfixedHeadLength + 1 - tmpSJacceptorStartPosInRead + buffer + 1);
+
+						chromPendingStr = chromDonerEndStr + chromAcceptorStartStr;
+						
+						max_append_mismatch = (unfixedHeadLength)/10 + 1;
+						
+						mismatch_bits = 0;
+						
+						comb_bits = 0;
+
+						matchBool = score_string(readPendingStr, chromPendingStr,
+													max_append_mismatch, mismatch_bits, comb_bits);//append first
+					}
+					else
+					{
+						matchBool = false;
+					}
+
+					if(matchBool)
+					{
+						SJfoundInSJhash = true;
+						//cout << "SJ found: at " << tmpSJdonerEndPosInRead << " SJsize: " << tmpSJacceptorStartPosInChr - tmpSJdonerEndPosInChr - 1 << endl;
+						SJposFromRemappingVec_candi.push_back(pair <int, int > (tmpSJdonerEndPosInRead, tmpSJacceptorStartPosInChr - tmpSJdonerEndPosInChr - 1));
+						SJposFromRemappingVec_candi_mismatch.push_back(mismatch_bits);
+					}
+
+				}
 			}
 		}
 		else
 		{}	
+
+		if(SJfoundInSJhash)
+		{
+			//int mismatchNumInBufferSeq = this->countMismatchNumInBufferSeq(buffer, readSeqWithDirection, indexInfo);
+			int mismatchNumInBufferSeq = 0;
+			this->filterSJposFromRemapping_candi(mismatchNumInBufferSeq);
+		}
 		
 		return SJfoundInSJhash;
+	}
+
+	void filterSJposFromRemapping_candi(int mismatchNumInBufferSeq)
+	{
+		int currentBestSJposNO = 0;
+		int currentBestSJposNO_SJdistance = (SJposFromRemappingVec_candi[0]).second;
+		int currentBestSJposNO_mismatch = SJposFromRemappingVec_candi_mismatch[0];
+		for(int tmpSJposNO = 1; tmpSJposNO < SJposFromRemappingVec_candi.size(); tmpSJposNO ++)
+		{
+			int tmpSJpos_mismatch = SJposFromRemappingVec_candi_mismatch[tmpSJposNO]; 
+			int tmpSJpos_SJdistance = (SJposFromRemappingVec_candi[tmpSJposNO]).second;
+
+			if(tmpSJpos_mismatch < currentBestSJposNO_mismatch)
+			{
+				currentBestSJposNO = tmpSJposNO;
+				currentBestSJposNO_mismatch = tmpSJpos_mismatch;
+				currentBestSJposNO_SJdistance = tmpSJpos_SJdistance;
+			}
+			else if(tmpSJpos_mismatch == currentBestSJposNO_mismatch)
+			{
+				if(tmpSJpos_SJdistance < currentBestSJposNO_SJdistance)
+				{
+					currentBestSJposNO = tmpSJposNO;
+					currentBestSJposNO_mismatch = tmpSJpos_mismatch;
+					currentBestSJposNO_SJdistance = tmpSJpos_SJdistance;
+				}
+				else
+				{}
+			}
+			else
+			{}
+		}
+
+		int SJposFromRemapping_first = (SJposFromRemappingVec_candi[currentBestSJposNO]).first;
+		int SJposFromRemapping_second = (SJposFromRemappingVec_candi[currentBestSJposNO]).second;
+		int SJposFromRemapping_mismatch = SJposFromRemappingVec_candi_mismatch[currentBestSJposNO];
+
+		SJposFromRemappingVec.push_back(pair<int, int> (SJposFromRemapping_first, SJposFromRemapping_second) );
+
+		//int countNum = this->countMismatchNumInBufferSeq()
+
+		SJposFromRemappingVec_mismatch.push_back(SJposFromRemapping_mismatch - mismatchNumInBufferSeq);
 	}
 
 	bool SJsearchInSJhash(SJhash_Info* SJinfo, const string& readSeqWithDirection, 
@@ -463,7 +669,7 @@ public:
 					{
 						SJfoundInSJhash = true;
 						//cout << "SJ found: at " << tmpSJdonerEndPosInRead << " SJsize: " << tmpSJacceptorStartPosInChr - tmpSJdonerEndPosInChr - 1 << endl;
-						SJposFromRemapping.push_back(pair <int, int > (tmpSJdonerEndPosInRead, tmpSJacceptorStartPosInChr - tmpSJdonerEndPosInChr - 1));
+						SJposFromRemappingVec.push_back(pair <int, int > (tmpSJdonerEndPosInRead, tmpSJacceptorStartPosInChr - tmpSJdonerEndPosInChr - 1));
 					}
 				} 
 			}

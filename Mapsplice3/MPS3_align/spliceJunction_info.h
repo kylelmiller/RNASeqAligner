@@ -39,19 +39,70 @@ public:
 		anchorStringLength = 3;
 	}
 
-	void initiateSpliceJunctionStringHash(int chromNum)
+	//////////////////////////////////////////////////////////////
+	/////////////////////  SJintHash   ///////////////////////////
+	//////////////////////////////////////////////////////////////
+
+	void insert2SJintHash(
+		int chrInt, int spliceStartPos, int spliceEndPos)
+	{
+
+		SJintHashIter foundIntHashIter;
+		// insert to SJintHashNormal
+		foundIntHashIter = SJintHashNormal[chrInt].find(spliceStartPos);
+		if(foundIntHashIter == SJintHashNormal[chrInt].end())
+		{
+			set<int> newPosSet; 
+			newPosSet.insert(spliceEndPos);
+			SJintHashNormal[chrInt].insert(pair<int, set<int> > (spliceStartPos, newPosSet));
+		}
+		else
+		{
+			if((foundIntHashIter->second).find(spliceEndPos) == (foundIntHashIter->second).end())
+			{
+				(foundIntHashIter->second).insert(spliceEndPos);
+			}
+			else
+			{}
+		}
+
+		//insert to SJintHashReverse
+		foundIntHashIter = SJintHashReverse[chrInt].find(spliceEndPos);
+		if(foundIntHashIter == SJintHashReverse[chrInt].end())
+		{
+			set<int> newPosSet; 
+			newPosSet.insert(spliceStartPos);
+			SJintHashReverse[chrInt].insert(pair<int, set<int> > (spliceEndPos, newPosSet));
+		}
+		else
+		{
+			if((foundIntHashIter->second).find(spliceStartPos) == (foundIntHashIter->second).end())
+			{
+				(foundIntHashIter->second).insert(spliceStartPos);
+			}
+			else
+			{}
+		}		
+	}
+	
+	void initiateSJintHash(int chromNum)
 	{
 		for(int tmp = 0; tmp < chromNum; tmp++)
 		{
-			SplicePosHash newSplicePosHash;
-			spliceJunctionNormal.push_back(newSplicePosHash);
+			SJintHash newSJintHash;
+			SJintHashNormal.push_back(newSJintHash);	
 		}
 		for(int tmp = 0; tmp < chromNum; tmp++)
 		{
-			SplicePosHash newSplicePosHash;
-			spliceJunctionReverse.push_back(newSplicePosHash);
-		}
+			SJintHash newSJintHash;
+			SJintHashReverse.push_back(newSJintHash);	
+		}		
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	//  1. AreadHash: area - SJendSite hash    ///////////////////////////////
+	//  2. StringHash: SJendSite - SJotherEndString - SJotherEndSite hash   //
+	//////////////////////////////////////////////////////////////////////////
 
 	void initiateSpliceJunctionAreaHash(int chromNum)
 	{
@@ -72,24 +123,24 @@ public:
 		}
 	}
 
-	void initiateTwoLevelHash_areaAndStringHash(int chromNum)
-	{
-		this->initiateSpliceJunctionStringHash(chromNum);
-		this->initiateSpliceJunctionAreaHash(chromNum);
-	}
-
-	void initiateSJintHash(int chromNum)
+	void initiateSpliceJunctionStringHash(int chromNum)
 	{
 		for(int tmp = 0; tmp < chromNum; tmp++)
 		{
-			SJintHash newSJintHash;
-			SJintHashNormal.push_back(newSJintHash);	
+			SplicePosHash newSplicePosHash;
+			spliceJunctionNormal.push_back(newSplicePosHash);
 		}
 		for(int tmp = 0; tmp < chromNum; tmp++)
 		{
-			SJintHash newSJintHash;
-			SJintHashReverse.push_back(newSJintHash);	
-		}		
+			SplicePosHash newSplicePosHash;
+			spliceJunctionReverse.push_back(newSplicePosHash);
+		}
+	}
+
+	void initiateAreaAndStringHash(int chromNum)
+	{
+		this->initiateSpliceJunctionStringHash(chromNum);
+		this->initiateSpliceJunctionAreaHash(chromNum);
 	}
 
 	void insert2AreaHash(int chrInt,
@@ -262,47 +313,13 @@ public:
 		}
 	}
 
-	void insert2SJintHash(
-		int chrInt, int spliceStartPos, int spliceEndPos)
+	void insert2AreaAndStringHash(int chrInt,
+		int spliceStartPos, int spliceEndPos, Index_Info* indexInfo)
 	{
-
-		SJintHashIter foundIntHashIter;
-		// insert to SJintHashNormal
-		foundIntHashIter = SJintHashNormal[chrInt].find(spliceStartPos);
-		if(foundIntHashIter == SJintHashNormal[chrInt].end())
-		{
-			set<int> newPosSet; 
-			newPosSet.insert(spliceEndPos);
-			SJintHashNormal[chrInt].insert(pair<int, set<int> > (spliceStartPos, newPosSet));
-		}
-		else
-		{
-			if((foundIntHashIter->second).find(spliceEndPos) == (foundIntHashIter->second).end())
-			{
-				(foundIntHashIter->second).insert(spliceEndPos);
-			}
-			else
-			{}
-		}
-
-		//insert to SJintHashReverse
-		foundIntHashIter = SJintHashReverse[chrInt].find(spliceEndPos);
-		if(foundIntHashIter == SJintHashReverse[chrInt].end())
-		{
-			set<int> newPosSet; 
-			newPosSet.insert(spliceStartPos);
-			SJintHashReverse[chrInt].insert(pair<int, set<int> > (spliceEndPos, newPosSet));
-		}
-		else
-		{
-			if((foundIntHashIter->second).find(spliceStartPos) == (foundIntHashIter->second).end())
-			{
-				(foundIntHashIter->second).insert(spliceStartPos);
-			}
-			else
-			{}
-		}		
+		this->insert2AreaHash(chrInt, spliceStartPos, spliceEndPos);
+		this->insert2StringHash(chrInt, spliceStartPos, spliceEndPos, indexInfo);
 	}
+
 
 	/*void insert2SJintHashAsClass(Splice_Junction& newSJ)
 	{

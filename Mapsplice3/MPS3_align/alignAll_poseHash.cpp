@@ -38,7 +38,6 @@
 #include "fixOneEndUnmapped.h"
 #include "fixPhase1.h"
 #include "readSeqPreProcessing.h"
-#include "headerSection_info.h"
 
 #define PreIndexSize 268435456
 
@@ -93,13 +92,13 @@ int main(int argc, char**argv)
 	///////////////////////////////////////////////////////////////////////////////////////////
 
 	bool Do_Phase1_Only = false;
-	Do_Phase1_Only = true;
+	//Do_Phase1_Only = true;
 
 	bool outputAlignInfoAndSamForAllPairedAlignmentBool = false;
-	//outputAlignInfoAndSamForAllPairedAlignmentBool = true;
+	outputAlignInfoAndSamForAllPairedAlignmentBool = true;
 
 	bool removeAllIntermediateFilesBool = false;
-	removeAllIntermediateFilesBool = true;
+	//removeAllIntermediateFilesBool = true;
 
 	bool DoSam2JuncBool = false;
 	DoSam2JuncBool = true;
@@ -322,8 +321,6 @@ int main(int argc, char**argv)
 	cout << endl << "[" << asctime(local) << "... whole genome index loaded ......" << endl << endl; 
 	log_ofs << endl << "[" << asctime(local) << "... whole genome index loaded ......" << endl << endl;
 
-	HeaderSection_Info* headerSectionInfo = new HeaderSection_Info(indexInfo);	
-
 	//////////////////////////////////////////////////       finish LOADing INDEX           ////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////       finish LOADing INDEX           ////////////////////////////////////////////////////////////////
 
@@ -332,6 +329,8 @@ int main(int argc, char**argv)
 	//////////////////////////////////////////////////       1st Mapping Process           ////////////////////////////////////////////////////////////////
 
 	/* align main*/
+
+
 
    	string testClassFileStr = outputDirStr + "/output.sam";
    	//testClassFileStr += ".testClass.sam";
@@ -343,10 +342,6 @@ int main(int argc, char**argv)
 
 	string tmpAlignCompleteRead = testClassFileStr + ".completePair.sam";
 	ofstream tmpAlignCompleteRead_ofs(tmpAlignCompleteRead.c_str());
-
-	//log_ofs << endl << "headerSectionInfo:\n" << headerSectionInfo->headerSectionInfoStr << endl;
-
-	//tmpAlignCompleteRead_ofs << headerSectionInfo->headerSectionInfoStr << endl;
 
 	string tmpAlignOneEndUnmapped = testClassFileStr + ".oneEndUnmapped";
 	
@@ -664,7 +659,7 @@ int main(int argc, char**argv)
 					/*PeAlignSamStrVec_complete[tmpOpenMP] = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
 					 	(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);*/
-					PeAlignSamStrVec_complete[tmpOpenMP] = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(
+					PeAlignSamStrVec_complete[tmpOpenMP] = peAlignInfo->getSAMformatForFinalPair(
 					 	(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);
 					if(outputAlignInfoAndSamForAllPairedAlignmentBool)
@@ -688,7 +683,7 @@ int main(int argc, char**argv)
 					/*PeAlignSamStrVec_inCompletePair[tmpOpenMP] = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
 					 	(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);*/
-					PeAlignSamStrVec_inCompletePair[tmpOpenMP] = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot (
+					PeAlignSamStrVec_inCompletePair[tmpOpenMP] = peAlignInfo->getSAMformatForFinalPair(
 					 	(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);
 				}
@@ -703,7 +698,7 @@ int main(int argc, char**argv)
 						/*PeAlignInfoStrVec_oneEndUnmapped[tmpOpenMP] = peAlignInfo->getTmpPEreadAlignInfoInSAMformat(
 			 				(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 							(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);*/ 
-						PeAlignInfoStrVec_oneEndUnmapped[tmpOpenMP] = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot (
+						PeAlignInfoStrVec_oneEndUnmapped[tmpOpenMP] = peAlignInfo->getSAMformatForUnpairedAlignments(
 							(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 							(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);
 					}
@@ -1219,7 +1214,7 @@ int main(int argc, char**argv)
 					/*tmpPeAlignSamStr = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
 					 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);*/
-					tmpPeAlignSamStr = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(
+					tmpPeAlignSamStr = peAlignInfo->getSAMformatForFinalPair(
 					 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);
 					tmpPeAlignInfoStr = "";
@@ -1256,7 +1251,7 @@ int main(int argc, char**argv)
 					/*tmpPeAlignSamStr_unpair_complete = peAlignInfo->getTmpPEreadAlignInfoInSAMformat(
 						(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName,
 						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq );*/
-					tmpPeAlignSamStr_unpair_complete = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
+					tmpPeAlignSamStr_unpair_complete = peAlignInfo->getSAMformatForUnpairedAlignments(
 						(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName,
 						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq );
 					if(outputAlignInfoAndSamForAllPairedAlignmentBool)
@@ -1431,15 +1426,8 @@ int main(int argc, char**argv)
 
 		//SJhash_Info SJ;
 		
-		/////////////////////////////////////////////////////////////////////////////
-		///////////////////// position Hash  ////////////////////////////////////////
-		/////////////////////////////////////////////////////////////////////////////
-		//SJ->initiateSJintHash(indexInfo->chromNum);
-		/////////////////////////////////////////////////////////////////////////////
-		//////////////////////  string hash /////////////////////////////////////////
-		/////////////////////////////////////////////////////////////////////////////
-		SJ->initiateAreaAndStringHash(indexInfo->chromNum);
 
+		SJ->initiateSJintHash(indexInfo->chromNum);
 
 		fgets(entry, sizeof(entry), fp_spliceJunction);
 		while(!feof(fp_spliceJunction))
@@ -1460,17 +1448,8 @@ int main(int argc, char**argv)
 			spliceStartPos = atoi(spliceStartPosString.c_str());
 			spliceEndPos = atoi(spliceEndPosString.c_str());
 
-			///////////////////////////////////////////////////////////////////////////
-			//////////// position Hash  ///////////////////////////////////////////////
-			///////////////////////////////////////////////////////////////////////////
-			//SJ->insert2SJintHash(chrInt, spliceStartPos, spliceEndPos);
-			///////////////////////////////////////////////////////////////////////////
-			////////////  string hash /////////////////////////////////////////////////
-			///////////////////////////////////////////////////////////////////////////			
-			SJ->insert2AreaAndStringHash(chrInt, spliceStartPos, spliceEndPos, indexInfo);
-		
+			SJ->insert2SJintHash(chrInt, spliceStartPos, spliceEndPos);
 		}
-
 		fclose(fp_spliceJunction);
 
 		if(junctionNum == 0)
@@ -1587,7 +1566,7 @@ int main(int argc, char**argv)
 					line9StrVec[tmpOpenMP], line10StrVec[tmpOpenMP], peReadInfo);		
 
 				FixHeadTailInfo* fixHeadTailInfo = new FixHeadTailInfo();
-				fixHeadTailInfo->fixHeadTail_areaAndStringHash(peReadInfo, peAlignInfo, SJ, 
+				fixHeadTailInfo->fixHeadTail(peReadInfo, peAlignInfo, SJ, 
 					secondLevelChrom,
 					secondLevelSa,
 					secondLevelLcpCompress,
@@ -1619,7 +1598,7 @@ int main(int argc, char**argv)
 						/*tmpPeAlignSamStr_complete_pair = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
 						 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);*/
-						tmpPeAlignSamStr_complete_pair = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(
+						tmpPeAlignSamStr_complete_pair = peAlignInfo->getSAMformatForFinalPair(
 						 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);						
 						tmpPeAlignSamStr_incomplete_pair = "";
@@ -1643,7 +1622,7 @@ int main(int argc, char**argv)
 						/*tmpPeAlignSamStr_incomplete_pair = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
 						 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);*/
-						tmpPeAlignSamStr_incomplete_pair = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(
+						tmpPeAlignSamStr_incomplete_pair = peAlignInfo->getSAMformatForFinalPair(
 						 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);
 						tmpPeAlignSamStr_complete_unpair = "";
@@ -1674,7 +1653,7 @@ int main(int argc, char**argv)
 				 			(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);*/
 
-						tmpPeAlignSamStr_complete_unpair = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
+						tmpPeAlignSamStr_complete_unpair = peAlignInfo->getSAMformatForUnpairedAlignments(
 				 			(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);
 
@@ -1698,7 +1677,7 @@ int main(int argc, char**argv)
 				 			(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);*/				
 
-						tmpPeAlignSamStr_incomplete_unpair = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
+						tmpPeAlignSamStr_incomplete_unpair = peAlignInfo->getSAMformatForUnpairedAlignments(
 				 			(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);	
 						if(outputAlignInfoAndSamForAllPairedAlignmentBool)

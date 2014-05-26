@@ -28,15 +28,6 @@ public:
 		bool fixGapInPathBool = false;
 		int pathVecSize = pathInfo->PathVec_seg.size();
 
-		/*if(pathVecSize > 100)
-		{
-			for(int tmpPathNO = 0; tmpPathNO < pathVecSize; tmpPathNO ++)
-			{
-				pathInfo->PathFixedBoolVec.push_back(false);
-			}
-			return true;
-		}*/
-
 		for(int tmpPathNO = 0; tmpPathNO < pathVecSize; tmpPathNO ++)
 		{
 			//cout << "...... start to fix path " << int_to_str(tmpPathNO + 1) << endl;
@@ -181,48 +172,6 @@ public:
 		fixGapInPathBool = true;
 		return fixGapInPathBool;
 	}
-
-	/*bool fixDoubleAnchor(Splice_Info* cigarInfo, int relation, int segmentLocInRead_1, int segmentLocInRead_2,
-		int segmentLength_1, int segmentLength_2, int segmentMapPos_1, int segmentMapPos_2,
-		const string& readSeq_inProcess, Index_Info* indexInfo, const string& chromName, int* mismatchNum
-		)
-	{
-		bool fixDoubleAnchorBool = false;
-		if((relation == FIX_TOO_CLOSE) || (relation == FIX_TOO_FAR) || (relation == FIX_NO_RELATIONSHIP))
-		{
-			return false;
-		}
-		else if(relation == FIX_MATCH)
-		{
-			fixDoubleAnchorBool = fixDoubleAnchor_Match(cigarInfo, relation, segmentLocInRead_1, segmentLocInRead_2,
-				segmentLength_1, segmentLength_2, segmentMapPos_1, segmentMapPos_2, readSeq_inProcess, 
-				indexInfo, chromName, mismatchNum);
-			//return fixDoubleAnchorBool;
-		}
-		else if((relation == FIX_INSERTION_NEIGHBOUR) || (relation == FIX_INSERTION_GAP))
-		{
-			fixDoubleAnchorBool = fixDoubleAnchor_Insertion(cigarInfo, relation, segmentLocInRead_1, segmentLocInRead_2,
-				segmentLength_1, segmentLength_2, segmentMapPos_1, segmentMapPos_2, readSeq_inProcess, 
-				indexInfo, chromName, mismatchNum);
-		}
-		else if((relation == FIX_DELETION_NEIGHBOUR) || (relation == FIX_DELETION_GAP))
-		{
-			fixDoubleAnchorBool = fixDoubleAnchor_Deletion(cigarInfo, relation, segmentLocInRead_1, segmentLocInRead_2,
-				segmentLength_1, segmentLength_2, segmentMapPos_1, segmentMapPos_2, readSeq_inProcess, 
-				indexInfo, chromName, mismatchNum);
-		}
-		else if((relation == FIX_SPLICE_NEIGHBOUR) || (relation == FIX_SPLICE_GAP))
-		{
-			fixDoubleAnchorBool = fixDoubleAnchor_Splice(cigarInfo, relation, segmentLocInRead_1, segmentLocInRead_2,
-				segmentLength_1, segmentLength_2, segmentMapPos_1, segmentMapPos_2, readSeq_inProcess, 
-				indexInfo, chromName, mismatchNum);
-		}
-		else
-		{
-			cout << "error in fixDoubleAnchor ... " << endl;
-		}
-		return fixDoubleAnchorBool;
-	}*/
 
 	bool fixDoubleAnchor_extendBack(Splice_Info* cigarInfo, int relation, int segmentLocInRead_1, int segmentLocInRead_2,
 		int segmentLength_1, int segmentLength_2, int segmentMapPos_1, int segmentMapPos_2,

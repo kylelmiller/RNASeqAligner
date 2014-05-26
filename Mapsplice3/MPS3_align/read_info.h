@@ -12,11 +12,9 @@ public:
 	string rcmReadSeq;
 	string readQual;
 	string rcmReadQual;
-	//string readPeInfo;
 
 	bool getSeqLength()
 	{
-		//return readSeq.length();
 		readSeqLength = readSeq.length();
 		if(readSeqLength <= 0)
 		{
@@ -27,13 +25,6 @@ public:
 			return true;
 		}
 	}
-	/*
-	bool getRcmRead()
-	{
-		for(int tmp = 0; )
-	}
-	*/
-
 };
 
 class PE_Read_Info
@@ -101,24 +92,6 @@ public:
 		//readInfo_pe2.readPeInfo = "2";
 	}
 
-	/*void getPeReadInfo_Fasta(const string& readName_1, const string& readName_2, 
-		const string& readSeq_1, const string& readSeq_2)
-	{
-		readInfo_pe1.readName = readName_1;
-		readInfo_pe2.readName = readName_2;
-		readInfo_pe1.readSeq = readSeq_1;
-		readInfo_pe2.readSeq = readSeq_2;
-		//readInfo_pe1.rcmReadSeq = convertStringToReverseComplement(readSeq_1);
-		//readInfo_pe2.rcmReadSeq = convertStringToReverseComplement(readSeq_2);
-		readInfo_pe1.readQual = "*";
-		readInfo_pe2.readQual = "*";
-		readInfo_pe1.rcmReadQual = "*";
-		readInfo_pe2.rcmReadQual = "*";
-
-		readInfo_pe1.readSeqLength = (readInfo_pe1.readSeq).length();
-		readInfo_pe2.readSeqLength = (readInfo_pe2.readSeq).length();		
-	}*/
-
 	void getBothEndRcmReadSeq()
 	{
 		readInfo_pe1.rcmReadSeq = covertStringToReverseComplement(readInfo_pe1.readSeq);//, (readInfo_pe1.readSeq).length());
@@ -142,11 +115,6 @@ public:
 
 		readInfo_pe1.readSeqLength = (readInfo_pe1.readSeq).length();
 		readInfo_pe2.readSeqLength = (readInfo_pe2.readSeq).length();
-		//int readSeqLength;
-		//string readSeq;
-		//string rcmReadSeq;
-		//string readQual;
-		//string rcmReadQual;
 	}
 
 	void getFastaFormatReadInfo(const string& readName_1, const string& readName_2, 
@@ -156,8 +124,6 @@ public:
 		readInfo_pe2.readName = readName_2;
 		readInfo_pe1.readSeq = readSeq_1;
 		readInfo_pe2.readSeq = readSeq_2;
-		//readInfo_pe1.rcmReadSeq = convertStringToReverseComplement(readSeq_1);
-		//readInfo_pe2.rcmReadSeq = convertStringToReverseComplement(readSeq_2);
 		readInfo_pe1.readQual = "*";
 		readInfo_pe2.readQual = "*";
 		readInfo_pe1.rcmReadQual = "*";
@@ -169,12 +135,32 @@ public:
 
 	void getReverseComplementReadSeq(char* readChar, char* readChar_PE)
 	{
-		//readInfo_pe1.rcmReadSeq = convertStringToReverseComplement(readInfo_pe1.readSeq);
-		//readInfo_pe2.rcmReadSeq = convertStringToReverseComplement(readInfo_pe2.readSeq);		
 		readInfo_pe1.rcmReadSeq = 
 			convertCharArrayToReverseCompletmentStr(readChar, readInfo_pe1.readSeqLength);
 		readInfo_pe2.rcmReadSeq = 
 			convertCharArrayToReverseCompletmentStr(readChar_PE, readInfo_pe2.readSeqLength);
+	}
+	char complement(int i)
+	{
+		static const int b2c_size = 20;
+		static const char b2c[] = {'T','N','G','N','N','N','C','N','N','N','N','N','N','N','N','N','N','N','N','A'};
+		static const char b2cl[] = {'t','n','g','n','n','n','c','n','n','n','n','n','n','n','n','n','n','n','n','a'};
+		if (i - 'A' >= 0 && i - 'A' < b2c_size)
+			return b2c[i - 'A'];
+		else if (i - 'a' >= 0 && i - 'a' < b2c_size)
+			return b2cl[i - 'a'];
+		else return 'N';
+	}
+
+	string revcomp(string s) //X: rewrite 06/08
+	{
+		string t;
+		for(string::reverse_iterator iter = s.rbegin();
+			iter != s.rend(); iter++)
+		{
+			t = t + complement(*iter);
+		}
+		return t;
 	}
 
 	void getRcmReadSeq()

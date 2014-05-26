@@ -113,36 +113,3 @@ int extendBackInChromSeq(int readLoc, const string& readSeq, int chromLoc, const
 	}
 	return extendBackLengthMax;
 }
-
-class OtherFunc
-{
-public:
-	vector<char> char2CharRcmVec;
-	//vector<string> str2StrRcmVec;
-
-
-	OtherFunc()
-	{
-		for(int tmp = 'A'-'A'; tmp <= 'Z' - 'A'; tmp++)
-		{
-			char2CharRcmVec.push_back('N');
-		}
-		char2CharRcmVec['A'-'A'] = 'T';
-		char2CharRcmVec['C'-'A'] = 'G';
-		char2CharRcmVec['G'-'A'] = 'C';
-		char2CharRcmVec['T'-'A'] = 'A';
-
-	}
-
-	/*string stringRcm(const string& s)
-	{
-		string t;
-		for(string::reverse_iterator iter = s.rbegin();
-			iter != s.rend(); iter++)
-		{
-			t = t + char2CharRcmVec(*iter);
-		}
-		return t;		
-	}*/
-
-};

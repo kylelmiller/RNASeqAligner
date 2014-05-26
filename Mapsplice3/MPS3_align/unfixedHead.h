@@ -37,7 +37,7 @@ public:
 	Unfixed_Head(int head_length, int mapPos, string mapChrName)
 	{
 		unfixedHeadLength = head_length;
-		midPartMapPosInChr = midPartMapPosInChr;
+		midPartMapPosInChr = mapPos;
 		midPartMapChrName = mapChrName;
 	}
 

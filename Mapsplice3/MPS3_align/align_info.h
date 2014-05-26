@@ -11,41 +11,16 @@ public:
 		SJdonerEnd = donerPos;
 		SJacceptorStart = acceptorPos;		
 	}
-
-	void getSpliceJunctionFromRecord(string entryString)
-	{
-		int tabLocation1, tabLocation2, tabLocation3;
-		tabLocation1 = entryString.find('\t', 0);
-		tabLocation2 = entryString.find('\t', tabLocation1+1);
-		tabLocation3 = entryString.find('\t', tabLocation2+1);		
-		
-		SJchrName = entryString.substr(0, tabLocation1);	
-
-		string spliceStartPosString = entryString.substr(tabLocation1+1, tabLocation2-tabLocation1-1);
-		string spliceEndPosString = entryString.substr(tabLocation2+1, tabLocation3-tabLocation2-1);
-
-		SJdonerEnd = atoi(spliceStartPosString.c_str());
-		SJacceptorStart = atoi(spliceEndPosString.c_str());
-	}
 };
 
 class SpliceJunction_Alignment
 {
 public:
-	//int SJposInRead;  // value = 11, if cigarString == 10M100N90M 
+
 	string SJchrName;
 	int SJdonerEnd;
 	int SJacceptorStart;
 	string flankString;
-
-	SpliceJunction_Alignment(Splice_Junction& newSJ, Index_Info* indexInfo)
-	{
-		SJchrName = newSJ.SJchrName;
-		SJdonerEnd = newSJ.SJdonerEnd;
-		SJacceptorStart = newSJ.SJacceptorStart;
-		//cout << SJdonerEnd << " " << SJacceptorStart << endl;
-		this->getFlankString(indexInfo);		
-	}
 
 	SpliceJunction_Alignment(string chrName, int donerPos, int acceptorPos, Index_Info* indexInfo)
 	{
@@ -69,7 +44,7 @@ public:
 
 class SamFormat
 {
-public:	
+public:
 
 	int FLAG;
 	int MAPQ;
@@ -78,31 +53,7 @@ public:
 	int TLEN;
 	int IH;
 	int HI;
-	//char XS;
-	//vector<string> XF;
 
-
-
-	int getFlagInfo()
-	{
-		int FlagValue;
-
-		bool multiSeg;
-		bool allProperlyAligned;
-		bool segUnmap;
-		bool nextSegUnmap;
-		bool segRcm;
-		bool nextSegRcm;
-		bool firstSeg;
-		bool lastSeg;
-		bool secondaryAlignment;
-
-		FlagValue = multiSeg + allProperlyAligned * 2 + segUnmap * 4 + nextSegUnmap * 8
-			+ segRcm * 16 + nextSegRcm * 32 + firstSeg * 64 + lastSeg * 128 + secondaryAlignment * 256; 		
-
-		return FlagValue;
-	}
-	
 };
 
 
@@ -129,6 +80,14 @@ public:
 
 	Alignment_Info()
 	{}
+
+	string int_to_str(int numerical)
+	{
+			char c[100];
+			sprintf(c,"%d",numerical);
+			string str(c);
+			return str;
+	}
 
 	int unfixedHeadLength()
 	{
@@ -175,45 +134,7 @@ public:
 		bool unfixedHeadBool = (cigarStringJumpCode[0].type == "S");
 		bool unfixedTailBool = (cigarStringJumpCode[jumpCodeNum - 1].type == "S");
 
-		if((!unfixedHeadBool)&&(!unfixedTailBool))
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	bool checkJumpCodeValid()
-	{
-		//continue;
-		bool jumpCodeValid = true;
-		for(int tmp = 0; tmp < cigarStringJumpCode.size(); tmp++)
-		{
-			if(cigarStringJumpCode[tmp].len <= 0)
-				return false;	
-		}
-		return jumpCodeValid;
-	}
-
-	Alignment_Info(string alignDir, unsigned int mapPos, vector<Jump_Code>& cigarString, Index_Info* indexInfo)
-	{
-		alignDirection = alignDir;
-		mapPosInWholeGenome = mapPos;
-
-		unsigned int tmpChrInt, tmpChrPos;
-		indexInfo->getChrLocation(mapPosInWholeGenome, &tmpChrInt, &tmpChrPos);
-		alignChromName = (indexInfo->chrNameStr)[tmpChrInt];		
-		alignChromPos = (int)tmpChrPos;
-
-		cigarStringJumpCode = cigarString;
-		this->jumpCodeVec2spliceJunctionVec(indexInfo);
-		mismatchNum = 0;
-		SJstrand = this->getStrandFromSJ();
-
-		//currentSam.setSamFormat(this, this);
-		//SJstrand
+		return  !unfixedHeadBool && !unfixedTailBool;
 	}
 
 	Alignment_Info(string alignDir, const string& mapChromName, 
@@ -235,16 +156,6 @@ public:
 		//currentSam.setSamFormat(this, this);
 		//SJstrand
 	}	
-
-	Alignment_Info(const string& mapChromName, 
-		int mapChromPos, const string& cigarStringStr, Index_Info* indexInfo)
-	{
-		alignChromName = mapChromName;		
-		alignChromPos = mapChromPos;
-		this->jumpCodeStr2jumpCodeVec(cigarStringStr);
-		this->jumpCodeVec2spliceJunctionVec(indexInfo);
-		SJstrand = this->getStrandFromSJ();
-	}
 
 	Alignment_Info(const string& alignInfoStr, const string& alignDir)
 	{
@@ -306,25 +217,8 @@ public:
 		}
 		
 		int newMismatch = mismatchNum;
-		//cout << "stop 5 " << endl;
-		//cout << newAlignDir << endl;
-		//cout << newAlignChromName << endl;
-		//cout << newAlignChromPos << endl;
-		//cout << newCigarStringJumpCode.size() << endl;
-		//cout << "1st jumpCode " << endl;
-		//cout << newCigarStringJumpCode[0].len << " " << newCigarStringJumpCode[0].type << endl;
-		//cout << "2nd jumpCode " << endl; 
-		//cout << newCigarStringJumpCode[1].len << " " << newCigarStringJumpCode[1].type << endl;
-		//cout << "3rd jumpCode " << endl; 
-		//cout << newCigarStringJumpCode[2].len << " " << newCigarStringJumpCode[2].type << endl;
-
 		Alignment_Info* newAlignInfo = new Alignment_Info(newAlignDir, newAlignChromName,
 			newAlignChromPos, newCigarStringJumpCode, newMismatch, indexInfo);
-		//cout << "finsh newAlignInfo" << endl;
-		//cigarStringJumpCode = newCigarStringJumpCode;
-		//this->jumpCodeVec2spliceJunctionVec();
-		//mismatchNum = mismatch;
-		//SJstrand = this->getStrandFromSJ();	
 		return newAlignInfo;	
 	}
 
@@ -434,55 +328,6 @@ public:
 			}
 		}
 	}
-
-	/*void jumpCodeVec2SJforCompareVec() 
-	{
-		int tmpPosInRead = 0; 
-		int tmpDonerPosInChr = alignChromPos - 1;
-		int tmpAcceptorPosInChr = 0;
-		//cout << "start to get sjVec ..." << endl;
-		for(int tmp = 0; tmp < cigarStringJumpCode.size(); tmp++)
-		{
-			//cout << "JumpCode[" << tmp << "]: " << cigarStringJumpCode[tmp].len << " " << cigarStringJumpCode[tmp].type << endl;
-			if(cigarStringJumpCode[tmp].type == "S")
-			{
-				tmpPosInRead += cigarStringJumpCode[tmp].len;
-			}
-			else if (cigarStringJumpCode[tmp].type == "M")
-			{
-				tmpPosInRead += cigarStringJumpCode[tmp].len;
-				//cout << "tmpPosInRead: " << tmpPosInRead << endl;
-				tmpDonerPosInChr += cigarStringJumpCode[tmp].len;
-				//cout << "tmpDonerPosInChr: " << tmpDonerPosInChr << endl;
-			}
-			else if (cigarStringJumpCode[tmp].type == "N")
-			{
-				//cout << "tmpDonerPosInChr: " << tmpDonerPosInChr << endl;
-
-				tmpAcceptorPosInChr = tmpDonerPosInChr + cigarStringJumpCode[tmp].len + 1;
-				//cout << "tmpAcceptorPosInChr: " << tmpAcceptorPosInChr << endl;
-				//SpliceJunction_Alignment* tmpSJ = 
-				//	new SpliceJunction_Alignment(alignChromName, tmpDonerPosInChr, tmpAcceptorPosInChr, indexInfo);
-				//cout << "tmpPosInRead: " << tmpPosInRead << endl;
-				//tmpSJ
-				SJforCompareVec.push_back(pair <int, int> (tmpDonerPosInChr, tmpAcceptorPosInChr));
-				tmpDonerPosInChr += cigarStringJumpCode[tmp].len;
-			}
-			else if (cigarStringJumpCode[tmp].type == "I")
-			{
-				tmpPosInRead += cigarStringJumpCode[tmp].len;
-				//tmpDonerPosInChr += cigarStringJumpCode[tmp].len;
-			}
-			else if (cigarStringJumpCode[tmp].type == "D")
-			{
-				tmpDonerPosInChr += cigarStringJumpCode[tmp].len;
-			}
-			else
-			{
-				cout << "other jumpCodeType" << endl;
-			}
-		}
-	}*/
 
 	string getStrandFromSJ()
 	{	
@@ -1149,24 +994,13 @@ public:
 
 	vector<bool> otherEndUnmappedBoolVec;
 
-	//vector< pair < SamFormat*, SamFormat* > > finalSamFormat_Nor1Rcm2;
-	//vector< pair < SamFormat*, SamFormat* > > finalSamFormat_Nor2Rcm1;
-
-	/*void generateNewPeReadAndPeAlignInfo(PE_Read_Info* peReadInfo, const string& readName_1, const string& readName_2,
-		const string& readSeq_1, const string& readSeq_2, )
+	string int_to_str(int numerical)
 	{
-
-	}*/
-
-	/*void generateOtherEndUnmappedBoolVec();
-	{
-		otherEndUnmappedBoolVec.clear();
-		if((norAlignmentInfo_PE_1.size() > 0)&&(rcmAlignmentInfo_PE_2.size() == 0))
-			otherEndUnmappedBoolVec.push_back(true);
-		else
-			otherEndUnmappedBoolVec.push_back(false);
-	}*/
-
+			char c[100];
+			sprintf(c,"%d",numerical);
+			string str(c);
+			return str;
+	}
 
 	void generatePeReadInfoAndPeAlignInfo_Fasta_toFixOneEndUnmapped_fgets(const string& line1, const string& line2, 
 		//const string& recordLine3, 
@@ -2008,62 +1842,6 @@ public:
 		return pairConflict;
 	}
 
-	/*bool checkAllPairCompletelyMapped(int readLength) //check 
-	{
-		bool allCompletelyMapped = true;
-		int tmpAlignmentNO;
-		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2.size(); tmp++)
-		{
-			tmpAlignmentNO = oriAlignPair_Nor1Rcm2[tmp].first;
-			if((norAlignmentInfo_PE_1[tmpAlignmentNO]->mappedLength()) != readLength)
-			{
-				return false;
-			}
-			else
-			{	}
-		}		
-
-		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1.size(); tmp++)
-		{
-			tmpAlignmentNO = oriAlignPair_Nor2Rcm1[tmp].first;
-			if((norAlignmentInfo_PE_2[tmpAlignmentNO]->mappedLength()) != readLength)
-			{
-				return false;
-			}
-			else
-			{	}
-		}
-		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2.size(); tmp++)
-		{
-			for(int tmp2 = 0; tmp2 < (oriAlignPair_Nor1Rcm2[tmp].second).size();
-				tmp2++)
-			{
-				tmpAlignmentNO = (oriAlignPair_Nor1Rcm2[tmp].second)[tmp2];
-				if((rcmAlignmentInfo_PE_2[tmpAlignmentNO]->mappedLength()) != readLength)
-				{
-					return false;
-				}
-				else
-				{	}
-			}
-		}
-		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1.size(); tmp++)
-		{
-			for(int tmp2 = 0; tmp2 < (oriAlignPair_Nor2Rcm1[tmp].second).size();
-				tmp2++)
-			{
-				tmpAlignmentNO = (oriAlignPair_Nor2Rcm1[tmp].second)[tmp2];
-				if((rcmAlignmentInfo_PE_1[tmpAlignmentNO]->mappedLength()) != readLength)
-				{
-					return false;
-				}
-				else
-				{	}
-			}
-		}
-		return allCompletelyMapped;
-	}*/
-
 	void getEndMatchPosForEveryAlignment()
 	{
 		for(int tmp = 0; tmp < norAlignmentInfo_PE_1.size(); tmp++)
@@ -2391,67 +2169,6 @@ public:
 		}
 
 	}
-
-	/*void filterAlignmentPairWithStrand() 
-	// Nor1Rcm2, if Nor1Rcm2orNor2Rcm1 == true; 
-	// Nor2Rcm1, if Nor1Rcm2orNor2Rcm1 == false;
-	{
-		Alignment_Info* tmpAlignInfo_1;
-		Alignment_Info* tmpAlignInfo_2;
-		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2.size(); tmp++)
-		{
-			vector<int> newIntVec;
-			tmpAlignInfo_1 = norAlignmentInfo_PE_1[oriAlignPair_Nor1Rcm2[tmp].first];
-			for(int tmp2 = 0; tmp2 < (oriAlignPair_Nor1Rcm2[tmp].second).size(); tmp2++)
-			{
-				tmpAlignInfo_2 = rcmAlignmentInfo_PE_2[(oriAlignPair_Nor1Rcm2[tmp].second)[tmp2]];
-				if(((tmpAlignInfo_1->SJstrand == "+")&&(tmpAlignInfo_2->SJstrand == "-"))
-					||((tmpAlignInfo_1->SJstrand == "-")&&(tmpAlignInfo_2->SJstrand == "+"))
-					||(tmpAlignInfo_1->SJstrand == "X")||(tmpAlignInfo_2->SJstrand == "X"))
-				{
-					continue; //conflict 
-					//newIntVec.push_back(tmp2);
-				}	
-				else
-				{
-					newIntVec.push_back((oriAlignPair_Nor1Rcm2[tmp].second)[tmp2]);
-				}
-			}
-			if(newIntVec.size()>0)
-			{
-				filteredAlignPair_Nor1Rcm2.push_back(pair< int, vector<int> > (oriAlignPair_Nor1Rcm2[tmp].first, newIntVec));
-			}
-			else
-			{}
-		}
-
-		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1.size(); tmp++)
-		{
-			vector<int> newIntVec;
-			tmpAlignInfo_1 = norAlignmentInfo_PE_2[oriAlignPair_Nor2Rcm1[tmp].first];
-			for(int tmp2 = 0; tmp2 < (oriAlignPair_Nor2Rcm1[tmp].second).size(); tmp2++)
-			{
-				tmpAlignInfo_2 = rcmAlignmentInfo_PE_1[(oriAlignPair_Nor2Rcm1[tmp].second)[tmp2]];
-				if(((tmpAlignInfo_1->SJstrand == "+")&&(tmpAlignInfo_2->SJstrand == "-"))
-					||((tmpAlignInfo_1->SJstrand == "-")&&(tmpAlignInfo_2->SJstrand == "+"))
-					||(tmpAlignInfo_1->SJstrand == "X")||(tmpAlignInfo_2->SJstrand == "X"))
-				{
-					continue; //conflict 
-					//newIntVec.push_back(tmp2);
-				}	
-				else
-				{
-					newIntVec.push_back((oriAlignPair_Nor2Rcm1[tmp].second)[tmp2]);
-				}
-			}
-			if(newIntVec.size()>0)
-			{
-				filteredAlignPair_Nor2Rcm1.push_back(pair< int, vector<int> > (oriAlignPair_Nor2Rcm1[tmp].first, newIntVec));
-			}
-			else
-			{}
-		}		
-	}*/
 
 	string getTmpPairedAlignInfoStr(const string& readName_1, 
 		const string& readName_2)

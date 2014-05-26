@@ -184,60 +184,6 @@ isvalid(char c) {
 	return (base2int(c) != 4);
 }
 
-void
-bit2misinfo(string read, string chrom_seq, size_t mis_bit, size_t pre_map_len, vector<Mismatch>& mis_pos)
-{
-	size_t merged_len = read.length();
-	size_t selector_bit = LEAST_SIG_BIT << (merged_len - 1);
-	const char* read_cstr = read.c_str();
-	const char* chrom_cstr = chrom_seq.c_str();
-	for (size_t i = 0; i < merged_len; ++i)
-	{
-		if ((selector_bit >> i) & mis_bit)
-		{
-			Mismatch new_mismatch(0, (int)(pre_map_len + i), chrom_cstr[i], read_cstr[i]);
-			mis_pos.push_back(new_mismatch);
-		}
-	}
-}
-
-void
-bit2misinfo(string read, string chrom_seq, size_t mis_bit, size_t pre_map_len, size_t prefix_len, vector<Mismatch>& mis_pos1, vector<Mismatch>& mis_pos2)
-{
-	size_t merged_len = read.length();
-	size_t selector_bit = LEAST_SIG_BIT << (merged_len - 1);
-	const char* read_cstr = read.c_str();
-	const char* chrom_cstr = chrom_seq.c_str();
-	for (size_t i = 0; i < merged_len; ++i)
-	{
-		if ((selector_bit >> i) & mis_bit)
-		{
-			Mismatch new_mismatch(0, (int)(pre_map_len + i), chrom_cstr[i], read_cstr[i]);
-			if(i < prefix_len)
-				mis_pos1.push_back(new_mismatch);
-			else
-				mis_pos2.push_back(new_mismatch);
-		}
-	}
-}
-
-/*void
-bit2misinfo(string read, string chrom_seq, size_t mis_bit, size_t pre_map_len, vector<Mismatch>& mis_pos)
-{
-	size_t merged_len = read.length();
-	size_t selector_bit = LEAST_SIG_BIT << (merged_len - 1);
-	const char* read_cstr = read.c_str();
-	const char* chrom_cstr = chrom_seq.c_str();
-	for (size_t i = merged_len; i > 0; --i)
-	{
-		if ((selector_bit >> (i - 1)) & mis_bit)
-		{
-			Mismatch new_mismatch(1, (int)(pre_map_len + (merged_len - i)), chrom_cstr[merged_len - i], read_cstr[merged_len - i]);
-			mis_pos.push_back(new_mismatch);
-		}
-	}
-}*/
-
 struct WordPair {
 	WordPair(const string &s);
 	WordPair() : upper(0), lower(0), bads(0) {}
@@ -266,7 +212,7 @@ struct WordPair {
 	{
 		upper = 0;
 		lower = 0;
-		bads = 0; 
+		bads = 0;
 	}
 	void ps_combine(const size_t prefix_mask, const size_t suffix_mask, const size_t big_buff_mask, const WordPair& suffix_wp, WordPair &wp);
 
@@ -277,10 +223,10 @@ struct WordPair {
 	void duplicate_self(const size_t leftshift, WordPair &wp)
 	{
 		wp.upper = ((upper << leftshift)  + upper) ;
-		wp.lower = ((lower << leftshift)  + lower); 
+		wp.lower = ((lower << leftshift)  + lower);
 
 		//why?
-		wp.bads =  ((bads << leftshift) + bads);  
+		wp.bads =  ((bads << leftshift) + bads);
 	}
 
 	Kmer get_kmer(size_t st, size_t end)
@@ -302,7 +248,7 @@ struct WordPair {
 			else
 			{
 				kmer = (kmer << 2) + (((cur_bit & upper) != 0) << 1) + ((cur_bit & lower) != 0);
-			}				
+			}
 		}
 
 		return Kmer(good_hit, kmer);

@@ -21,7 +21,7 @@ compareJunction: directories
 	g++  $(CFLAGS) -o $(OUTPUTDIR)compareJunction compareJunction.cpp
 	
 clean:
-	rm $(OUTPUTDIR)*
+	rm $(OUTPUTDIR)alignAll
 
 directories:
 	mkdir -p $(OUTPUTDIR)

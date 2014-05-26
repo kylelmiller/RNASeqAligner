@@ -3,10 +3,7 @@
 
 #include <string>
 #include <string.h>
-#include "mismatch.h"
 using namespace std;
-
-class Bwtmap_Info;
 
 class Jump_Code
 {
@@ -22,6 +19,14 @@ public:
 	
 	~Jump_Code()
 	{}
+
+	string int_to_str(int numerical)
+	{
+			char c[100];
+			sprintf(c,"%d",numerical);
+			string str(c);
+			return str;
+	}
 	
 	string toString()
 	{
@@ -49,6 +54,13 @@ public:
 	Splice_Info()
 	{ 
 		mapped_len = -1;	
+	}
+	string int_to_str(int numerical)
+	{
+			char c[100];
+			sprintf(c,"%d",numerical);
+			string str(c);
+			return str;
 	}
 
 	Splice_Info(const Splice_Info& copy_info)
@@ -546,7 +558,6 @@ public:
 	size_t start_contig;
 	size_t end_contig;
 };
-
 
 class Fusion_Splice
 {

@@ -37,7 +37,7 @@ public:
 	Unfixed_Tail(int tail_length, int mapPos, string mapChrName)
 	{
 		unfixedTailLength = tail_length;
-		midPartMapPosInChr = midPartMapPosInChr;
+		midPartMapPosInChr = mapPos;
 		midPartMapChrName = mapChrName;
 	}
 

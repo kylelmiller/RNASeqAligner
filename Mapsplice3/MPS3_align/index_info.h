@@ -41,17 +41,13 @@ public:
 	unsigned int indexSize; //2654911539  //sequence length + 1, the length of sa-lcp-down-next 
 	//omp_lock_t lock;
 
-	/*void generateSecondLevelIndexLengthVec()
+	string int_to_str(int numerical)
 	{
-		for(int tmpChrInt = 0; tmpChrInt < chromNum; tmpChrInt ++)
-		{
-			for(int tmpChrPartInt = 1; tmpChrPartInt < secondLevelIndexPartsNum[tmpChrInt]; tmpChrPartInt ++)
-			{
-				secondLevelIndexLengthVec.push_back(secondLevelIndexNormalSize+1);
-			}
-
-		}
-	}*/
+			char c[100];
+			sprintf(c,"%d",numerical);
+			string str(c);
+			return str;
+	}
 
 	string getInvalidSecondLevelIndexNOstr()
 	{

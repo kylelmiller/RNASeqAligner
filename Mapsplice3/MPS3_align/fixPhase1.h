@@ -139,49 +139,4 @@ public:
 		gapInfo_Rcm2->fixGapInPath(pathInfo_Rcm2, segInfo_Rcm2, 
 			indexInfo, (readInfo->readInfo_pe2).rcmReadSeq, (readInfo->readInfo_pe2).readSeqLength);			
 	}
-
-	void coutDebugInfo(PE_Read_Info* readInfo, Index_Info* indexInfo)
-	{
-				cout << endl << "##### readName_1: " << (readInfo->readInfo_pe1).readName << " #####" << endl;
-				cout << "##### readName_2: " << (readInfo->readInfo_pe2).readName << " #####"<< endl;
-
-				cout << endl << "## do segment mapping for Nor_1 ##" << endl;
-				cout << segInfo_Nor1->segInfoStr(indexInfo) << endl;
-				cout << pathInfo_Nor1->possiPathStr() << endl;
-				cout << pathInfo_Nor1->fixedPathVecStr(indexInfo, segInfo_Nor1) << endl;
-				cout << pathInfo_Nor1->finalFixedPathStr(indexInfo) << endl;
-
-		    	cout << endl << "## do segment mapping for Rcm_1 ##" << endl;
-		    	cout << segInfo_Rcm1->segInfoStr(indexInfo) << endl;
-				cout << pathInfo_Rcm1->possiPathStr() << endl;
-				cout << pathInfo_Rcm1->fixedPathVecStr(indexInfo, segInfo_Rcm1) << endl;
-				cout << pathInfo_Rcm1->finalFixedPathStr(indexInfo) << endl;
-
-				cout << endl << "## do segment mapping for Nor_2 ##" << endl;
-				cout << segInfo_Nor2->segInfoStr(indexInfo) << endl;
-				cout << pathInfo_Nor2->possiPathStr() << endl;
-				cout << pathInfo_Nor2->fixedPathVecStr(indexInfo, segInfo_Nor2) << endl;
-				cout << pathInfo_Nor2->finalFixedPathStr(indexInfo) << endl;
-
-				cout << endl << "## do segment mapping for Rcm_2 ##" << endl;
-				cout << segInfo_Rcm2->segInfoStr(indexInfo) << endl;
-				cout << pathInfo_Rcm2->possiPathStr() << endl;
-				cout << pathInfo_Rcm2->fixedPathVecStr(indexInfo, segInfo_Rcm2) << endl;
-				cout << pathInfo_Rcm2->finalFixedPathStr(indexInfo) << endl;
-	}
-	/*void fixPhase1()
-	{
-			gapInfo_Nor1->fixGapInPath(pathInfo_Nor1, segInfo_Nor1, 
-				indexInfo, (readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe1).readSeqLength);
-
-			gapInfo_Rcm1->fixGapInPath(pathInfo_Rcm1, segInfo_Rcm1, 
-				indexInfo, (readInfo->readInfo_pe1).rcmReadSeq, (readInfo->readInfo_pe1).readSeqLength);
-			
-			gapInfo_Nor2->fixGapInPath(pathInfo_Nor2, segInfo_Nor2, 
-				indexInfo, (readInfo->readInfo_pe2).readSeq, (readInfo->readInfo_pe2).readSeqLength);
-
-			gapInfo_Rcm2->fixGapInPath(pathInfo_Rcm2, segInfo_Rcm2, 
-				indexInfo, (readInfo->readInfo_pe2).rcmReadSeq, (readInfo->readInfo_pe2).readSeqLength);	
-	}*/
-
 };

@@ -8,6 +8,11 @@ target/
 # ignore all files ending with ~
 *~
 
+# ignore eclipse files
+.cproject
+.project
+.pydevproject
+
 # ignore metadata folders
 .metadata
 

@@ -1,9 +1,22 @@
 /**********************************
- * Builds a suffix array on a given chromosome
- * The suffix array building code uses the DC3
- * algorithm which constructs the suffix array
- * in linear time. The algorithm is explained
- * in the paper "Linear Work Suffix Array Construction"
+ * This file:
+ *
+ * 1 - Builds a suffix array on a given chromosome
+ * 	The suffix array building code uses the DC3
+ * 	algorithm which constructs the suffix array
+ * 	in linear time. The algorithm is explained
+ * 	in the paper "Linear Work Suffix Array Construction".
+ *
+ * 2 - Builds a longest common prefix array for
+ * 	our suffix array. This allows for fastest query times
+ * 	by allowing the suffix array to be used like a suffix
+ * 	tree.
+ *
+ * 3 - Builds up, down and nextIndex tables.
+ * 	The reason for this is outlined in the paper "Optimal
+ * 	Exact String Matching Based on Suffix Arrays". These
+ * 	tables,	along with the lcp array, allows for suffix array
+ * 	queries to be done in O(k) time, where k is the query string.
  *********************************/
 
 #include <stdio.h>

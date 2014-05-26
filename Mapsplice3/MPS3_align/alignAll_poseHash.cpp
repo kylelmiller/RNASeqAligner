@@ -13,12 +13,18 @@
 #include <omp.h>
 #include <time.h>
 
+//#include "switch.h"
+#include "read_block_test.h"
+#include "bwtmap_info.h"
 #include "DoubleAnchorScore.h"
+#include "sbndm.h"
 #include "otherFunc.h"
 #include "index_info.h"
 #include "constantDefinitions.h"
 #include "segmentMapping.h"
+//#include "segmentMapping_secondLevel.h"
 #include "splice_info.h"
+#include "fixGapRelationParameters.h"
 #include "read_info.h"
 #include "seg_info.h"
 #include "gap_info.h"
@@ -32,7 +38,6 @@
 #include "fixOneEndUnmapped.h"
 #include "fixPhase1.h"
 #include "readSeqPreProcessing.h"
-#include "headerSection_info.h"
 
 #define PreIndexSize 268435456
 
@@ -62,9 +67,11 @@ unsigned int PairedReadNum = 0, BothUnmappedReadNum = 0, UnpairedReadNum = 0;
 
 int main(int argc, char**argv)
 {
-    if(argc != 9)
+    if(argc < 9)
 	{
+		//cout << "Executable <InputReads> <InputReads_PE> <OutputSAM> <threads_num> <Fasta_or_Fastq> <HumanOrMouse>" << endl;
 		cout << "Executable <InputReads> <InputReads_PE> <OutputDir> <threads_num> <Fasta_or_Fastq> <wholeGenomeIndexPrefix> <localIndexPrefix> <chromsomeDir>" << endl;
+
 		exit(0);
 	}
 
@@ -84,39 +91,61 @@ int main(int argc, char**argv)
 	///////////////////////   switches of seperate processes    ///////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////
 
-	bool Do_Phase1_Only = true;
+	bool Do_Phase1_Only = false;
+	//Do_Phase1_Only = true;
+
 	bool outputAlignInfoAndSamForAllPairedAlignmentBool = false;
-	bool removeAllIntermediateFilesBool = true;
-	bool DoSam2JuncBool = true;
-	bool load2ndLevelIndexBool = true;
-	bool DoRemappingOnUnmapEndReadsBool = true;
-	bool DoRemappingOnUnfixedHeadTailAlignmentBool = true;
+	outputAlignInfoAndSamForAllPairedAlignmentBool = true;
+
+	bool removeAllIntermediateFilesBool = false;
+	//removeAllIntermediateFilesBool = true;
+
+	bool DoSam2JuncBool = false;
+	DoSam2JuncBool = true;
+
+	bool load2ndLevelIndexBool = false;
+	load2ndLevelIndexBool = true;
+
+	bool load2ndLevelIndexBool_compressedSize = false;
+	load2ndLevelIndexBool_compressedSize = true;
+
+	bool DoRemappingOnUnmapEndReadsBool = false;
+	DoRemappingOnUnmapEndReadsBool = true;
+
+	bool DoRemappingOnUnfixedHeadTailAlignmentBool = false;
+	DoRemappingOnUnfixedHeadTailAlignmentBool = true;
+
+
 
 	if(Do_Phase1_Only)
 	{
 		log_ofs << "Do_Phase1 only!" << endl;
 		DoSam2JuncBool = false;
 		load2ndLevelIndexBool = false;
+		load2ndLevelIndexBool_compressedSize = false;
 		DoRemappingOnUnmapEndReadsBool = false;
 		DoRemappingOnUnfixedHeadTailAlignmentBool = false;
 	}	
 	else
 	{
 		log_ofs << "Do_Phase1_Phase2! " << endl;
-		DoSam2JuncBool = true;
-		load2ndLevelIndexBool = true;
-		DoRemappingOnUnmapEndReadsBool = true;
-		DoRemappingOnUnfixedHeadTailAlignmentBool = true;
+		DoSam2JuncBool = true;//false;
+		load2ndLevelIndexBool = true;//false;
+		load2ndLevelIndexBool_compressedSize = true;//false;
+		DoRemappingOnUnmapEndReadsBool = true;//false;
+		DoRemappingOnUnfixedHeadTailAlignmentBool = true;//false;
 	}
 
 	int normalRecordNum_1stMapping = 1000000;
 	int normalRecordNum_fixOneEndUnmapped = 1000000;
-	int normalRecordNum_fixHeadTail = 1000000;
+	int normalRecordNum_fixHeadTail = 1000000;//000000;
+
 	int readTotalNum = 0;
 
 	log_ofs << "normalRecordNum_1stMapping: " << normalRecordNum_1stMapping << endl;
 	log_ofs << "normalRecordNum_fixOneEndUnmapped: " << normalRecordNum_fixOneEndUnmapped << endl;
 	log_ofs << "normalRecordNum_fixHeadTail: " << normalRecordNum_fixHeadTail << endl;
+
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////
@@ -126,12 +155,13 @@ int main(int argc, char**argv)
 	struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... MPS starts ......" << endl << endl;  
-	log_ofs << endl << "[" << asctime(local) << "... MPS starts ......" << endl << endl;
+	log_ofs << endl << "[" << asctime(local) << "... MPS starts ......" << endl << endl; 
+	//////////////////////////////////////////////////////              LOAD INDEX           ////////////////////////////////////////////////////////////////
 
-	/////////////////  LOAD INDEX  /////////////////
 	log_ofs << "Reads input 1: " << argv[1] << endl;
 	log_ofs << "Reads input 2: " << argv[2] << endl;
 	log_ofs << "output directory: " << argv[3] << endl;
+	//cout << "Annotation: " << argv[4] << endl;
 	log_ofs << "threads_num: " << argv[4] << endl;
 	log_ofs << "data format: " << argv[5] << endl;
 	log_ofs << "wholeGenomeIndex: " << argv[6] << endl;
@@ -141,11 +171,13 @@ int main(int argc, char**argv)
     char *InputReadFile = argv[1];//read sample, exacted from fastq file every time
     char *InputReadFile_PE = argv[2];// another end read for pair-end reads
 
-	omp_set_num_threads(atoi(argv[4]));
+	string threadsNumStr = argv[4];
+	int threads_num = atoi(threadsNumStr.c_str());
+	omp_set_num_threads(threads_num);
 
 	string fastqOrFasta = argv[5];
 
-	bool InputAsFastq;
+	bool InputAsFastq = false; 
 	if((fastqOrFasta == "fastq")||(fastqOrFasta == "Fastq"))
 	{
 		InputAsFastq = true;
@@ -156,54 +188,76 @@ int main(int argc, char**argv)
 	}
 	else
 	{
-		cout << "Incorrect input read format: Please specify 'Fastq' or 'Fasta'." << endl;
-		log_ofs << "Incorrect input read format: Please specify 'Fastq' or 'Fasta'." << endl;
+		cout << "input read format error" << endl;
+		log_ofs << "input read format error" << endl;
 		exit(0);
 	}
+
 	
-    string indexStr = argv[6];
-    string chromDirStr = argv[8];
-    string secondLevelIndexStr = argv[7];
-
-    indexStr.append("/");
-    chromDirStr.append("/");
-    secondLevelIndexStr.append("/");
-
-    string preIndexArrayPreStr = indexStr;
-
 	//////////////////////////////////////////////////////////              LOAD INDEX           ////////////////////////////////////////////////////////////////
 	#ifdef CAL_TIME
 	read_file_begin = clock();
 	#endif
-
 	nowtime = time(NULL);
+	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... start to load whole genome index ......" << endl << endl; 
 	log_ofs << endl << "[" << asctime(local) << "... start to load whole genome index ......" << endl << endl; 
 
+    //cout << "start to load preIndex ..." << endl;
     log_ofs << "start to load preIndex ..." << endl;
+	   
 
-	ifstream preIndexMapLengthArray_ifs((preIndexArrayPreStr + "_MapLength").c_str(), ios::binary);
-	ifstream preIndexIntervalStartArray_ifs((preIndexArrayPreStr + "_IntervalStart").c_str(), ios::binary);
-	ifstream preIndexIntervalEndArray_ifs((preIndexArrayPreStr + "_IntervalEnd").c_str(), ios::binary);
+    string preIndexArrayPreStr;
+    string indexStr;// = "/data/homes/lxauky/adSA_table/mm9_table/testAll2_table/testAll2Index";
+    string chromDirStr;
+    string secondLevelIndexStr;
 
-	int* preIndexMapLengthArray = (int*)malloc(PreIndexSize * sizeof(int));
+    indexStr = argv[6];
+    preIndexArrayPreStr = indexStr;
+    chromDirStr = argv[8];
+    secondLevelIndexStr = argv[7];
+
+    preIndexArrayPreStr.append("/");
+    indexStr.append("/");
+    chromDirStr.append("/");
+    secondLevelIndexStr.append("/");
+
+	string preIndexMapLengthArrayStr = preIndexArrayPreStr;
+	preIndexMapLengthArrayStr.append("_MapLength"); 
+	ifstream preIndexMapLengthArray_ifs(preIndexMapLengthArrayStr.c_str(), ios::binary);
+
+	string preIndexIntervalStartArrayStr = preIndexArrayPreStr;
+	preIndexIntervalStartArrayStr.append("_IntervalStart");
+	ifstream preIndexIntervalStartArray_ifs(preIndexIntervalStartArrayStr.c_str(), ios::binary);
+
+	string preIndexIntervalEndArrayStr = preIndexArrayPreStr;
+	preIndexIntervalEndArrayStr.append("_IntervalEnd");
+	ifstream preIndexIntervalEndArray_ifs(preIndexIntervalEndArrayStr.c_str(), ios::binary);
+
+
+	int* preIndexMapLengthArray;
+	preIndexMapLengthArray = (int*)malloc(PreIndexSize * sizeof(int));
 	preIndexMapLengthArray_ifs.read((char*)preIndexMapLengthArray, PreIndexSize * sizeof(int));
 
-	unsigned int *preIndexIntervalStartArray = (unsigned int*)malloc(PreIndexSize * sizeof(unsigned int));
+	unsigned int *preIndexIntervalStartArray;
+    preIndexIntervalStartArray = (unsigned int*)malloc(PreIndexSize * sizeof(unsigned int));
     preIndexIntervalStartArray_ifs.read((char*)preIndexIntervalStartArray, PreIndexSize * sizeof(int));
 
-	unsigned int *preIndexIntervalEndArray = (unsigned int*)malloc(PreIndexSize * sizeof(unsigned int));
+	unsigned int *preIndexIntervalEndArray;
+    preIndexIntervalEndArray = (unsigned int*)malloc(PreIndexSize * sizeof(unsigned int));
     preIndexIntervalEndArray_ifs.read((char*)preIndexIntervalEndArray, PreIndexSize * sizeof(int));
 
  	log_ofs << "finish loading preIndex ..." << endl;
 
- 	ifstream SA_file_ifs((indexStr + "_SA").c_str(),ios::binary);
-	ifstream lcpCompress_file_ifs((indexStr + "_lcpCompress").c_str(),ios::binary);
-	ifstream childTab_file_ifs((indexStr + "_childTab").c_str(),ios::binary);
-	ifstream verifyChild_file_ifs((indexStr + "_detChild").c_str(),ios::binary);
-	ifstream chrom_bit_file_ifs((indexStr + "_chrom").c_str(),ios::binary);
-	ifstream parameter_file_ifs((indexStr + "_parameter").c_str(),ios::binary);
+	string SA_file = indexStr; SA_file.append("_SA"); ifstream SA_file_ifs(SA_file.c_str(),ios::binary); 
+	//CompressIndex
+	string lcpCompress_file = indexStr; lcpCompress_file.append("_lcpCompress"); ifstream lcpCompress_file_ifs(lcpCompress_file.c_str(),ios::binary);
+	string childTab_file = indexStr; childTab_file.append("_childTab"); ifstream childTab_file_ifs(childTab_file.c_str(),ios::binary);
+	string verifyChild_file = indexStr; verifyChild_file.append("_detChild"); ifstream verifyChild_file_ifs(verifyChild_file.c_str(),ios::binary);
+	string chrom_bit_file = indexStr; chrom_bit_file.append("_chrom"); ifstream chrom_bit_file_ifs(chrom_bit_file.c_str(),ios::binary);
+
+	string parameter_file = indexStr; parameter_file.append("_parameter"); ifstream parameter_file_ifs(parameter_file.c_str(),ios::binary);
 
 	Index_Info* indexInfo = new Index_Info(parameter_file_ifs);
 
@@ -220,11 +274,12 @@ int main(int argc, char**argv)
 	log_ofs << "chromSize = " <<(indexInfo->chromString).size() << endl;
 	
 	log_ofs << "start to load every chromosome" << endl;
-
+	//chromStr[0] = 
 	(indexInfo->chromStr).push_back((indexInfo->chromString).substr(0, (indexInfo->chrEndPosInGenome)[0]+1));
 	(indexInfo->chromLength).push_back(((indexInfo->chrEndPosInGenome)[0]+1));
 	for(int tmp = 1; tmp < indexInfo->chromNum; tmp++)
 	{
+		//chromStr[tmp] = 
 		(indexInfo->chromStr).push_back((indexInfo->chromString).substr((indexInfo->chrEndPosInGenome)[tmp-1]+2, 
 			(indexInfo->chrEndPosInGenome)[tmp]-(indexInfo->chrEndPosInGenome)[tmp-1]-1));	
 		(indexInfo->chromLength).push_back(((indexInfo->chrEndPosInGenome)[tmp]-(indexInfo->chrEndPosInGenome)[tmp-1]-1));
@@ -266,8 +321,6 @@ int main(int argc, char**argv)
 	cout << endl << "[" << asctime(local) << "... whole genome index loaded ......" << endl << endl; 
 	log_ofs << endl << "[" << asctime(local) << "... whole genome index loaded ......" << endl << endl;
 
-	HeaderSection_Info* headerSectionInfo = new HeaderSection_Info(indexInfo);	
-
 	//////////////////////////////////////////////////       finish LOADing INDEX           ////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////       finish LOADing INDEX           ////////////////////////////////////////////////////////////////
 
@@ -277,28 +330,41 @@ int main(int argc, char**argv)
 
 	/* align main*/
 
-   	string testClassFileStr = outputDirStr + "/output.sam";
-	string tmpAlignInfoForDebug = testClassFileStr+ ".alignInfoDebug";
-	string tmpAlignUnmap = testClassFileStr + ".unmap";
-	string tmpAlignCompleteRead = testClassFileStr + ".completePair.sam";
-	string tmpAlignBothEndsUnmapped = testClassFileStr + ".bothEndsUnmapped.sam";
-	string tmpAlignIncompletePair = testClassFileStr + ".incomplete.alignInfo";
-	string tmpAlignIncompletePair_SAM = testClassFileStr + ".incompletePair.sam";
-	string tmpAlignCompleteRead_alignInfo = testClassFileStr + ".completePair.sam_alignInfo";
-	string tmpAlignOneEndUnmapped = testClassFileStr + ".oneEndUnmapped";
-	
-	tmpAlignOneEndUnmapped += Do_Phase1_Only
-		? ".sam"
-		: ".alignInfo";
 
-	ofstream tmpAlignOneEndUnmapped_ofs(tmpAlignOneEndUnmapped.c_str());
-	ofstream tmpAlignBothEndsUnmapped_ofs(tmpAlignBothEndsUnmapped.c_str());
-	ofstream tmpAlignIncompletePair_ofs(tmpAlignIncompletePair.c_str());
-	ofstream tmpAlignIncompletePair_SAM_ofs(tmpAlignIncompletePair_SAM.c_str());
-	ofstream tmpAlignCompleteRead_alignInfo_ofs(tmpAlignCompleteRead_alignInfo.c_str());
+
+   	string testClassFileStr = outputDirStr + "/output.sam";
+   	//testClassFileStr += ".testClass.sam";
+   	//ofstream testClassFile_ofs(testClassFileStr.c_str());
+
+	string tmpAlignInfoForDebug = testClassFileStr+ ".alignInfoDebug";
+
+	string tmpAlignUnmap = testClassFileStr + ".unmap";
+
+	string tmpAlignCompleteRead = testClassFileStr + ".completePair.sam";
 	ofstream tmpAlignCompleteRead_ofs(tmpAlignCompleteRead.c_str());
 
+	string tmpAlignOneEndUnmapped = testClassFileStr + ".oneEndUnmapped";
+	
+	if(Do_Phase1_Only)
+		tmpAlignOneEndUnmapped += ".sam";	
+	else
+		tmpAlignOneEndUnmapped += ".alignInfo";
+
+	ofstream tmpAlignOneEndUnmapped_ofs(tmpAlignOneEndUnmapped.c_str());
+
+	string tmpAlignBothEndsUnmapped = testClassFileStr + ".bothEndsUnmapped.sam";
+	ofstream tmpAlignBothEndsUnmapped_ofs(tmpAlignBothEndsUnmapped.c_str());
+
+	string tmpAlignIncompletePair = testClassFileStr + ".incomplete.alignInfo"; 
+	ofstream tmpAlignIncompletePair_ofs(tmpAlignIncompletePair.c_str());
+
+	string tmpAlignIncompletePair_SAM = testClassFileStr + ".incompletePair.sam"; 
+	ofstream tmpAlignIncompletePair_SAM_ofs(tmpAlignIncompletePair_SAM.c_str());	
+
 	string tmpIntermediateJunctionFile = testClassFileStr + ".inter.junc";
+
+	string tmpAlignCompleteRead_alignInfo = testClassFileStr + ".completePair.sam_alignInfo";
+	ofstream tmpAlignCompleteRead_alignInfo_ofs(tmpAlignCompleteRead_alignInfo.c_str());
 
 	ifstream inputRead_ifs(InputReadFile);
 	ifstream inputRead_PE_ifs(InputReadFile_PE);
@@ -306,30 +372,41 @@ int main(int argc, char**argv)
     string line1, line2, line3, line4, line1_PE, line2_PE, line3_PE, line4_PE;
     string line2_afterProcess, line2_PE_afterProcess;
 
-	int normalRecordNum = normalRecordNum_1stMapping;
+	int normalRecordNum = normalRecordNum_1stMapping; //1000000;//1500000;
 
 	#ifdef DEBUG_INFO
 	normalRecordNum = 1;
 	#endif
 
+	bool EndOfRecord = false;
+	int tmpTurn = 0;
 	int realRecordNum;
 
 	int readPairNum = 0;
 
 	vector<string> readName1Vec(normalRecordNum);
 	vector<string> readSeq1Vec(normalRecordNum);
+	//vector<string> readSeq1Vec_RC(normalRecordNum);
 	vector<string> readName2Vec(normalRecordNum);
 	vector<string> readSeq2Vec(normalRecordNum);
 
 	vector<string> PeAlignSamStrVec_complete(normalRecordNum);
+
 	vector<string> PeAlignInfoStrVec_inCompletePair(normalRecordNum);
+
 	vector<string> PeAlignInfoStrVec_oneEndUnmapped(normalRecordNum);
+
 	vector<string> PeAlignSamStrVec_bothEndsUnmapped(normalRecordNum);
+
 	vector<string> PeAlignSamStrVec_inCompletePair(normalRecordNum);
-	vector<string> PeAlignInfoStrVec_completePaired(normalRecordNum);
+
+	//if(outputAlignInfoAndSamForAllPairedAlignmentBool)
+	//{
+		vector<string> PeAlignInfoStrVec_completePaired(normalRecordNum);
+	//}
 
 	nowtime = time(NULL);
-
+	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... 1st mapping process starts ......" << endl << endl; 
 	log_ofs << endl << "[" << asctime(local) << "... 1st mapping process starts ......" << endl << endl; 
@@ -338,14 +415,19 @@ int main(int argc, char**argv)
 
 	InputReadPreProcess* readPreProcessInfo = new InputReadPreProcess();
 
-	bool endOfRecord = false;
-	while(!endOfRecord)
+	for(tmpTurn = 0; ; tmpTurn++)
 	{
 		#ifdef CAL_TIME		
 		input_begin = clock();
 		#endif
 
+		if(EndOfRecord)
+			break;
+
 		int recordNum = normalRecordNum;
+
+		//cout << "start to read Fasta file, turn: " << tmpTurn + 1 << endl;
+
 		realRecordNum = normalRecordNum;
 
 		for(int recordNumTmp = 0; recordNumTmp < recordNum; recordNumTmp++)
@@ -353,7 +435,7 @@ int main(int argc, char**argv)
     		if((inputRead_ifs.eof())||(inputRead_PE_ifs.eof()))
     		{
 				realRecordNum = recordNumTmp;
-				endOfRecord = true;
+				EndOfRecord = true;
 				break;    			
     		}
 
@@ -362,16 +444,21 @@ int main(int argc, char**argv)
     		if((inputRead_ifs.eof())||(inputRead_PE_ifs.eof()))
     		{
 				realRecordNum = recordNumTmp;
-				endOfRecord = true;
+				EndOfRecord = true;
 				break;    			
     		}
     		
     		readName1Vec[recordNumTmp] = line1.substr(1);
     		getline(inputRead_ifs, line2); // readSeq_1
 
+    		//readSeq1Vec[recordNumTmp] = line2;
+    		//int readLength_1 = line2.length();
+
     		line2_afterProcess = readPreProcessInfo->upperCaseReadSeq(line2);
+    		//line2_afterProcess = readPreProcessInfo->readPreProcess_upperCase_trim(line2);
     		readSeq1Vec[recordNumTmp] = line2_afterProcess;
     		int readLength_1 = line2_afterProcess.length();
+
 
 			if(readLength_1 > readLengthMax_tmp)
 			{
@@ -383,11 +470,15 @@ int main(int argc, char**argv)
     			getline(inputRead_ifs, line4);
     		}
 
-    		getline(inputRead_PE_ifs, line1_PE);
+    		getline(inputRead_PE_ifs, line1_PE); // readName_2
     		readName2Vec[recordNumTmp] = line1_PE.substr(1);
     		getline(inputRead_PE_ifs, line2_PE);
     	
+    		//readSeq2Vec[recordNumTmp] = line2_PE;
+    		//int readLength_2 = line2_PE.length();
+    	    		
     		line2_PE_afterProcess = readPreProcessInfo->upperCaseReadSeq(line2_PE);
+    		//line2_PE_afterProcess = readPreProcessInfo->readPreProcess_upperCase_trim(line2_PE);
     		readSeq2Vec[recordNumTmp] = line2_PE_afterProcess;
     		int readLength_2 = line2_PE_afterProcess.length();
 
@@ -407,15 +498,40 @@ int main(int argc, char**argv)
 		#ifdef CAL_TIME	
 		input_end = clock();
 		input_cost = input_cost + input_end - input_begin;
+		#endif
+		//cout << "realRecordNum: " << realRecordNum << " turn: " << tmpTurn+1 << endl;
+
+		//cout << "finish reading Fasta/Fastq file, turn: " << tmpTurn+1 << endl;
+
+		//cout << "start to fix mid, turn: " << tmpTurn+1 << endl;
+
+		#ifdef CAL_TIME	
 		align_begin = clock();
 		#endif
 
+		omp_set_num_threads(threads_num);
+		
 		#pragma omp parallel for
 		for(int tmpOpenMP = 0; tmpOpenMP < realRecordNum; tmpOpenMP++)
 		{
+			//#ifdef DEBUG_INFO
+			//readPairNum ++;
+			//if((readPairNum != 928)&&(readPairNum < 847283))  
+			//	continue;
+			//if(readPairNum > 98880)
+			//	exit(1);
+				//continue;
+				//break;
+			//#endif
+			//cout << "readName: " << readName1Vec[tmpOpenMP] << endl << endl;
 			#ifdef CAL_TIME
 			getReadInfo_begin = clock();
 			#endif
+
+			//cout << "readName_1: " << readName1Vec[tmpOpenMP] << endl;
+			//cout << "readSeq_1: " << endl << readSeq1Vec[tmpOpenMP] << endl;
+			//cout << "readName_2: " << readName2Vec[tmpOpenMP] << endl;
+			//cout << "readSeq_2: " << endl << readSeq2Vec[tmpOpenMP] << endl;
 
 			PE_Read_Info* readInfo = new PE_Read_Info();
 
@@ -438,6 +554,7 @@ int main(int argc, char**argv)
     		string rcmReadSeq_2 = read_RC_PE;
     		(readInfo->readInfo_pe2).rcmReadSeq = rcmReadSeq_2.substr(0, (readInfo->readInfo_pe2).readSeqLength);
 			
+
 			#ifdef CAL_TIME 
 			getReadInfo_end = clock();
 			getReadInfo_cost = getReadInfo_cost + getReadInfo_end - getReadInfo_begin;
@@ -445,22 +562,50 @@ int main(int argc, char**argv)
     		segMap_begin = clock();
     		#endif
 
+    		
 			FixPhase1Info* fixPhase1Info = new FixPhase1Info();
 
 			fixPhase1Info->fixPhase1_segInfo(read, read_RC, read_PE, read_RC_PE, sa, lcpCompress, childTab, 
 				chrom, verifyChild, indexInfo, preIndexMapLengthArray, preIndexIntervalStartArray, preIndexIntervalEndArray,
 				readInfo);
 
+				//cout << endl << "## do segment mapping for Nor_1 ##" << endl;
+				//cout << (fixPhase1Info->segInfo_Nor1)->segInfoStr(indexInfo) << endl;
+				//cout << pathInfo_Nor1->possiPathStr() << endl;
+				//cout << pathInfo_Nor1->fixedPathVecStr(indexInfo, segInfo_Nor1) << endl;
+				//cout << pathInfo_Nor1->finalFixedPathStr(indexInfo) << endl;
+
+		    	//cout << endl << "## do segment mapping for Rcm_1 ##" << endl;
+		    	//cout << (fixPhase1Info->segInfo_Rcm1)->segInfoStr(indexInfo) << endl;
+				//cout << pathInfo_Rcm1->possiPathStr() << endl;
+				//cout << pathInfo_Rcm1->fixedPathVecStr(indexInfo, segInfo_Rcm1) << endl;
+				//cout << pathInfo_Rcm1->finalFixedPathStr(indexInfo) << endl;
+
+				//cout << endl << "## do segment mapping for Nor_2 ##" << endl;
+				//cout << (fixPhase1Info->segInfo_Nor2)->segInfoStr(indexInfo) << endl;
+				//cout << pathInfo_Nor2->possiPathStr() << endl;
+				//cout << pathInfo_Nor2->fixedPathVecStr(indexInfo, segInfo_Nor2) << endl;
+				//cout << pathInfo_Nor2->finalFixedPathStr(indexInfo) << endl;
+
+				//cout << endl << "## do segment mapping for Rcm_2 ##" << endl;
+				//cout << (fixPhase1Info->segInfo_Rcm2)->segInfoStr(indexInfo) << endl;
+				//cout << pathInfo_Rcm2->possiPathStr() << endl;
+				//cout << pathInfo_Rcm2->fixedPathVecStr(indexInfo, segInfo_Rcm2) << endl;
+				//cout << pathInfo_Rcm2->finalFixedPathStr(indexInfo) << endl;		
+
+ 
 			#ifdef CAL_TIME
 			segMap_end = clock();
 			segMap_cost = segMap_cost + segMap_end - segMap_begin;
 
 			getPath_begin = clock();
 			#endif
+			     
 
 			fixPhase1Info->fixPhase1_pathInfo();
 			//cout << "finish fixing pathInfo ..." << endl; 
 			//cout << fixPhase1Info->pathInfo_Nor1->possiPathStr() << endl;
+
 
 			#ifdef CAL_TIME
 			getPath_end = clock();
@@ -469,7 +614,9 @@ int main(int argc, char**argv)
 			fixGap_begin = clock();
 			#endif
 
+
 			fixPhase1Info->fixPhase1_gapInfo(readInfo, indexInfo);
+
 
 			#ifdef CAL_TIME
 			fixGap_end = clock();
@@ -481,6 +628,7 @@ int main(int argc, char**argv)
 			PE_Read_Alignment_Info* peAlignInfo = new PE_Read_Alignment_Info(
 				fixPhase1Info->pathInfo_Nor1, fixPhase1Info->pathInfo_Rcm1, 
 				fixPhase1Info->pathInfo_Nor2, fixPhase1Info->pathInfo_Rcm2, indexInfo);
+
 
 			peAlignInfo->pairingAlignment();
 			peAlignInfo->chooseBestAlignment();
@@ -511,7 +659,7 @@ int main(int argc, char**argv)
 					/*PeAlignSamStrVec_complete[tmpOpenMP] = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
 					 	(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);*/
-					PeAlignSamStrVec_complete[tmpOpenMP] = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(
+					PeAlignSamStrVec_complete[tmpOpenMP] = peAlignInfo->getSAMformatForFinalPair(
 					 	(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);
 					if(outputAlignInfoAndSamForAllPairedAlignmentBool)
@@ -535,7 +683,7 @@ int main(int argc, char**argv)
 					/*PeAlignSamStrVec_inCompletePair[tmpOpenMP] = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
 					 	(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);*/
-					PeAlignSamStrVec_inCompletePair[tmpOpenMP] = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(
+					PeAlignSamStrVec_inCompletePair[tmpOpenMP] = peAlignInfo->getSAMformatForFinalPair(
 					 	(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);
 				}
@@ -550,7 +698,7 @@ int main(int argc, char**argv)
 						/*PeAlignInfoStrVec_oneEndUnmapped[tmpOpenMP] = peAlignInfo->getTmpPEreadAlignInfoInSAMformat(
 			 				(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 							(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);*/ 
-						PeAlignInfoStrVec_oneEndUnmapped[tmpOpenMP] = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
+						PeAlignInfoStrVec_oneEndUnmapped[tmpOpenMP] = peAlignInfo->getSAMformatForUnpairedAlignments(
 							(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
 							(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);
 					}
@@ -660,6 +808,7 @@ int main(int argc, char**argv)
 		output_end = clock();
 		output_cost = output_cost + output_end - output_begin;
 		#endif
+		//cout << "finish output, turn: " << tmpTurn+1 << endl << endl;
 
 	}
 
@@ -668,6 +817,7 @@ int main(int argc, char**argv)
 	inputRead_ifs.close();
 	inputRead_PE_ifs.close();
 	tmpAlignCompleteRead_ofs.close();
+	//tmpAlignIncompletePair_ofs.close();
 	tmpAlignOneEndUnmapped_ofs.close();
 	tmpAlignBothEndsUnmapped_ofs.close();
 	tmpAlignIncompletePair_SAM_ofs.close();
@@ -676,19 +826,18 @@ int main(int argc, char**argv)
 		tmpAlignIncompletePair_ofs.close();
 	}
 
-	free(preIndexMapLengthArray);
-	free(preIndexIntervalStartArray);
-	free(preIndexIntervalEndArray);
-	free(sa);
-	free(lcpCompress);
-	free(childTab);
-	free(chrom);
+	//fclose(fp_in);
+
+	free(preIndexMapLengthArray); free(preIndexIntervalStartArray); free(preIndexIntervalEndArray);
+	free(sa);free(lcpCompress);//free(child_up);free(child_down);free(child_next);
+	free(childTab);free(chrom);
 	
 	#ifdef CAL_TIME
 	overall_end = clock();
 	#endif
 	
 	nowtime = time(NULL);
+	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... 1st mapping process ends ......" << endl << endl; 
 	log_ofs << endl << "[" << asctime(local) << "... 1st mapping process ends ......" << endl << endl; 
@@ -764,18 +913,38 @@ int main(int argc, char**argv)
 				sprintf(tmpFileNumChar, "%d", tmpSecondLevelIndexNO);
 				string tmpFileNumStr = tmpFileNumChar;
 				
-				string inputIndexFileStr = secondLevelIndexStr + "/" + indexInfo->chrNameStr[tmpChrNO] + "/"
-					+ tmpFileNumStr + "/";
+				string inputIndexFileStr = secondLevelIndexStr + "/" + indexInfo->chrNameStr[tmpChrNO] + "/" 
+					//+ indexInfo->chrNameStr[tmpChrNO] + "_part."
+					+ tmpFileNumStr + "/";//"." + "test3_";
 
-				ifstream secondLevelChrom_file_ifs((inputIndexFileStr + "chrom").c_str(), ios::binary);
-				ifstream secondLevelSA_file_ifs((inputIndexFileStr + "SA").c_str(), ios::binary);
-				ifstream secondLevelLcp_file_ifs((inputIndexFileStr + "lcp").c_str(), ios::binary);
-				ifstream secondLevelUp_file_ifs((inputIndexFileStr + "up").c_str(), ios::binary);
-				ifstream secondLevelDown_file_ifs((inputIndexFileStr + "down").c_str(), ios::binary);
-				ifstream secondLevelNext_file_ifs((inputIndexFileStr + "next").c_str(), ios::binary);
-				ifstream secondLevelLcpCompress_file_ifs((inputIndexFileStr + "_lcpCompress").c_str(), ios::binary);
-				ifstream secondLevelChildTab_file_ifs((inputIndexFileStr + "childTab").c_str(), ios::binary);
-				ifstream secondLevelDetChild_file_ifs((inputIndexFileStr + "detChild").c_str(), ios::binary);
+
+				string secondLevelIndexFileChromStr = inputIndexFileStr + "chrom"; 
+				ifstream secondLevelChrom_file_ifs(secondLevelIndexFileChromStr.c_str(), ios::binary);
+				string secondLevelIndexFileSaStr = inputIndexFileStr + "SA";
+				ifstream secondLevelSA_file_ifs(secondLevelIndexFileSaStr.c_str(), ios::binary);
+
+				//if(!load2ndLevelIndexBool_compressedSize)
+				//{
+				
+					string secondLevelIndexFileLcpStr = inputIndexFileStr + "lcp";	
+					ifstream secondLevelLcp_file_ifs(secondLevelIndexFileLcpStr.c_str(), ios::binary);	
+					string secondLevelIndexFileUpStr = inputIndexFileStr + "up";	
+					ifstream secondLevelUp_file_ifs(secondLevelIndexFileUpStr.c_str(), ios::binary);
+					string secondLevelIndexFileDownStr = inputIndexFileStr + "down";	
+					ifstream secondLevelDown_file_ifs(secondLevelIndexFileDownStr.c_str(), ios::binary);
+					string secondLevelIndexFileNextStr = inputIndexFileStr + "next";	
+					ifstream secondLevelNext_file_ifs(secondLevelIndexFileNextStr.c_str(), ios::binary);
+				
+				//}
+				//else
+				//{
+					string secondLevelIndexFileLcpCompressStr = inputIndexFileStr + "_lcpCompress";	
+					ifstream secondLevelLcpCompress_file_ifs(secondLevelIndexFileLcpCompressStr.c_str(), ios::binary);	
+					string secondLevelIndexFileChildTabStr = inputIndexFileStr + "childTab";	
+					ifstream secondLevelChildTab_file_ifs(secondLevelIndexFileChildTabStr.c_str(), ios::binary);
+					string secondLevelIndexFileDetChildStr = inputIndexFileStr + "detChild";	
+					ifstream secondLevelDetChild_file_ifs(secondLevelIndexFileDetChildStr.c_str(), ios::binary);					
+				//}
 
 				int sizeOfIndex = indexInfo->secondLevelIndexNormalSize + 1;
 				char* tmpSecondLevelChrom = (char*)malloc(sizeOfIndex * sizeof(char));
@@ -783,7 +952,6 @@ int main(int argc, char**argv)
 				{
 					tmpSecondLevelChrom[tmpMallocSpace] = '0';
 				}
-
 				secondLevelChrom_file_ifs.read((char*)tmpSecondLevelChrom, sizeOfIndex * sizeof(char));
 				if(tmpSecondLevelChrom[sizeOfIndex-1] != 'X')
 				{
@@ -799,8 +967,7 @@ int main(int argc, char**argv)
 						No_ATGC_Bool = false;
 						break;
 					}
-				}
-
+				}				
 				if(No_ATGC_Bool)
 				{
 					(indexInfo->invalidSecondLevelIndexNOset).insert(secondLevelIndexNO + 1);
@@ -812,27 +979,55 @@ int main(int argc, char**argv)
 				secondLevelSA_file_ifs.read((char*)tmpSecondLevelSa, sizeOfIndex * sizeof(unsigned int));
 				secondLevelSa.push_back(tmpSecondLevelSa);
 
-				BYTE* tmpSecondLevelLcpCompress = (BYTE*)malloc(sizeOfIndex * sizeof(BYTE));
-				secondLevelLcpCompress_file_ifs.read((char*)tmpSecondLevelLcpCompress, sizeOfIndex * sizeof(BYTE));
-				secondLevelLcpCompress.push_back(tmpSecondLevelLcpCompress);
+				if(!load2ndLevelIndexBool_compressedSize)
+				{
+					unsigned int* tmpSecondLevelLcp = (unsigned int*)malloc(sizeOfIndex * sizeof(unsigned int));
+					secondLevelLcp_file_ifs.read((char*)tmpSecondLevelLcp, sizeOfIndex * sizeof(unsigned int));
+					secondLevelLcp.push_back(tmpSecondLevelLcp);
+					
+					unsigned int* tmpSecondLevelUp = (unsigned int*)malloc(sizeOfIndex * sizeof(unsigned int));
+					secondLevelUp_file_ifs.read((char*)tmpSecondLevelUp, sizeOfIndex * sizeof(unsigned int));
+					secondLevelUp.push_back(tmpSecondLevelUp);
+					
+					unsigned int* tmpSecondLevelDown = (unsigned int*)malloc(sizeOfIndex * sizeof(unsigned int));
+					secondLevelDown_file_ifs.read((char*)tmpSecondLevelDown, sizeOfIndex * sizeof(unsigned int));
+					secondLevelDown.push_back(tmpSecondLevelDown);
+					
+					unsigned int* tmpSecondLevelNext = (unsigned int*)malloc(sizeOfIndex * sizeof(unsigned int));
+					secondLevelNext_file_ifs.read((char*)tmpSecondLevelNext, sizeOfIndex * sizeof(unsigned int));
+					secondLevelNext.push_back(tmpSecondLevelNext);
+				}
+				else
+				{
+					BYTE* tmpSecondLevelLcpCompress = (BYTE*)malloc(sizeOfIndex * sizeof(BYTE));
+					secondLevelLcpCompress_file_ifs.read((char*)tmpSecondLevelLcpCompress, sizeOfIndex * sizeof(BYTE));
+					secondLevelLcpCompress.push_back(tmpSecondLevelLcpCompress);
+					
+					unsigned int* tmpSecondLevelChildTab = (unsigned int*)malloc(sizeOfIndex * sizeof(unsigned int));
+					secondLevelChildTab_file_ifs.read((char*)tmpSecondLevelChildTab, sizeOfIndex * sizeof(unsigned int));
+					secondLevelChildTab.push_back(tmpSecondLevelChildTab);
 
-				unsigned int* tmpSecondLevelChildTab = (unsigned int*)malloc(sizeOfIndex * sizeof(unsigned int));
-				secondLevelChildTab_file_ifs.read((char*)tmpSecondLevelChildTab, sizeOfIndex * sizeof(unsigned int));
-				secondLevelChildTab.push_back(tmpSecondLevelChildTab);
+					BYTE* tmpSecondLevelDetChild = (BYTE*)malloc(sizeOfIndex * sizeof(BYTE));
+					secondLevelDetChild_file_ifs.read((char*)tmpSecondLevelDetChild, sizeOfIndex * sizeof(BYTE));
+					secondLevelDetChild.push_back(tmpSecondLevelDetChild);
+				}
 
-				BYTE* tmpSecondLevelDetChild = (BYTE*)malloc(sizeOfIndex * sizeof(BYTE));
-				secondLevelDetChild_file_ifs.read((char*)tmpSecondLevelDetChild, sizeOfIndex * sizeof(BYTE));
-				secondLevelDetChild.push_back(tmpSecondLevelDetChild);
 
 				secondLevelChrom_file_ifs.close();
 				secondLevelSA_file_ifs.close();
-				secondLevelLcp_file_ifs.close();
-				secondLevelUp_file_ifs.close();
-				secondLevelDown_file_ifs.close();
-				secondLevelNext_file_ifs.close();
-				secondLevelLcpCompress_file_ifs.close();
-				secondLevelChildTab_file_ifs.close();
-				secondLevelDetChild_file_ifs.close();
+				//if(!load2ndLevelIndexBool_compressedSize)
+				//{
+					secondLevelLcp_file_ifs.close();
+					secondLevelUp_file_ifs.close();
+					secondLevelDown_file_ifs.close();
+					secondLevelNext_file_ifs.close();
+				//}
+				//else
+				//{
+					secondLevelLcpCompress_file_ifs.close();
+					secondLevelChildTab_file_ifs.close();
+					secondLevelDetChild_file_ifs.close();					
+				//}				
 
 				secondLevelIndexNO ++;
 
@@ -848,12 +1043,12 @@ int main(int argc, char**argv)
 	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... load 2nd level index ends ......" << endl << endl ; 		
-	log_ofs << endl << "[" << asctime(local) << "... load 2nd level index ends ......" << endl << endl ;
-
+	log_ofs << endl << "[" << asctime(local) << "... load 2nd level index ends ......" << endl << endl ; 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////   Do REMAPPING On one end unmapped Reads    ///////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	nowtime = time(NULL);
+	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... fixing oneEndUnmapped reads starts ......" << endl << endl ; 	 
 	log_ofs << endl << "[" << asctime(local) << "... fixing oneEndUnmapped reads starts ......" << endl << endl ; 
@@ -873,12 +1068,18 @@ int main(int argc, char**argv)
 	{
 		log_ofs << "start doing remapping on unmapped end reads" << endl;
 
-		ifstream inputRecord_ifs(tmpAlignOneEndUnmapped.c_str());
+		string oneEndMappedFileStr = tmpAlignOneEndUnmapped;
+
+		ifstream inputRecord_ifs(oneEndMappedFileStr.c_str());
 
 		string line1, line2, line3, line4, line5, line6, line7, 
 			line8, line9, line10, line11;
 		
 		int normalRecordNum = normalRecordNum_fixOneEndUnmapped; //1000000;
+
+		bool EndOfRecord = false;
+
+		int tmpTurn = 0;
 
 		int realRecordNum;// = normalRecordNum;
 
@@ -895,11 +1096,16 @@ int main(int argc, char**argv)
 		vector<string> peAlignInfoVec(normalRecordNum);
 		vector<string> peAlignSamVec(normalRecordNum);
 		vector<string> peAlignSamVec_unpair_complete(normalRecordNum);
+
 		vector<string> peAlignInfoVec_pair_complete(normalRecordNum);
 
-		bool endOfRecord = false;
-		while(!endOfRecord)
+		//getline(inputRecord_ifs, line11);
+
+		for(tmpTurn = 0; /*tmpTurn < TurnNum*/; tmpTurn++)
 		{
+			if(EndOfRecord)
+				break;
+
 			int recordNum = normalRecordNum;
 
 			//cout << "start to read record" << endl;
@@ -911,7 +1117,7 @@ int main(int argc, char**argv)
 				if(inputRecord_ifs.eof())
 				{
 					realRecordNum = recordNumTmp;
-					endOfRecord = true;
+					EndOfRecord = true;
 					break;
 				}				
 				getline(inputRecord_ifs, line11);
@@ -925,6 +1131,7 @@ int main(int argc, char**argv)
 				getline(inputRecord_ifs, line8);
 				getline(inputRecord_ifs, line9);
 				getline(inputRecord_ifs, line10);
+				//getline(inputRecord_ifs, line11);
 
 				line1StrVec[recordNumTmp] = line1;
 				line2StrVec[recordNumTmp] = line2;
@@ -945,6 +1152,8 @@ int main(int argc, char**argv)
 
 			//cout << "start to fix oneEndUnmapped, turn: " << tmpTurn+1 << endl;
 
+			omp_set_num_threads(threads_num);
+			//omp_set_num_threads(1);
 			#pragma omp parallel for
 			for(int tmpOpenMP = 0; tmpOpenMP < realRecordNum; tmpOpenMP++)
 			{
@@ -989,6 +1198,7 @@ int main(int argc, char**argv)
 					secondLevelUp,
 					secondLevelDown,
 					secondLevelNext, 
+					load2ndLevelIndexBool_compressedSize,
 					indexInfo);
 
 				peAlignInfo->pairingAlignment();
@@ -1004,7 +1214,7 @@ int main(int argc, char**argv)
 					/*tmpPeAlignSamStr = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
 					 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);*/
-					tmpPeAlignSamStr = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(
+					tmpPeAlignSamStr = peAlignInfo->getSAMformatForFinalPair(
 					 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);
 					tmpPeAlignInfoStr = "";
@@ -1041,7 +1251,7 @@ int main(int argc, char**argv)
 					/*tmpPeAlignSamStr_unpair_complete = peAlignInfo->getTmpPEreadAlignInfoInSAMformat(
 						(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName,
 						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq );*/
-					tmpPeAlignSamStr_unpair_complete = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
+					tmpPeAlignSamStr_unpair_complete = peAlignInfo->getSAMformatForUnpairedAlignments(
 						(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName,
 						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq );
 					if(outputAlignInfoAndSamForAllPairedAlignmentBool)
@@ -1115,8 +1325,10 @@ int main(int argc, char**argv)
 	OutputSamFile_oneEndMapped_ofs.close();
 	OutputSamFile_oneEndMapped_unpairComplete_ofs.close();
 	tmpAlignIncompletePair_ofs.close();
+	//tmpAlignInfoForDebugFile_oneEndMapped_ofs.close();
 
 	nowtime = time(NULL);
+	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... fixing oneEndUnmapped reads ends ......" << endl << endl ;  
 	log_ofs << endl << "[" << asctime(local) << "... fixing oneEndUnmapped reads ends ......" << endl << endl ; 
@@ -1125,6 +1337,7 @@ int main(int argc, char**argv)
 	//////////////////////////////////////   Sam 2 Junc   ///////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	nowtime = time(NULL);
+	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... Sam 2 Junc starts ......" << endl << endl; 
 	log_ofs << endl << "[" << asctime(local) << "... Sam 2 Junc starts ......" << endl << endl; 
@@ -1153,8 +1366,10 @@ int main(int argc, char**argv)
 		Covert2JuncComb(juncfile.c_str(), comb_mapreads_files, read_width, chrom_dir, max_rank, min_intron, max_intron, min_anchor);
 
 	}
+	//string juncInsFile = juncfile.append("ins");
 
 	nowtime = time(NULL);
+	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... Sam 2 Junc ends ......" << endl << endl; 
 	log_ofs << endl << "[" << asctime(local) << "... Sam 2 Junc ends ......" << endl << endl; 
@@ -1163,6 +1378,7 @@ int main(int argc, char**argv)
 	//////////////////////////////////////   Do REMAPPING On unfixed head/tail Reads    ///////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	nowtime = time(NULL);
+	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... fixing unfixed-head/tail reads starts ......" << endl << endl ;  
 	log_ofs << endl << "[" << asctime(local) << "... fixing unfixed-head/tail reads starts ......" << endl << endl ; 
@@ -1183,6 +1399,7 @@ int main(int argc, char**argv)
 		
 	string OutputSamFile_fixHeadTail_incomplete_pair_alignInfo = testClassFileStr + ".fixHeadTail_incomplete_pair.sam_alignInfo";
 	ofstream OutputSamFile_fixHeadTail_incomplete_pair_alignInfo_ofs(OutputSamFile_fixHeadTail_incomplete_pair_alignInfo.c_str());	
+
 
 	string OutputSamFile_fixHeadTail_complete_unpair = testClassFileStr + ".fixHeadTail_complete_unpair.sam";
 	ofstream OutputSamFile_fixHeadTail_complete_unpair_ofs(OutputSamFile_fixHeadTail_complete_unpair.c_str());
@@ -1206,6 +1423,9 @@ int main(int argc, char**argv)
 		string chrIntString;
 		string spliceStartPosString;
 		string spliceEndPosString;
+
+		//SJhash_Info SJ;
+		
 
 		SJ->initiateSJintHash(indexInfo->chromNum);
 
@@ -1243,12 +1463,17 @@ int main(int argc, char**argv)
 		log_ofs << "start doing remapping on unfixed head/tail alignments" << endl;
 
 		string headTailSoftClippingFile = tmpAlignIncompletePair;
+		//FILE *fp_HeadTail = fopen(headTailSoftClippingFile.c_str(), "r");
 		ifstream inputUnfixedHeadTailRecord_ifs(headTailSoftClippingFile.c_str());
 
 		string line1, line2, line3, line4, line5, line6, line7, 
 			line8, line9, line10, line11;
 
 		int normalRecordNum = normalRecordNum_fixHeadTail; //1000000;
+
+		bool EndOfRecord = false;
+
+		int tmpTurn = 0;
 
 		int realRecordNum;// = normalRecordNum;
 
@@ -1262,17 +1487,23 @@ int main(int argc, char**argv)
 		vector<string> line8StrVec(normalRecordNum);
 		vector<string> line9StrVec(normalRecordNum);
 		vector<string> line10StrVec(normalRecordNum);
+		//vector<string> peAlignInfoVec(normalRecordNum);
 		vector<string> peAlignSamVec_complete_pair(normalRecordNum);
 		vector<string> peAlignSamVec_incomplete_pair(normalRecordNum);
 		vector<string> peAlignSamVec_complete_unpair(normalRecordNum);
 		vector<string> peAlignSamVec_incomplete_unpair(normalRecordNum);
 
 		vector<string> peAlignSamVec_complete_pair_alignInfo(normalRecordNum);
-		vector<string> peAlignSamVec_incomplete_pair_alignInfo(normalRecordNum);
+		vector<string> peAlignSamVec_incomplete_pair_alignInfo(normalRecordNum);		
+		//vector<string> peAlignSamVec_incomplete_unpair(normalRecordNum);
 
-		bool endOfRecord = false;
-		while(!endOfRecord)
+		//getline(inputUnfixedHeadTailRecord_ifs, line11);
+
+		for(tmpTurn = 0; /*tmpTurn < TurnNum*/; tmpTurn++)
 		{
+			if(EndOfRecord)
+				break;
+
 			int recordNum = normalRecordNum;
 
 			//cout << "start to read long-head file record" << endl;
@@ -1285,7 +1516,7 @@ int main(int argc, char**argv)
 				if(inputUnfixedHeadTailRecord_ifs.eof())
 				{
 					realRecordNum = recordNumTmp;
-					endOfRecord = true;
+					EndOfRecord = true;
 					break;
 				}				
 
@@ -1300,6 +1531,7 @@ int main(int argc, char**argv)
 				getline(inputUnfixedHeadTailRecord_ifs, line8);
 				getline(inputUnfixedHeadTailRecord_ifs, line9);
 				getline(inputUnfixedHeadTailRecord_ifs, line10);
+				//getline(inputUnfixedHeadTailRecord_ifs, line11);
 
 				line1StrVec[recordNumTmp] = line1;
 				line2StrVec[recordNumTmp] = line2;
@@ -1312,7 +1544,15 @@ int main(int argc, char**argv)
 				line9StrVec[recordNumTmp] = line9;
 				line10StrVec[recordNumTmp] = line10;
 			}	
+		
+			//cout << "realRecordNum: " << realRecordNum << " turn: " << tmpTurn+1 << endl;
 
+			//cout << "finish reading Head/Tail records file, turn: " << tmpTurn+1 << endl;
+
+			//cout << "start to fix Head/Tail, turn: " << tmpTurn+1 << endl;
+
+			omp_set_num_threads(threads_num);
+			//omp_set_num_threads(1);
 			#pragma omp parallel for
 			for(int tmpOpenMP = 0; tmpOpenMP < realRecordNum; tmpOpenMP++)
 			{
@@ -1326,7 +1566,7 @@ int main(int argc, char**argv)
 					line9StrVec[tmpOpenMP], line10StrVec[tmpOpenMP], peReadInfo);		
 
 				FixHeadTailInfo* fixHeadTailInfo = new FixHeadTailInfo();
-				fixHeadTailInfo->fixHeadTail_areaAndStringHash(peReadInfo, peAlignInfo, SJ,
+				fixHeadTailInfo->fixHeadTail(peReadInfo, peAlignInfo, SJ, 
 					secondLevelChrom,
 					secondLevelSa,
 					secondLevelLcpCompress,
@@ -1336,6 +1576,7 @@ int main(int argc, char**argv)
 					secondLevelUp,
 					secondLevelDown,
 					secondLevelNext, 
+					load2ndLevelIndexBool_compressedSize,
 					spliceJunctionHashExists,
 					indexInfo);	
 
@@ -1354,7 +1595,10 @@ int main(int argc, char**argv)
 					bool allFinalPairAlignmentCompleteBool = peAlignInfo->allAlignmentInFinalPairCompleted();	
 					if(allFinalPairAlignmentCompleteBool)
 					{
-						tmpPeAlignSamStr_complete_pair = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(
+						/*tmpPeAlignSamStr_complete_pair = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
+						 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
+							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);*/
+						tmpPeAlignSamStr_complete_pair = peAlignInfo->getSAMformatForFinalPair(
 						 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);						
 						tmpPeAlignSamStr_incomplete_pair = "";
@@ -1378,7 +1622,7 @@ int main(int argc, char**argv)
 						/*tmpPeAlignSamStr_incomplete_pair = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
 						 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);*/
-						tmpPeAlignSamStr_incomplete_pair = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(
+						tmpPeAlignSamStr_incomplete_pair = peAlignInfo->getSAMformatForFinalPair(
 						 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);
 						tmpPeAlignSamStr_complete_unpair = "";
@@ -1404,8 +1648,12 @@ int main(int argc, char**argv)
 						tmpPeAlignSamStr_complete_pair = "";
 
 						tmpPeAlignSamStr_incomplete_pair = "";
+						
+						/*tmpPeAlignSamStr_complete_unpair = peAlignInfo->getTmpPEreadAlignInfoInSAMformat(
+				 			(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
+							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);*/
 
-						tmpPeAlignSamStr_complete_unpair = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
+						tmpPeAlignSamStr_complete_unpair = peAlignInfo->getSAMformatForUnpairedAlignments(
 				 			(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);
 
@@ -1425,7 +1673,11 @@ int main(int argc, char**argv)
 						
 						tmpPeAlignSamStr_complete_unpair = "";
 
-						tmpPeAlignSamStr_incomplete_unpair = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
+						/*tmpPeAlignSamStr_incomplete_unpair = peAlignInfo->getTmpPEreadAlignInfoInSAMformat(
+				 			(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
+							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);*/				
+
+						tmpPeAlignSamStr_incomplete_unpair = peAlignInfo->getSAMformatForUnpairedAlignments(
 				 			(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
 							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);	
 						if(outputAlignInfoAndSamForAllPairedAlignmentBool)
@@ -1507,6 +1759,7 @@ int main(int argc, char**argv)
 	OutputSamFile_fixHeadTail_incomplete_pair_alignInfo_ofs.close();
 
 	nowtime = time(NULL);
+	//struct tm *local;
 	local = localtime(&nowtime);
 
 
@@ -1527,6 +1780,7 @@ int main(int argc, char**argv)
 	}			
 
 	nowtime = time(NULL);
+	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... start to prepare for final output files ......" << endl << endl ;  
 	log_ofs << endl << "[" << asctime(local) << "... start to prepare for final output files ......" << endl << endl ;  
@@ -1534,7 +1788,8 @@ int main(int argc, char**argv)
 	string finalOutputSam = testClassFileStr;
 	if(Do_Phase1_Only)
 	{
-		string cat_cmd = "cat " + tmpAlignCompleteRead
+		string cat_cmd = "cat " + tmpAlignCompleteRead  
+			//+ " " + tmpAlignOneEndUnmapped
 			+ " " + tmpAlignIncompletePair_SAM 
 			+ " " + tmpAlignOneEndUnmapped
 			+ " " + tmpAlignBothEndsUnmapped
@@ -1580,6 +1835,7 @@ int main(int argc, char**argv)
 	delete(indexInfo);
 
 	nowtime = time(NULL);
+	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... all jobs done ......" << endl << endl ;  
 	log_ofs << endl << "[" << asctime(local) << "... all jobs done ......" << endl << endl ;  

@@ -97,7 +97,6 @@ public:
 				int pathValidNum = pathInfo->pathValidNumInt();
 				if(pathValidNum > 10)
 				{
-					pathInfo->memoryFree();
 					delete(pathInfo);
 					delete(segInfo);
 					delete(seg2ndOriInfo);
@@ -118,7 +117,6 @@ public:
 				peAlignInfo->pushBackPathInfo2PeAlignInfo(pathInfo, End1OrEnd2, NorOrRcm, indexInfo);
 
 				delete(gapInfo);
-				pathInfo->memoryFree();
 				delete(pathInfo);
 				delete(segInfo);
 				delete(seg2ndOriInfo);

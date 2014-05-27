@@ -58,12 +58,22 @@ public:
 		gapInfo_Rcm2 = new Gap_Info();		
 	}
 
-	void memoryFree()
+	~FixPhase1Info()
 	{
-			delete(gapInfo_Nor1); delete(gapInfo_Rcm1); delete(gapInfo_Nor2); delete(gapInfo_Rcm2);
-			pathInfo_Nor1->memoryFree(); delete(pathInfo_Nor1); pathInfo_Rcm1->memoryFree(); delete(pathInfo_Rcm1);
-			pathInfo_Nor2->memoryFree(); delete(pathInfo_Nor2); pathInfo_Rcm2->memoryFree(); delete(pathInfo_Rcm2);
-			delete(segInfo_Nor1); delete(segInfo_Nor2); delete(segInfo_Rcm1); delete(segInfo_Rcm2);		
+			delete(gapInfo_Nor1);
+			delete(gapInfo_Rcm1);
+			delete(gapInfo_Nor2);
+			delete(gapInfo_Rcm2);
+
+			delete(pathInfo_Nor1);
+			delete(pathInfo_Rcm1);
+			delete(pathInfo_Nor2);
+			delete(pathInfo_Rcm2);
+
+			delete(segInfo_Nor1);
+			delete(segInfo_Nor2);
+			delete(segInfo_Rcm1);
+			delete(segInfo_Rcm2);
 	}
 
 	void fixPhase1_segInfo(char* read, char* read_RC, char* read_PE, char* read_RC_PE, unsigned int* sa, BYTE* lcpCompress, 

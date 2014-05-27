@@ -1090,18 +1090,7 @@ public:
 	Path_Info()
 	{}
 
-	int pathValidNumInt()
-	{
-		int pathValidNum = 0;
-		for(int tmp = 0; tmp < PathValidBoolVec.size(); tmp++)
-		{
-			if(PathValidBoolVec[tmp])
-				pathValidNum++;
-		}
-		return pathValidNum;
-	}
-
-	void memoryFree()
+	~Path_Info()
 	{
 		for(int tmp = 0; tmp < fixedPathVec.size(); tmp++)
 		{
@@ -1111,6 +1100,17 @@ public:
 		{
 			delete(finalPathVec[tmp].second);
 		}
+	}
+
+	int pathValidNumInt()
+	{
+		int pathValidNum = 0;
+		for(int tmp = 0; tmp < PathValidBoolVec.size(); tmp++)
+		{
+			if(PathValidBoolVec[tmp])
+				pathValidNum++;
+		}
+		return pathValidNum;
 	}
 
 	void getFinalPath_extend2HeadTail(Index_Info* indexInfo, Seg_Info* segInfo, int readLength, const string& readSeq_inProcess)

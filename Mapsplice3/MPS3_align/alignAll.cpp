@@ -14,7 +14,6 @@
 #include <time.h>
 
 #include "DoubleAnchorScore.h"
-#include "otherFunc.h"
 #include "index_info.h"
 #include "constantDefinitions.h"
 #include "segmentMapping.h"
@@ -24,7 +23,6 @@
 #include "gap_info.h"
 #include "align_info.h"
 #include "spliceJunction_info.h"
-#include "unmapEnd_info.h"
 #include "unfixedHead.h"
 #include "unfixedTail.h"
 #include "sam2junc.h"
@@ -55,10 +53,6 @@ clock_t read_file_begin, read_file_end, read_file_end2, read_file_end3,
 		generateReadAlignInfo_begin, generateReadAlignInfo_end, generateReadAlignInfo_cost = 0;
 
 unsigned int PairedReadNum = 0, BothUnmappedReadNum = 0, UnpairedReadNum = 0;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 int main(int argc, char**argv)
 {
@@ -171,7 +165,7 @@ int main(int argc, char**argv)
 
     string preIndexArrayPreStr = indexStr;
 
-	//////////////////////////////////////////////////////////              LOAD INDEX           ////////////////////////////////////////////////////////////////
+	//// LOAD INDEX ///////
 	#ifdef CAL_TIME
 	read_file_begin = clock();
 	#endif
@@ -239,19 +233,27 @@ int main(int argc, char**argv)
 	lcpCompress = (BYTE*)malloc((indexInfo->indexSize) * sizeof(BYTE));
 	lcpCompress_file_ifs.read((char*)lcpCompress, (indexInfo->indexSize) * sizeof(BYTE));	
 
-	//Xinan: Compress Index
-	//read childTab file
 	log_ofs << "start to load childTab " << endl;
 	unsigned int *childTab;
 	childTab = (unsigned int*)malloc((indexInfo->indexSize) * sizeof(unsigned int));
 	childTab_file_ifs.read((char*)childTab, (indexInfo->indexSize) * sizeof(unsigned int));
-	//cout << "childTab loaded" << endl;
 
 	log_ofs << "start to load detChild" << endl;
 	BYTE *verifyChild;
 	verifyChild = (BYTE*)malloc((indexInfo->indexSize) * sizeof(BYTE));
 	verifyChild_file_ifs.read((char*)verifyChild, (indexInfo->indexSize) * sizeof(BYTE));
 	
+	Chromosome* alignmentChromosome = new Chromosome(
+		sa,
+		lcpCompress,
+		childTab,
+		verifyChild,
+		chrom,
+		indexInfo,
+		preIndexMapLengthArray,
+		preIndexIntervalStartArray,
+		preIndexIntervalEndArray);
+
 	log_ofs << "All index files loaded" << endl;
 	
 	#ifdef CAL_TIME
@@ -261,7 +263,6 @@ int main(int argc, char**argv)
 	#endif
 	//////////////////////////////////////////////////
 	nowtime = time(NULL);
-	//struct tm *local;
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... whole genome index loaded ......" << endl << endl; 
 	log_ofs << endl << "[" << asctime(local) << "... whole genome index loaded ......" << endl << endl;
@@ -412,27 +413,11 @@ int main(int argc, char**argv)
 			getReadInfo_begin = clock();
 			#endif
 
-			PE_Read_Info* readInfo = new PE_Read_Info();
+			PairedEndRead* readInfo = new PairedEndRead();
 
 			readInfo->getFastaFormatReadInfo(readName1Vec[tmpOpenMP], readName2Vec[tmpOpenMP],
 				readSeq1Vec[tmpOpenMP], readSeq2Vec[tmpOpenMP]);
 
-			char* read = const_cast<char*>((readInfo->readInfo_pe1).readSeq.c_str());
-			char* read_PE = const_cast<char*>((readInfo->readInfo_pe2).readSeq.c_str());
-
-    		char read_RC[(readInfo->readInfo_pe1).readSeqLength], read_RC_PE[(readInfo->readInfo_pe2).readSeqLength];
-
-    		for(int read_RC_loc = 0; read_RC_loc < (readInfo->readInfo_pe1).readSeqLength; read_RC_loc++) // get read_RC
-    			*(read_RC + read_RC_loc) = reverseComplement(*(read + (readInfo->readInfo_pe1).readSeqLength - 1 - read_RC_loc)); 			
-     		for(int read_RC_loc = 0; read_RC_loc < (readInfo->readInfo_pe2).readSeqLength; read_RC_loc++) // get read_RC_PE
-    			*(read_RC_PE + read_RC_loc) = reverseComplement(*(read_PE + (readInfo->readInfo_pe2).readSeqLength - 1 - read_RC_loc)); 
-
-    		string rcmReadSeq_1 = read_RC;
-    		(readInfo->readInfo_pe1).rcmReadSeq = rcmReadSeq_1.substr(0, (readInfo->readInfo_pe1).readSeqLength);
-
-    		string rcmReadSeq_2 = read_RC_PE;
-    		(readInfo->readInfo_pe2).rcmReadSeq = rcmReadSeq_2.substr(0, (readInfo->readInfo_pe2).readSeqLength);
-			
 			#ifdef CAL_TIME 
 			getReadInfo_end = clock();
 			getReadInfo_cost = getReadInfo_cost + getReadInfo_end - getReadInfo_begin;
@@ -442,9 +427,7 @@ int main(int argc, char**argv)
 
 			FixPhase1Info* fixPhase1Info = new FixPhase1Info();
 
-			fixPhase1Info->fixPhase1_segInfo(read, read_RC, read_PE, read_RC_PE, sa, lcpCompress, childTab, 
-				chrom, verifyChild, indexInfo, preIndexMapLengthArray, preIndexIntervalStartArray, preIndexIntervalEndArray,
-				readInfo);
+			fixPhase1Info->fixPhase1_segInfo(readInfo, alignmentChromosome);
 
 			#ifdef CAL_TIME
 			segMap_end = clock();
@@ -454,8 +437,6 @@ int main(int argc, char**argv)
 			#endif
 
 			fixPhase1Info->fixPhase1_pathInfo();
-			//cout << "finish fixing pathInfo ..." << endl; 
-			//cout << fixPhase1Info->pathInfo_Nor1->possiPathStr() << endl;
 
 			#ifdef CAL_TIME
 			getPath_end = clock();
@@ -503,17 +484,14 @@ int main(int argc, char**argv)
 				bool allAlignmentCompleteBool = peAlignInfo->allAlignmentInFinalPairCompleted();
 				if(allAlignmentCompleteBool)
 				{
-					/*PeAlignSamStrVec_complete[tmpOpenMP] = peAlignInfo->getTmpPEreadAlignInfoInSAMformatForFinalPair(
-					 	(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
-						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);*/
 					PeAlignSamStrVec_complete[tmpOpenMP] = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(readInfo);
 
 					if(outputAlignInfoAndSamForAllPairedAlignmentBool)
 					{
 						PeAlignInfoStrVec_completePaired[tmpOpenMP] = peAlignInfo->getTmpAlignInfoForFinalPair(
-					 		(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
-							(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq,
-							(readInfo->readInfo_pe1).readQual, (readInfo->readInfo_pe2).readQual);
+					 		(readInfo->firstPairedEndRead).readName, (readInfo->secondPairedEndRead).readName, 
+							(readInfo->firstPairedEndRead).readSeq, (readInfo->secondPairedEndRead).readSeq,
+							(readInfo->firstPairedEndRead).readQual, (readInfo->secondPairedEndRead).readQual);
 					}
 				}
 				else
@@ -521,9 +499,9 @@ int main(int argc, char**argv)
 					if(!Do_Phase1_Only)
 					{
 						PeAlignInfoStrVec_inCompletePair[tmpOpenMP] = peAlignInfo->getTmpAlignInfoForFinalPair(
-					 		(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
-							(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq,
-							(readInfo->readInfo_pe1).readQual, (readInfo->readInfo_pe2).readQual);
+					 		(readInfo->firstPairedEndRead).readName, (readInfo->secondPairedEndRead).readName, 
+							(readInfo->firstPairedEndRead).readSeq, (readInfo->secondPairedEndRead).readSeq,
+							(readInfo->firstPairedEndRead).readQual, (readInfo->secondPairedEndRead).readQual);
 					}
 
 					PeAlignSamStrVec_inCompletePair[tmpOpenMP] = peAlignInfo->getSAMformatForFinalPair_secondaryOrNot(readInfo);
@@ -536,29 +514,23 @@ int main(int argc, char**argv)
 				{	
 					if(Do_Phase1_Only)
 					{
-						/*PeAlignInfoStrVec_oneEndUnmapped[tmpOpenMP] = peAlignInfo->getTmpPEreadAlignInfoInSAMformat(
-			 				(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
-							(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);*/ 
 						PeAlignInfoStrVec_oneEndUnmapped[tmpOpenMP] = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
-							(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
-							(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);
+							(readInfo->firstPairedEndRead).readName, (readInfo->secondPairedEndRead).readName, 
+							(readInfo->firstPairedEndRead).readSeq, (readInfo->secondPairedEndRead).readSeq);
 					}
 					else
 					{
 						PeAlignInfoStrVec_oneEndUnmapped[tmpOpenMP] = peAlignInfo->getTmpAlignInfo(
-						 	(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
-							(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq,
-							(readInfo->readInfo_pe1).readQual, (readInfo->readInfo_pe2).readQual);
+						 	(readInfo->firstPairedEndRead).readName, (readInfo->secondPairedEndRead).readName, 
+							(readInfo->firstPairedEndRead).readSeq, (readInfo->secondPairedEndRead).readSeq,
+							(readInfo->firstPairedEndRead).readQual, (readInfo->secondPairedEndRead).readQual);
 					}
 				}
 				else // both ends unmapped
 				{
-					/*PeAlignSamStrVec_bothEndsUnmapped[tmpOpenMP] = peAlignInfo->getTmpPEreadAlignInfoInSAMformat(
-			 			(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
-						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);*/
 					PeAlignSamStrVec_bothEndsUnmapped[tmpOpenMP] = peAlignInfo->getSAMformatForBothEndsUnmapped(
-			 			(readInfo->readInfo_pe1).readName, (readInfo->readInfo_pe2).readName, 
-						(readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe2).readSeq);						
+			 			(readInfo->firstPairedEndRead).readName, (readInfo->secondPairedEndRead).readName, 
+						(readInfo->firstPairedEndRead).readSeq, (readInfo->secondPairedEndRead).readSeq);						
 				}
 			}
 			
@@ -606,41 +578,25 @@ int main(int argc, char**argv)
 			{
 				tmpAlignCompleteRead_ofs << PeAlignSamStrVec_complete[tmp] << endl;
 				PairedReadNum ++;
-				//PeAlignSamStrVec_complete[tmp] = "";
 			}			
 
 			if(PeAlignInfoStrVec_inCompletePair[tmp] != "")
-			{
 				tmpAlignIncompletePair_ofs << PeAlignInfoStrVec_inCompletePair[tmp] << endl;
-				//PeAlignInfoStrVec_inCompletePair[tmp] = "";
-			}
 			
 			if(PeAlignInfoStrVec_oneEndUnmapped[tmp] != "")
-			{
 				tmpAlignOneEndUnmapped_ofs << PeAlignInfoStrVec_oneEndUnmapped[tmp] << endl;
-				//PeAlignInfoStrVec_oneEndUnmapped[tmp] = "";
-			}
 			
 			if(PeAlignSamStrVec_bothEndsUnmapped[tmp] != "")
 			{
 				tmpAlignBothEndsUnmapped_ofs << PeAlignSamStrVec_bothEndsUnmapped[tmp] << endl;
-				//PeAlignSamStrVec_bothEndsUnmapped[tmp] = "";
 				BothUnmappedReadNum ++;
 			}
 
 			if(PeAlignSamStrVec_inCompletePair[tmp] != "")
-			{
 				tmpAlignIncompletePair_SAM_ofs << PeAlignSamStrVec_inCompletePair[tmp] << endl;
-			}
 
-			if(outputAlignInfoAndSamForAllPairedAlignmentBool)
-			{
-				if(PeAlignInfoStrVec_completePaired[tmp] != "")
-				{
-					tmpAlignCompleteRead_alignInfo_ofs << PeAlignInfoStrVec_completePaired[tmp] << endl;
-				}
-			}
-
+			if(outputAlignInfoAndSamForAllPairedAlignmentBool && PeAlignInfoStrVec_completePaired[tmp] != "")
+				tmpAlignCompleteRead_alignInfo_ofs << PeAlignInfoStrVec_completePaired[tmp] << endl;
 		}
 
 		#ifdef CAL_TIME
@@ -663,13 +619,7 @@ int main(int argc, char**argv)
 		tmpAlignIncompletePair_ofs.close();
 	}
 
-	free(preIndexMapLengthArray);
-	free(preIndexIntervalStartArray);
-	free(preIndexIntervalEndArray);
-	free(sa);
-	free(lcpCompress);
-	free(childTab);
-	free(chrom);
+	delete alignmentChromosome;
 	
 	#ifdef CAL_TIME
 	overall_end = clock();
@@ -715,28 +665,17 @@ int main(int argc, char**argv)
 	#endif
 
 	log_ofs << endl << "**********************************" << endl << "**********************************" << endl;
-	//cout << endl << "totalReadNum = " << read_num << endl;
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////    	Load Second Level Index      ////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	nowtime = time(NULL);
-	//struct tm *local;
+
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... start to load 2nd level index ......" << endl << endl; 
 	log_ofs << endl << "[" << asctime(local) << "... load 2nd level index starts ......" << endl << endl; 
 
-	vector<char*> secondLevelChrom;
-	vector<unsigned int*> secondLevelSa;
-
-	vector<BYTE*> secondLevelLcpCompress;
-	vector<unsigned int*> secondLevelChildTab;
-	vector<BYTE*> secondLevelDetChild;
-
-	vector<unsigned int*> secondLevelLcp;
-	vector<unsigned int*> secondLevelUp;
-	vector<unsigned int*> secondLevelDown;
-	vector<unsigned int*> secondLevelNext;
+	vector<SecondLevelChromosome*> secondLevelChromVector;
 
 	if(load2ndLevelIndexBool)
 	{
@@ -751,15 +690,16 @@ int main(int argc, char**argv)
 				sprintf(tmpFileNumChar, "%d", tmpSecondLevelIndexNO);
 				string tmpFileNumStr = tmpFileNumChar;
 				
-				string inputIndexFileStr = secondLevelIndexStr + "/" + indexInfo->chrNameStr[tmpChrNO] + "/"
-					+ tmpFileNumStr + "/";
+				string inputIndexFileStr = secondLevelIndexStr +
+					"/" +
+					indexInfo->chrNameStr[tmpChrNO] +
+					"/"	+
+					tmpFileNumStr +
+					"/";
 
+				// Name of all of the second level index files
 				ifstream secondLevelChrom_file_ifs((inputIndexFileStr + "chrom").c_str(), ios::binary);
 				ifstream secondLevelSA_file_ifs((inputIndexFileStr + "SA").c_str(), ios::binary);
-				ifstream secondLevelLcp_file_ifs((inputIndexFileStr + "lcp").c_str(), ios::binary);
-				ifstream secondLevelUp_file_ifs((inputIndexFileStr + "up").c_str(), ios::binary);
-				ifstream secondLevelDown_file_ifs((inputIndexFileStr + "down").c_str(), ios::binary);
-				ifstream secondLevelNext_file_ifs((inputIndexFileStr + "next").c_str(), ios::binary);
 				ifstream secondLevelLcpCompress_file_ifs((inputIndexFileStr + "_lcpCompress").c_str(), ios::binary);
 				ifstream secondLevelChildTab_file_ifs((inputIndexFileStr + "childTab").c_str(), ios::binary);
 				ifstream secondLevelDetChild_file_ifs((inputIndexFileStr + "detChild").c_str(), ios::binary);
@@ -767,15 +707,11 @@ int main(int argc, char**argv)
 				int sizeOfIndex = indexInfo->secondLevelIndexNormalSize + 1;
 				char* tmpSecondLevelChrom = (char*)malloc(sizeOfIndex * sizeof(char));
 				for(int tmpMallocSpace = 0; tmpMallocSpace < sizeOfIndex; tmpMallocSpace++)
-				{
 					tmpSecondLevelChrom[tmpMallocSpace] = '0';
-				}
 
 				secondLevelChrom_file_ifs.read((char*)tmpSecondLevelChrom, sizeOfIndex * sizeof(char));
 				if(tmpSecondLevelChrom[sizeOfIndex-1] != 'X')
-				{
 					(indexInfo->invalidSecondLevelIndexNOset).insert(secondLevelIndexNO + 1);
-				}
 
 				bool No_ATGC_Bool = true;
 				for(int tmpMallocSpace = 0; tmpMallocSpace < sizeOfIndex; tmpMallocSpace++)
@@ -789,50 +725,53 @@ int main(int argc, char**argv)
 				}
 
 				if(No_ATGC_Bool)
-				{
 					(indexInfo->invalidSecondLevelIndexNOset).insert(secondLevelIndexNO + 1);
-				}	
 
-				secondLevelChrom.push_back(tmpSecondLevelChrom);
-				
 				unsigned int* tmpSecondLevelSa = (unsigned int*)malloc(sizeOfIndex * sizeof(unsigned int));
 				secondLevelSA_file_ifs.read((char*)tmpSecondLevelSa, sizeOfIndex * sizeof(unsigned int));
-				secondLevelSa.push_back(tmpSecondLevelSa);
 
 				BYTE* tmpSecondLevelLcpCompress = (BYTE*)malloc(sizeOfIndex * sizeof(BYTE));
 				secondLevelLcpCompress_file_ifs.read((char*)tmpSecondLevelLcpCompress, sizeOfIndex * sizeof(BYTE));
-				secondLevelLcpCompress.push_back(tmpSecondLevelLcpCompress);
 
 				unsigned int* tmpSecondLevelChildTab = (unsigned int*)malloc(sizeOfIndex * sizeof(unsigned int));
 				secondLevelChildTab_file_ifs.read((char*)tmpSecondLevelChildTab, sizeOfIndex * sizeof(unsigned int));
-				secondLevelChildTab.push_back(tmpSecondLevelChildTab);
 
 				BYTE* tmpSecondLevelDetChild = (BYTE*)malloc(sizeOfIndex * sizeof(BYTE));
 				secondLevelDetChild_file_ifs.read((char*)tmpSecondLevelDetChild, sizeOfIndex * sizeof(BYTE));
-				secondLevelDetChild.push_back(tmpSecondLevelDetChild);
+
+				secondLevelChromVector.push_back(new SecondLevelChromosome(
+					tmpSecondLevelChrom,
+					tmpSecondLevelSa,
+					tmpSecondLevelLcpCompress,
+					tmpSecondLevelChildTab,
+					tmpSecondLevelDetChild,
+					indexInfo));
 
 				secondLevelChrom_file_ifs.close();
 				secondLevelSA_file_ifs.close();
-				secondLevelLcp_file_ifs.close();
-				secondLevelUp_file_ifs.close();
-				secondLevelDown_file_ifs.close();
-				secondLevelNext_file_ifs.close();
 				secondLevelLcpCompress_file_ifs.close();
 				secondLevelChildTab_file_ifs.close();
 				secondLevelDetChild_file_ifs.close();
 
 				secondLevelIndexNO ++;
 
-			}
-			log_ofs << "finish loading 2nd-level index of " << indexInfo->chrNameStr[tmpChrNO] << endl; 
-		}
+			} // for(int tmpSecondLevelIndexNO = 1; tmpSecondLevelIndexNO <= (indexInfo->secondLevelIndexPartsNum)[tmpChrNO]; tmpSecondLevelIndexNO ++)
+
+			log_ofs << "finish loading 2nd-level index of " << indexInfo->chrNameStr[tmpChrNO] << endl;
+
+		} // for(int tmpChrNO = 0; tmpChrNO < indexInfo->chromNum; tmpChrNO ++)
+
 		log_ofs << "finish loading ALL 2nd-level index !" << endl;
 		log_ofs << indexInfo->getInvalidSecondLevelIndexNOstr() << endl;
-		//loadIndex_end = clock(); 
-	}
+
+	} // if(load2ndLevelIndexBool)
+
+	SecondLevelChromosomeList* secondLevelChroms = new SecondLevelChromosomeList(
+		secondLevelChromVector,
+		indexInfo);
 
 	nowtime = time(NULL);
-	//struct tm *local;
+
 	local = localtime(&nowtime);
 	cout << endl << "[" << asctime(local) << "... load 2nd level index ends ......" << endl << endl ; 		
 	log_ofs << endl << "[" << asctime(local) << "... load 2nd level index ends ......" << endl << endl ;
@@ -889,8 +828,6 @@ int main(int argc, char**argv)
 		{
 			int recordNum = normalRecordNum;
 
-			//cout << "start to read record" << endl;
-			//cout << "start to input oneEndUnmapped records, turn: " << tmpTurn+1 << endl;
 			realRecordNum = normalRecordNum;
 
 			for(int recordNumTmp = 0; recordNumTmp < recordNum; recordNumTmp++)
@@ -931,46 +868,16 @@ int main(int argc, char**argv)
 			{
 				////////////////  parse long head reads record after 1-mapping process  ///////////////////////////////////////
 				tmpRecordNum_oneEndUnmapped ++;
-				//if(tmpRecordNum_oneEndUnmapped <= 2202658)
-				//	continue;
-				//cout << "recordNum: " << tmpRecordNum_oneEndUnmapped << endl;
 
-
-				PE_Read_Info* peReadInfo = new PE_Read_Info();
+				PairedEndRead* peReadInfo = new PairedEndRead();
 				PE_Read_Alignment_Info* peAlignInfo = new PE_Read_Alignment_Info();
 				peAlignInfo->generatePeReadInfoAndPeAlignInfo_Fasta_toFixOneEndUnmapped_getline(line1StrVec[tmpOpenMP], line2StrVec[tmpOpenMP], 
 					line4StrVec[tmpOpenMP], line5StrVec[tmpOpenMP],
 					line7StrVec[tmpOpenMP], line8StrVec[tmpOpenMP], //line9StrVec[tmpOpenMP],
 					line9StrVec[tmpOpenMP], line10StrVec[tmpOpenMP], peReadInfo);		
 
-				char* read = const_cast<char*>((peReadInfo->readInfo_pe1).readSeq.c_str());
-				char* read_PE = const_cast<char*>((peReadInfo->readInfo_pe2).readSeq.c_str());
-
- 		   		char read_RC_PE[(peReadInfo->readInfo_pe1).readSeqLength], read_RC[(peReadInfo->readInfo_pe2).readSeqLength];
-    			for(int read_RC_loc = 0; read_RC_loc < (peReadInfo->readInfo_pe1).readSeqLength; read_RC_loc++) // get read_RC
-    				*(read_RC + read_RC_loc) = reverseComplement(*(read + (peReadInfo->readInfo_pe1).readSeqLength - 1 - read_RC_loc)); 			
-    	 		for(int read_RC_loc = 0; read_RC_loc < (peReadInfo->readInfo_pe2).readSeqLength; read_RC_loc++) // get read_RC_PE
-    				*(read_RC_PE + read_RC_loc) = reverseComplement(*(read_PE + (peReadInfo->readInfo_pe2).readSeqLength - 1 - read_RC_loc)); 
-
-	    		string rcmReadSeq_1 = read_RC;
-    			(peReadInfo->readInfo_pe1).rcmReadSeq = rcmReadSeq_1.substr(0, (peReadInfo->readInfo_pe1).readSeqLength);
-
-	    		string rcmReadSeq_2 = read_RC_PE;
-    			(peReadInfo->readInfo_pe2).rcmReadSeq = rcmReadSeq_2.substr(0, (peReadInfo->readInfo_pe2).readSeqLength);
-
-
 				FixOneEndUnmappedInfo* fixOneEndUnmappedInfo = new FixOneEndUnmappedInfo();
-				fixOneEndUnmappedInfo->fixOneEndUnmapped(peReadInfo, peAlignInfo,
-					secondLevelChrom,
-					secondLevelSa,
-					secondLevelLcpCompress,
-					secondLevelChildTab,
-					secondLevelDetChild,
-					secondLevelLcp,
-					secondLevelUp,
-					secondLevelDown,
-					secondLevelNext, 
-					indexInfo);
+				fixOneEndUnmappedInfo->fixOneEndUnmapped(peReadInfo, peAlignInfo, secondLevelChroms);
 
 				peAlignInfo->pairingAlignment();
 				peAlignInfo->chooseBestAlignment();
@@ -988,18 +895,18 @@ int main(int argc, char**argv)
 					if(outputAlignInfoAndSamForAllPairedAlignmentBool)
 					{
 						tmpPeAlignInfo_complete_pair = peAlignInfo->getTmpAlignInfoForFinalPair(
-						 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
-							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq,
-							(peReadInfo->readInfo_pe1).readQual, (peReadInfo->readInfo_pe2).readQual);
+						 	(peReadInfo->firstPairedEndRead).readName, (peReadInfo->secondPairedEndRead).readName, 
+							(peReadInfo->firstPairedEndRead).readSeq, (peReadInfo->secondPairedEndRead).readSeq,
+							(peReadInfo->firstPairedEndRead).readQual, (peReadInfo->secondPairedEndRead).readQual);
 					}
 				}
 				else if(pairExistsBool && (!allAlignmentCompleteBool)) // pair exists, incomplete
 				{
 					tmpPeAlignSamStr = "";
 					tmpPeAlignInfoStr = peAlignInfo->getTmpAlignInfoForFinalPair(
-					 	(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
-						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq,
-						(peReadInfo->readInfo_pe1).readQual, (peReadInfo->readInfo_pe2).readQual);
+					 	(peReadInfo->firstPairedEndRead).readName, (peReadInfo->secondPairedEndRead).readName, 
+						(peReadInfo->firstPairedEndRead).readSeq, (peReadInfo->secondPairedEndRead).readSeq,
+						(peReadInfo->firstPairedEndRead).readQual, (peReadInfo->secondPairedEndRead).readQual);
 					tmpPeAlignSamStr_unpair_complete = "";
 					if(outputAlignInfoAndSamForAllPairedAlignmentBool)
 					{					
@@ -1008,18 +915,12 @@ int main(int argc, char**argv)
 				}
 				else if((!pairExistsBool) && (allUnpairedAlignmentCompleteBool)) // no pair exists, all complete, print out original SAM info
 				{
-
-					/*tmpPeAlignSamStr = peAlignInfo->getTmpPEreadAlignInfoInSAMformat(
-						(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName,
-						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq );*/
 					tmpPeAlignSamStr = "";
 					tmpPeAlignInfoStr = "";
-					/*tmpPeAlignSamStr_unpair_complete = peAlignInfo->getTmpPEreadAlignInfoInSAMformat(
-						(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName,
-						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq );*/
+
 					tmpPeAlignSamStr_unpair_complete = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
-						(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName,
-						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq );
+						(peReadInfo->firstPairedEndRead).readName, (peReadInfo->secondPairedEndRead).readName,
+						(peReadInfo->firstPairedEndRead).readSeq, (peReadInfo->secondPairedEndRead).readSeq );
 					if(outputAlignInfoAndSamForAllPairedAlignmentBool)
 					{					
 						tmpPeAlignInfo_complete_pair = "";
@@ -1029,8 +930,8 @@ int main(int argc, char**argv)
 				{
 					tmpPeAlignSamStr = "";
 					tmpPeAlignInfoStr = peAlignInfo->getTmpAlignInfo(
-						(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName,
-						(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq, 
+						(peReadInfo->firstPairedEndRead).readName, (peReadInfo->secondPairedEndRead).readName,
+						(peReadInfo->firstPairedEndRead).readSeq, (peReadInfo->secondPairedEndRead).readSeq, 
 						//readQualSeq_1, readQualSeq_2
 						"*", "*");// << endl;
 					tmpPeAlignSamStr_unpair_complete = "";
@@ -1186,7 +1087,7 @@ int main(int argc, char**argv)
 			if(feof(fp_spliceJunction))
 				break;
 			junctionNum ++;
-			//cout << "entryString: " << entryString << endl;
+
 			entryString = entry;
 			tabLocation1 = entryString.find('\t', 0);
 			tabLocation2 = entryString.find('\t', tabLocation1+1);
@@ -1288,7 +1189,7 @@ int main(int argc, char**argv)
 			{
 				////////////////  parse long head reads record after 1-mapping process  ///////////////////////////////////////
 
-				PE_Read_Info* peReadInfo = new PE_Read_Info();
+				PairedEndRead* peReadInfo = new PairedEndRead();
 				PE_Read_Alignment_Info* peAlignInfo = new PE_Read_Alignment_Info();
 				peAlignInfo->generatePeReadInfoAndPeAlignInfo_Fasta_toFixIncompleteAlignment_getline(line1StrVec[tmpOpenMP], line2StrVec[tmpOpenMP], 
 					line4StrVec[tmpOpenMP], line5StrVec[tmpOpenMP],
@@ -1297,17 +1198,7 @@ int main(int argc, char**argv)
 
 				FixHeadTailInfo* fixHeadTailInfo = new FixHeadTailInfo();
 				fixHeadTailInfo->fixHeadTail_areaAndStringHash(peReadInfo, peAlignInfo, SJ,
-					secondLevelChrom,
-					secondLevelSa,
-					secondLevelLcpCompress,
-					secondLevelChildTab,
-					secondLevelDetChild,
-					secondLevelLcp,
-					secondLevelUp,
-					secondLevelDown,
-					secondLevelNext, 
-					spliceJunctionHashExists,
-					indexInfo);	
+					secondLevelChroms, spliceJunctionHashExists);
 
 				peAlignInfo->pairingAlignment();
 				peAlignInfo->chooseBestAlignment();
@@ -1333,9 +1224,9 @@ int main(int argc, char**argv)
 						if(outputAlignInfoAndSamForAllPairedAlignmentBool)
 						{
 							tmpPeAlignSamStr_complete_pair_alignInfo = peAlignInfo->getTmpAlignInfoForFinalPair(
-						 		(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
-								(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq,
-								(peReadInfo->readInfo_pe1).readQual, (peReadInfo->readInfo_pe2).readQual);
+						 		(peReadInfo->firstPairedEndRead).readName, (peReadInfo->secondPairedEndRead).readName, 
+								(peReadInfo->firstPairedEndRead).readSeq, (peReadInfo->secondPairedEndRead).readSeq,
+								(peReadInfo->firstPairedEndRead).readQual, (peReadInfo->secondPairedEndRead).readQual);
 							tmpPeAlignSamStr_incomplete_pair_alignInfo = "";
 						}
 					}
@@ -1352,9 +1243,9 @@ int main(int argc, char**argv)
 						{
 							tmpPeAlignSamStr_complete_pair_alignInfo = "";
 							tmpPeAlignSamStr_incomplete_pair_alignInfo = peAlignInfo->getTmpAlignInfoForFinalPair(
-						 		(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
-								(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq,
-								(peReadInfo->readInfo_pe1).readQual, (peReadInfo->readInfo_pe2).readQual);
+						 		(peReadInfo->firstPairedEndRead).readName, (peReadInfo->secondPairedEndRead).readName, 
+								(peReadInfo->firstPairedEndRead).readSeq, (peReadInfo->secondPairedEndRead).readSeq,
+								(peReadInfo->firstPairedEndRead).readQual, (peReadInfo->secondPairedEndRead).readQual);
 						}						
 					}
 				}
@@ -1369,8 +1260,8 @@ int main(int argc, char**argv)
 						tmpPeAlignSamStr_incomplete_pair = "";
 
 						tmpPeAlignSamStr_complete_unpair = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
-				 			(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
-							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);
+				 			(peReadInfo->firstPairedEndRead).readName, (peReadInfo->secondPairedEndRead).readName, 
+							(peReadInfo->firstPairedEndRead).readSeq, (peReadInfo->secondPairedEndRead).readSeq);
 
 						tmpPeAlignSamStr_incomplete_unpair = "";	
 
@@ -1389,17 +1280,14 @@ int main(int argc, char**argv)
 						tmpPeAlignSamStr_complete_unpair = "";
 
 						tmpPeAlignSamStr_incomplete_unpair = peAlignInfo->getSAMformatForUnpairedAlignments_secondaryOrNot(
-				 			(peReadInfo->readInfo_pe1).readName, (peReadInfo->readInfo_pe2).readName, 
-							(peReadInfo->readInfo_pe1).readSeq, (peReadInfo->readInfo_pe2).readSeq);	
+				 			(peReadInfo->firstPairedEndRead).readName, (peReadInfo->secondPairedEndRead).readName, 
+							(peReadInfo->firstPairedEndRead).readSeq, (peReadInfo->secondPairedEndRead).readSeq);	
 						if(outputAlignInfoAndSamForAllPairedAlignmentBool)
 						{
 							tmpPeAlignSamStr_complete_pair_alignInfo = "";
 							tmpPeAlignSamStr_incomplete_pair_alignInfo = "";
 						}
 					}
-
-
-					//tmpPeAlignSamStr_incomplete_unpair = "";
 				}
 
 				peAlignSamVec_complete_pair[tmpOpenMP] = tmpPeAlignSamStr_complete_pair;
@@ -1417,11 +1305,8 @@ int main(int argc, char**argv)
 
 				delete(peReadInfo);
 				delete(peAlignInfo);
-
 			}
-			//cout << "finish fixing Head/Tail, turn: " << tmpTurn+1 << endl;// << endl;
 
-			//cout << "start to output ... turn: " << tmpTurn+1 << endl;
 			for(int tmp = 0; tmp < realRecordNum; tmp++)
 			{
 				if(peAlignSamVec_complete_pair[tmp] != "")
@@ -1453,8 +1338,6 @@ int main(int argc, char**argv)
 						OutputSamFile_fixHeadTail_incomplete_pair_alignInfo_ofs << peAlignSamVec_incomplete_pair_alignInfo[tmp] << endl;					
 				}
 			}		
-			//cout << "finish output, turn: " << tmpTurn+1 << endl << endl;
-
 		}
 		inputUnfixedHeadTailRecord_ifs.close();
 	}
@@ -1478,13 +1361,6 @@ int main(int argc, char**argv)
 	{
 		cout << "readTotalNum: " << readTotalNum << endl;		
 		log_ofs << "readTotalNum: " << readTotalNum << endl;
-
-		//cout << endl << "PairedReadNum: " << PairedReadNum << " " << ((double)(PairedReadNum)/((double)readTotalNum)) * 100 << endl ;  
-		//log_ofs << endl << "PairedReadNum: " << PairedReadNum << " " << ((double)(PairedReadNum)/((double)readTotalNum)) * 100 << endl ;  
-		//cout << endl << "UnpairedReadNum: " << UnpairedReadNum << " " << ((double)(UnpairedReadNum)/((double)readTotalNum)) * 100 << endl ;  
-		//log_ofs << endl << "UnpairedReadNum: " << UnpairedReadNum << " " << ((double)(UnpairedReadNum)/((double)readTotalNum)) * 100 << endl ;  
-		//cout << endl << "BothEndsUnmappedReadNum: " << BothUnmappedReadNum << " " << ((double)(BothUnmappedReadNum)/((double)readTotalNum)) * 100 << endl ;  
-		//log_ofs << endl << "BothEndsUnmappedReadNum: " << BothUnmappedReadNum << " " << ((double)(BothUnmappedReadNum)/((double)readTotalNum)) * 100 << endl ;  
 	}			
 
 	nowtime = time(NULL);

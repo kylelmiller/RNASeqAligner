@@ -71,17 +71,17 @@ public:
 		return countNum;
 	}
 
-	void getUnfixedHeadInfoFromRecord(PE_Read_Info* readInfo, bool end1, Alignment_Info* alignInfo, Index_Info* indexInfo)
+	void getUnfixedHeadInfoFromRecord(PairedEndRead* readInfo, bool end1, Alignment_Info* alignInfo, Index_Info* indexInfo)
 	{
 		if(end1)
 		{
-			readName = (readInfo->readInfo_pe1).readName;
-			readSeqOriginal = (readInfo->readInfo_pe1).readSeq;
+			readName = (readInfo->firstPairedEndRead).readName;
+			readSeqOriginal = (readInfo->firstPairedEndRead).readSeq;
 		}
 		else
 		{
-			readName = (readInfo->readInfo_pe2).readName;
-			readSeqOriginal = (readInfo->readInfo_pe2).readSeq;
+			readName = (readInfo->secondPairedEndRead).readName;
+			readSeqOriginal = (readInfo->secondPairedEndRead).readSeq;
 		}
 		alignDirection = alignInfo->alignDirection;
 
@@ -103,17 +103,17 @@ public:
 		//cout << "midPartMapPosInWholeGenome: " << midPartMapPosInWholeGenome << endl;
 	}
 
-	void getUnfixedHeadInfoFromRecordWithAlignInfoType(PE_Read_Info* readInfo, int alignInfoType, Alignment_Info* alignInfo, Index_Info* indexInfo)
+	void getUnfixedHeadInfoFromRecordWithAlignInfoType(PairedEndRead* readInfo, int alignInfoType, Alignment_Info* alignInfo, Index_Info* indexInfo)
 	{
 		if((alignInfoType == 1) || (alignInfoType == 2))
 		{
-			readName = (readInfo->readInfo_pe1).readName;
-			readSeqOriginal = (readInfo->readInfo_pe1).readSeq;
+			readName = (readInfo->firstPairedEndRead).readName;
+			readSeqOriginal = (readInfo->firstPairedEndRead).readSeq;
 		}
 		else
 		{
-			readName = (readInfo->readInfo_pe2).readName;
-			readSeqOriginal = (readInfo->readInfo_pe2).readSeq;
+			readName = (readInfo->secondPairedEndRead).readName;
+			readSeqOriginal = (readInfo->secondPairedEndRead).readSeq;
 		}
 		alignDirection = alignInfo->alignDirection;
 

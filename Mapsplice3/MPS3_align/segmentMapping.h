@@ -11,39 +11,28 @@ unsigned int getChildDownValue(unsigned int *child, BYTE *verifyChild, unsigned 
 void getFirstInterval(char ch, unsigned int *interval_begin, unsigned int *interval_end, 
 	unsigned int* child, BYTE* verifyChild)
 {
-	if (ch == 'C')
+	switch(ch)
 	{
-		*interval_begin = ((verifyChild[0]>2)*child[0]);//getChildNextValue(child, verifyChild, 0);
-		//*interval_end = child_next[*interval_begin] - 1; 
-		*interval_end = ((verifyChild[*interval_begin]>2)*child[*interval_begin])-1;//getChildNextValue(child, verifyChild, *interval_begin) - 1;
-	}
-	else if(ch == 'A') //ch == 'A'
-	{
-		*interval_begin = 0;
-		//*interval_end = child_next[0] - 1;
-		*interval_end = ((verifyChild[0]>2)*child[0]) - 1;
-	}
-	else //ch == 'G' or ch == 'T'
-	{
-		if (ch == 'G')
-		{
-			//cout << "ch: " << ch << endl;
-			//*interval_begin = child_next[child_next[0]];
-			//*interval_end = child_next[*interval_begin] - 1;
+		case 'C':
+			*interval_begin = ((verifyChild[0]>2)*child[0]);
+			*interval_end = ((verifyChild[*interval_begin]>2)*child[*interval_begin])-1;
+			break;
+		case 'A':
+			*interval_begin = 0;
+			*interval_end = ((verifyChild[0]>2)*child[0]) - 1;
+			break;
+		case 'G':
 			unsigned int child_next_tmp = ((verifyChild[0]>2)*child[0]);
-			//cout << "child_next_tmp: " << child_next_tmp << endl;
 			*interval_begin = ((verifyChild[child_next_tmp]>2)*child[child_next_tmp]);
 			*interval_end = ((verifyChild[*interval_begin]>2)*child[*interval_begin]) - 1;
-		}
-		else
-		{
-			//*interval_begin = child_next[child_next[child_next[0]]];
-			//*interval_end = child_next[*interval_begin] - 1;
+			break;
+		case 'T':
+		default:
 			unsigned int child_next_tmp = ((verifyChild[0]>2)*child[0]);
 			unsigned int child_next_tmp2 = ((verifyChild[child_next_tmp]>2)*child[child_next_tmp]);
 			*interval_begin = ((verifyChild[child_next_tmp2]>2)*child[child_next_tmp2]);
 			*interval_end = ((verifyChild[*interval_begin]>2)*child[*interval_begin]) - 1;
-		}
+			break;
 	}
 }
 

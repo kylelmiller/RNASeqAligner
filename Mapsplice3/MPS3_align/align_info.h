@@ -1,4 +1,7 @@
+#ifndef __ALIGN_INFO_H_INCLUDED__
+#define __ALIGN_INFO_H_INCLUDED__
 
+#include "seg_info.h"
 
 class SpliceJunction_Alignment
 {
@@ -1383,7 +1386,7 @@ public:
 		const string& line4, const string& line5,
 		//const string& recordLine6, 
 		const string& line7, const string& line8,
-		const string& line9, const string& line10, PE_Read_Info* peReadInfo)
+		const string& line9, const string& line10, PairedEndRead* peReadInfo)
 	{
 		int Nor1Num = 0, Rcm1Num = 0, Nor2Num = 0, Rcm2Num = 0;
 		string readNameStr_1, readNameStr_2;
@@ -1421,7 +1424,7 @@ public:
 		const string& line4, const string& line5,
 		//const string& recordLine6, 
 		const string& line7, const string& line8,
-		const string& line9, const string& line10, PE_Read_Info* peReadInfo)
+		const string& line9, const string& line10, PairedEndRead* peReadInfo)
 	{
 		int Nor1Num = 0, Rcm1Num = 0, Nor2Num = 0, Rcm2Num = 0;
 		string readNameStr_1, readNameStr_2;
@@ -2471,12 +2474,12 @@ public:
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 
-	string getSAMformatForFinalPair_secondaryOrNot(PE_Read_Info* pairedEndRead)
+	string getSAMformatForFinalPair_secondaryOrNot(PairedEndRead* pairedEndRead)
 	{
-		string readName_1_ori = pairedEndRead->readInfo_pe1.readName;
-		string readName_2_ori = pairedEndRead->readInfo_pe2.readName;
-		string readSeq_1 = pairedEndRead->readInfo_pe1.readSeq;
-		string readSeq_2 = pairedEndRead->readInfo_pe2.readSeq;
+		string readName_1_ori = pairedEndRead->firstPairedEndRead.readName;
+		string readName_2_ori = pairedEndRead->secondPairedEndRead.readName;
+		string readSeq_1 = pairedEndRead->firstPairedEndRead.readSeq;
+		string readSeq_2 = pairedEndRead->secondPairedEndRead.readSeq;
 
 		int readNameSize_1 = readName_1_ori.length();
 		int readNameSize_2 = readName_2_ori.length();
@@ -2639,3 +2642,5 @@ public:
 	}
 
 };
+
+#endif

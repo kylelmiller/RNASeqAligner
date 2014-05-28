@@ -159,18 +159,6 @@ public:
 
 	}
 
-	/*string printChrNameMap()
-	{
-		string printChrNameMapStr; 
-		for(chrNameMapIter = chrNameMap.begin(); chrNameMapIter != chrNameMap.end(); chrNameMapIter++)
-		{
-			printChrNameMapStr = printChrNameMapStr + "chrNameMap:\n";
-			//cout << chrNameMapIter->first << ": " << chrNameMapIter->second << endl;
-			printChrNameMapStr = printChrNameMapStr + chrNameMapIter->first + ": " + int_to_str(chrNameMapIter->second) + "\n"; 
-		}
-		return printChrNameMapStr;		
-	}*/
-
 	int getSecondLevelIndexFromChrAndPos(int chrNameInt, int chrMapPos)
 	{
 		int tmpTimes = chrMapPos/secondLevelIndexNormalSize;

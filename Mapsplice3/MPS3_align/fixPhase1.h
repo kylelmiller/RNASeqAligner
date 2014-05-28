@@ -60,66 +60,42 @@ public:
 
 	~FixPhase1Info()
 	{
-			delete(gapInfo_Nor1);
-			delete(gapInfo_Rcm1);
-			delete(gapInfo_Nor2);
-			delete(gapInfo_Rcm2);
+		delete gapInfo_Nor1;
+		delete gapInfo_Rcm1;
+		delete gapInfo_Nor2;
+		delete gapInfo_Rcm2;
 
-			delete(pathInfo_Nor1);
-			delete(pathInfo_Rcm1);
-			delete(pathInfo_Nor2);
-			delete(pathInfo_Rcm2);
+		delete pathInfo_Nor1;
+		delete pathInfo_Rcm1;
+		delete pathInfo_Nor2;
+		delete pathInfo_Rcm2;
 
-			delete(segInfo_Nor1);
-			delete(segInfo_Nor2);
-			delete(segInfo_Rcm1);
-			delete(segInfo_Rcm2);
+		delete segInfo_Nor1;
+		delete segInfo_Nor2;
+		delete segInfo_Rcm1;
+		delete segInfo_Rcm2;
 	}
 
-	void fixPhase1_segInfo(char* read, char* read_RC, char* read_PE, char* read_RC_PE, unsigned int* sa, BYTE* lcpCompress, 
-		unsigned int* childTab, char* chrom, 
-		//unsigned int* valLength, 
-		BYTE* verifyChild, //int readLength, 
-		Index_Info* indexInfo,
-		int* preIndexMapLengthArray, unsigned int* preIndexIntervalStartArray,
-		unsigned int* preIndexIntervalEndArray, PE_Read_Info* readInfo)
+	/*
+	 * Attempt to map the paired-end read to the reference
+	 */
+	void fixPhase1_segInfo(PairedEndRead* pairedEndRead, Chromosome* chrom)
 	{
-		//cout << endl << "## do segment mapping for Nor_1 ##" << endl;
-		//cout << "start to fix segInfo_Nor1 ..." << endl << endl;
-		//bool 
-		normalMapMain = segInfo_Nor1->mapMain_SegInfo_preIndex(read, sa, lcpCompress, childTab, 
-			chrom, &norValLength, verifyChild, (readInfo->readInfo_pe1).readSeqLength, indexInfo, preIndexMapLengthArray,
-			preIndexIntervalStartArray, preIndexIntervalEndArray);
-		
-		//cout << (segInfo_Nor1)->segInfoStr(indexInfo) << endl << endl;
+		// Attempt to map the first read and it's reverse complement
+		normalMapMain = segInfo_Nor1->mapMain_SegInfo_preIndex(
+			pairedEndRead->getFirstRead(),
+			chrom);
+		rcmMapMain = segInfo_Rcm1->mapMain_SegInfo_preIndex(
+			pairedEndRead->getFirstReadReverseComplement(),
+			chrom);
 
-		//cout << endl << "## do segment mapping for Rcm_1 ##" << endl;
-		//cout << "start to fix segInfo_Rcm1 ..." << endl << endl;
-	   	//bool 
-	   	rcmMapMain = segInfo_Rcm1->mapMain_SegInfo_preIndex(read_RC, sa, lcpCompress, childTab,
-			chrom, &rcmValLength, verifyChild, (readInfo->readInfo_pe1).readSeqLength, indexInfo, preIndexMapLengthArray,
-			preIndexIntervalStartArray, preIndexIntervalEndArray);		
-	   
-	   	//cout << (segInfo_Rcm1)->segInfoStr(indexInfo) << endl << endl;
-
-		//cout << endl << "## do segment mapping for Nor_2 ##" << endl;
-	   	//cout << "start to fix segInfo_Nor2 ..." << endl << endl;
-		//bool 
-		normalMapMain_PE = segInfo_Nor2->mapMain_SegInfo_preIndex(read_PE, sa, lcpCompress, childTab, 
-			chrom, &norValLength_PE, verifyChild, (readInfo->readInfo_pe2).readSeqLength, indexInfo, preIndexMapLengthArray,
-			preIndexIntervalStartArray, preIndexIntervalEndArray);
-		
-		//cout << (segInfo_Nor2)->segInfoStr(indexInfo) << endl << endl;		
-		
-		//cout << endl << "## do segment mapping for Rcm_2 ##" << endl;
-		//cout << "start to fix segInfo_Rcm2 ..." << endl << endl;
-		//bool 
-		rcmMapMain_PE = segInfo_Rcm2->mapMain_SegInfo_preIndex(read_RC_PE, sa, lcpCompress, childTab, 
-			chrom, &rcmValLength_PE, verifyChild, (readInfo->readInfo_pe2).readSeqLength, indexInfo, preIndexMapLengthArray,
-			preIndexIntervalStartArray, preIndexIntervalEndArray);			
-		
-		//cout << (segInfo_Rcm2)->segInfoStr(indexInfo) << endl << endl;
-
+		// Attempt to map the second read and it's reverse complement
+		normalMapMain_PE = segInfo_Nor2->mapMain_SegInfo_preIndex(
+			pairedEndRead->getSecondRead(),
+			chrom);
+		rcmMapMain_PE = segInfo_Rcm2->mapMain_SegInfo_preIndex(
+			pairedEndRead->getSecondReadReverseComplement(),
+			chrom);
 	}
 
 	void fixPhase1_pathInfo()
@@ -134,19 +110,30 @@ public:
 			pathInfo_Rcm2->getPossiPathFromSeg(segInfo_Rcm2);		
 	}
 
-	void fixPhase1_gapInfo(PE_Read_Info* readInfo, Index_Info* indexInfo)
+	void fixPhase1_gapInfo(PairedEndRead* pairedEndRead, Index_Info* indexInfo)
 	{
-		//cout << "start to fix gapInfo_Nor1 ..." << endl;
-		gapInfo_Nor1->fixGapInPath(pathInfo_Nor1, segInfo_Nor1, 
-			indexInfo, (readInfo->readInfo_pe1).readSeq, (readInfo->readInfo_pe1).readSeqLength);
-		//cout << "start to fix gapInfo_Rcm1 ..." << endl;
-		gapInfo_Rcm1->fixGapInPath(pathInfo_Rcm1, segInfo_Rcm1, 
-			indexInfo, (readInfo->readInfo_pe1).rcmReadSeq, (readInfo->readInfo_pe1).readSeqLength);
-		//cout << "start to fix gapInfo_Nor2 ..." << endl;	
-		gapInfo_Nor2->fixGapInPath(pathInfo_Nor2, segInfo_Nor2, 
-			indexInfo, (readInfo->readInfo_pe2).readSeq, (readInfo->readInfo_pe2).readSeqLength);
-		//cout << "start to fix gapInfo_Rcm2 ..." << endl;
-		gapInfo_Rcm2->fixGapInPath(pathInfo_Rcm2, segInfo_Rcm2, 
-			indexInfo, (readInfo->readInfo_pe2).rcmReadSeq, (readInfo->readInfo_pe2).readSeqLength);			
+		gapInfo_Nor1->fixGapInPath(
+			pathInfo_Nor1,
+			segInfo_Nor1,
+			indexInfo,
+			pairedEndRead->getFirstRead());
+
+		gapInfo_Rcm1->fixGapInPath(
+			pathInfo_Rcm1,
+			segInfo_Rcm1,
+			indexInfo,
+			pairedEndRead->getFirstReadReverseComplement());
+
+		gapInfo_Nor2->fixGapInPath(
+			pathInfo_Nor2,
+			segInfo_Nor2,
+			indexInfo,
+			pairedEndRead->getSecondRead());
+
+		gapInfo_Rcm2->fixGapInPath(
+			pathInfo_Rcm2,
+			segInfo_Rcm2,
+			indexInfo,
+			pairedEndRead->getSecondReadReverseComplement());
 	}
 };

@@ -1,6 +1,7 @@
 #include <string>
 #include <string.h>
 #include "splice_info.h"
+#include "secondLevelChromosome.h"
 
 using namespace std;
 
@@ -13,33 +14,47 @@ public:
 
 	}
 
-	void fixHeadTail_areaAndStringHash(PE_Read_Info* peReadInfo, PE_Read_Alignment_Info* peAlignInfo, SJhash_Info* SJ, 
-	vector<char*>& secondLevelChrom,
-	vector<unsigned int*>& secondLevelSa,
-	vector<BYTE*>& secondLevelLcpCompress,
-	vector<unsigned int*>& secondLevelChildTab,
-	vector<BYTE*>& secondLevelDetChild,
-	vector<unsigned int*>& secondLevelLcp,
-	vector<unsigned int*>& secondLevelUp,
-	vector<unsigned int*>& secondLevelDown,
-	vector<unsigned int*>& secondLevelNext, 
-	bool spliceJunctionHashExists,
-	Index_Info* indexInfo)
+	void areaAndStringHash(Read* read,
+		PE_Read_Alignment_Info* peAlignInfo,
+		SJhash_Info* SJ,
+		Chromosome* chrom)
 	{
-		int readLength_1 = ((peReadInfo->readInfo_pe1).readSeq).length();
-		int readLength_2 = ((peReadInfo->readInfo_pe2).readSeq).length();
+		// FIX ME - 5/28/14 KLM
+		// WE NEED TO TAKE fixHeadTail_areaAndStringHash AND
+		// THE FOR LOOP AND BREAK IT UP INTO MANY FUNCTIONS
+		// fixHeadTail_areaAndStringHash NEEDS TO CALL THESE WITH
+		// TWO DIFFERENT READS
+	}
 
+	void areaAndStringHashReverseComplement(Read* read,
+		PE_Read_Alignment_Info* peAlignInfo,
+		SJhash_Info* SJ,
+		Chromosome* chrom)
+	{
+		// FIX ME - 5/28/14 KLM
+		// WE NEED TO TAKE fixHeadTail_areaAndStringHash AND
+		// THE FOR LOOP AND BREAK IT UP INTO MANY FUNCTIONS
+		// fixHeadTail_areaAndStringHash NEEDS TO CALL THESE WITH
+		// TWO DIFFERENT READS
+
+	}
+
+	void fixHeadTail_areaAndStringHash(PairedEndRead* peReadInfo, PE_Read_Alignment_Info* peAlignInfo,
+		SJhash_Info* SJ, SecondLevelChromosomeList* secondLevelChromosomeList, bool spliceJunctionHashExists)
+	{
 		Alignment_Info* tmpAlignmentInfo;
 
-		int readLength = 0;
+		Read currentRead;
 
+		/* FIX ME - THIS NEEDS TO BE REWORKED LIKE 'fixOneEndUnmapped.h'
+		 * 5/28/14 KLM
 		//////////////////// fix head //////////////////////////////
 		//cout << "start to fix head" << endl;
-		for(int tmpAlignInfoType = 1; tmpAlignInfoType <= 4; tmpAlignInfoType++)
+		for(int i = 1; i <= 4; i++)
 		{
-			readLength = tmpAlignInfoType <= 2
-				? readLength_1
-				: readLength_2;
+			currentRead = i <= 2
+				? peReadInfo->firstPairedEndRead
+				: peReadInfo->secondPairedEndRead;
 
 			for(int tmpAlignmentNO = 0; tmpAlignmentNO < (peAlignInfo->fixHeadTail_getAlignInfoVecSize(tmpAlignInfoType));
 				tmpAlignmentNO++)
@@ -51,23 +66,14 @@ public:
 					continue;
 				}
 
-				//cout << "start to nor1" << endl;
-				//cout << "start to getUnfixedHeadInfoFromRecordWithAlignInfoType ..." << endl;
 				Unfixed_Head unfixedHeadInfo;
 				unfixedHeadInfo.getUnfixedHeadInfoFromRecordWithAlignInfoType(peReadInfo, tmpAlignInfoType, tmpAlignmentInfo, indexInfo);
 
 				//cout << "finish getUnfixedTailInfoFromRecord ..." << endl;
 
-				string readSeqWithDirection;
-				if(unfixedHeadInfo.alignDirection == "+")
-				{
-					readSeqWithDirection = unfixedHeadInfo.readSeqOriginal;
-				}
-				else
-				{
-					readSeqWithDirection = covertStringToReverseComplement(unfixedHeadInfo.readSeqOriginal);
-				}		
-
+				string readSeqWithDirection = unfixedHeadInfo.alignDirection == "+"
+					? unfixedHeadInfo.readSeqOriginal
+					: covertStringToReverseComplement(unfixedHeadInfo.readSeqOriginal);
 
 				///////////////////////////////////////////////////////////////////////////////////////////	
 				/////////////////////////  try remapping with splice junction hash ////////////////////////
@@ -623,7 +629,7 @@ public:
 
 			}
 		}
-
+*/
 	}
 
 };

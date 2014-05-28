@@ -22,7 +22,7 @@ public:
 		FixSpliceBuffer = 4;
 	}
 
-	bool fixGapInPath(Path_Info* pathInfo, Seg_Info* segInfo, Index_Info* indexInfo, const string& readSeq_inProcess, int readLength)
+	bool fixGapInPath(Path_Info* pathInfo, Seg_Info* segInfo, Index_Info* indexInfo, Read readSeq_inProcess)
 	{
 		//cout << "start to fixGapInPath ..." << endl;
 		bool fixGapInPathBool = false;
@@ -123,7 +123,7 @@ public:
 				}
 
 				bool tmpDoubleAnchorFixed = fixDoubleAnchor_extendBack(newPathSpliceInfo, tmpRelation, tmpSegmentLocInRead_1, tmpSegmentLocInRead_2,
-					tmpSegmentLength_1, tmpSegmentLength_2, tmpSegmentMapPos_1, tmpSegmentMapPos_2, readSeq_inProcess, indexInfo, tmpChrNameStr, &tmpMismatchNum);
+					tmpSegmentLength_1, tmpSegmentLength_2, tmpSegmentMapPos_1, tmpSegmentMapPos_2, readSeq_inProcess.readSeq, indexInfo, tmpChrNameStr, &tmpMismatchNum);
 
 				newPathMismatchNum = newPathMismatchNum + tmpMismatchNum;
 				//cout << "...... tmpDoubleAnchorFixed: "<< tmpDoubleAnchorFixed << endl;
@@ -166,11 +166,25 @@ public:
 		}
 		//cout << "start to get finalPath " << endl;
 		//pathInfo->getFinalPath(indexInfo, segInfo, readLength);
-		pathInfo->getFinalPath_extend2HeadTail(indexInfo, segInfo, readLength, readSeq_inProcess);
+		pathInfo->getFinalPath_extend2HeadTail(indexInfo, segInfo, readSeq_inProcess);
 
 		//cout << "finish getting finalPath" << endl;
 		fixGapInPathBool = true;
 		return fixGapInPathBool;
+	}
+
+
+	int extendBackInChromSeq(int readLoc, const string& readSeq, int chromLoc, const string& chromSeq, int extendBackLengthMax)
+	{
+		int tmp = 1;
+		for (tmp = 1; tmp <= extendBackLengthMax; tmp++)
+		{
+			if(readSeq.at(readLoc - tmp - 1) != chromSeq.at(chromLoc - tmp - 1))
+			{
+				return tmp - 1;
+			}
+		}
+		return extendBackLengthMax;
 	}
 
 	bool fixDoubleAnchor_extendBack(Splice_Info* cigarInfo, int relation, int segmentLocInRead_1, int segmentLocInRead_2,

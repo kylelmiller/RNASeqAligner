@@ -1,6 +1,7 @@
 #include <string>
 #include <string.h>
 #include "splice_info.h"
+#include "secondLevelChromosome.h"
 
 using namespace std;
 
@@ -9,119 +10,111 @@ class FixOneEndUnmappedInfo
 public:
 	FixOneEndUnmappedInfo()
 	{}
+/*
 
-	void fixOneEndUnmapped(PE_Read_Info* peReadInfo, PE_Read_Alignment_Info* peAlignInfo,
-		vector<char*>& secondLevelChrom,
-		vector<unsigned int*>& secondLevelSa,
-		vector<BYTE*>& secondLevelLcpCompress,
-		vector<unsigned int*>& secondLevelChildTab,
-		vector<BYTE*>& secondLevelDetChild,
-		vector<unsigned int*>& secondLevelLcp,
-		vector<unsigned int*>& secondLevelUp,
-		vector<unsigned int*>& secondLevelDown,
-		vector<unsigned int*>& secondLevelNext, 
-		Index_Info* indexInfo
-		)
+	void setUnmapEndInfoBackwards(Alignment_Info* alignInfo, Index_Info* indexInfo)
 	{
-		int readLength;// = 100; // to debug
+		chrNameStr = alignInfo->alignChromName;
+		chrMapPos_start = alignInfo->alignChromPos;
+		chrMapPos_end = alignInfo->getEndMatchedPosInChr();
 
-		bool End1OrEnd2; bool NorOrRcm;
+		mapPosIntervalStart = chrMapPos_start - READ_ALIGN_AREA_LENGTH;
+		mapPosIntervalEnd = chrMapPos_end;
 
-		vector<int> alignmentInfoVecSize_ori;
-		alignmentInfoVecSize_ori.push_back(peAlignInfo->norAlignmentInfo_PE_1.size());
-		alignmentInfoVecSize_ori.push_back(peAlignInfo->rcmAlignmentInfo_PE_1.size());
-		alignmentInfoVecSize_ori.push_back(peAlignInfo->norAlignmentInfo_PE_2.size());
-		alignmentInfoVecSize_ori.push_back(peAlignInfo->rcmAlignmentInfo_PE_2.size());
+		int chrNameInt = indexInfo->convertStringToInt(chrNameStr);
 
-		for(int tmpAlignInfoType = 1; tmpAlignInfoType <= 4; tmpAlignInfoType ++)
+		// Xinan: need to debug
+		secondLevelIndexNum = indexInfo->getSecondLevelIndexFromChrAndPos(chrNameInt, chrMapPos_start);
+		chrPosStartIn2ndLevelIndex = indexInfo->getChrPosFromSecondLevelIndexPos(chrNameInt, secondLevelIndexNum, 1);
+	}*/
+
+	void fixOneEndReadForward(Read read, Read incompleteEndRead, PE_Read_Alignment_Info* peAlignInfo,
+		vector<Alignment_Info*> alignmentVector, SecondLevelChromosomeList* secondLevelChromosomeList)
+	{
+		string chrNameStr;
+		int chrMapPos_start;
+		int chrMapPos_end;
+
+		int mapPosIntervalStart;
+		int mapPosIntervalEnd;
+		int secondLevelIndexNum; // start from 1
+
+		int chrPosStartIn2ndLevelIndex;
+
+		for(int i = 0; i < alignmentVector.size();i++)
 		{
-			End1OrEnd2 = peReadInfo->checkEnd1OrEnd2WithAlignInfoTypeNo(tmpAlignInfoType);
-			NorOrRcm = peReadInfo->checkNorOrRcmWithAlignInfoTypeNo(tmpAlignInfoType);
-			readLength = peReadInfo->checkReadLengthWithAlignInfoTypeNo(tmpAlignInfoType);
+			Alignment_Info* alignmentInfo = alignmentVector[i];
 
-			int peAlignInfoVectorSize = (peAlignInfo->getAlignInfoVecSize(tmpAlignInfoType));
+			mapPosIntervalStart = alignmentInfo->alignChromPos;
+			mapPosIntervalEnd = alignmentInfo->getEndMatchedPosInChr() + READ_ALIGN_AREA_LENGTH;
 
-			for(int tmpAlignmentNO = 0;
-				tmpAlignmentNO < peAlignInfoVectorSize;
-				tmpAlignmentNO ++)
+			SecondLevelChromosome* secondLevelChromosome =
+				secondLevelChromosomeList->getSecondLevelChromosome(alignmentVector[i]);
+
+			if(secondLevelChromosome == NULL)
+				continue;
+
+			Seg2ndOri_Info* seg2ndOriInfo = new Seg2ndOri_Info();
+			if(!seg2ndOriInfo->mapMainSecondLevel_compressedIndexWILLBEFINAL(read, secondLevelChromosome))
 			{
+				delete seg2ndOriInfo;
+				continue;
+			}
 
-				//cout << "tmpAlignemntNO: " << tmpAlignmentNO << endl;
+			Seg_Info* segInfo = new Seg_Info(seg2ndOriInfo, mapPosIntervalStart,
+				mapPosIntervalEnd, chrPosStartIn2ndLevelIndex,
+				secondLevelChromosome->getIndexInfo(), chrNameStr);
 
-				Alignment_Info* tmpAlignInfo = peAlignInfo->getAlignInfo(tmpAlignInfoType,
-					tmpAlignmentNO);
-				UnmapEnd_Info* unmapEndInfo = new UnmapEnd_Info();
-				unmapEndInfo->setUnmapEndInfo(tmpAlignInfo, End1OrEnd2, NorOrRcm, indexInfo);
+			Path_Info* pathInfo = new Path_Info();
+			pathInfo->getPossiPathFromSeg(segInfo);
 
-				char* unmapEndReadChar =  const_cast<char*>(peReadInfo->getIncompleteEndReadSeq(End1OrEnd2, NorOrRcm).c_str());
-
-				Seg2ndOri_Info* seg2ndOriInfo = new Seg2ndOri_Info();
-
-				//cout << "start to map in 2nd level index " << endl;
-				int secondLevelIndexNO = unmapEndInfo->secondLevelIndexNum - 1;
-				//cout << "secondLevelIndexNO: " << secondLevelIndexNO << endl;
-
-				if(
-					((indexInfo->invalidSecondLevelIndexNOset).find(secondLevelIndexNO+1))
-					!= (indexInfo->invalidSecondLevelIndexNOset).end()
-					)
-				{
-					delete(seg2ndOriInfo);
-					delete(unmapEndInfo);
-					continue;
-				}
-
-				bool unmapEndMapBool = seg2ndOriInfo->mapMainSecondLevel_compressedIndex(
-					unmapEndReadChar,
-					secondLevelSa[secondLevelIndexNO],
-					secondLevelLcpCompress[secondLevelIndexNO],
-					secondLevelChildTab[secondLevelIndexNO],
-					secondLevelChrom[secondLevelIndexNO],
-					secondLevelDetChild[secondLevelIndexNO],
-					readLength, indexInfo);
-
-				if(!unmapEndMapBool)
-				{
-					delete(seg2ndOriInfo);
-					delete(unmapEndInfo);
-					continue;
-				}
-
-				Seg_Info* segInfo = new Seg_Info(seg2ndOriInfo, unmapEndInfo->mapPosIntervalStart,
-					unmapEndInfo->mapPosIntervalEnd, unmapEndInfo->chrPosStartIn2ndLevelIndex,
-					indexInfo, unmapEndInfo->chrNameStr);
-
-				Path_Info* pathInfo = new Path_Info();
-				pathInfo->getPossiPathFromSeg(segInfo);
-
-				int pathValidNum = pathInfo->pathValidNumInt();
-				if(pathValidNum > 10)
-				{
-					delete(pathInfo);
-					delete(segInfo);
-					delete(seg2ndOriInfo);
-					delete(unmapEndInfo);
-					continue;
-				}
-
-				Gap_Info* gapInfo = new Gap_Info();
-				gapInfo->fixGapInPath(pathInfo, segInfo,
-					indexInfo, peReadInfo->getIncompleteEndReadSeq(End1OrEnd2, NorOrRcm), readLength);
-
-
-				if(pathInfo->finalPathVec.size() == 1)
-				{
-					peAlignInfo->pushBackPathInfo2PeAlignInfo(pathInfo, End1OrEnd2, NorOrRcm, indexInfo);
-				}
-
-				peAlignInfo->pushBackPathInfo2PeAlignInfo(pathInfo, End1OrEnd2, NorOrRcm, indexInfo);
-
-				delete(gapInfo);
+			int pathValidNum = pathInfo->pathValidNumInt();
+			if(pathValidNum > 10)
+			{
 				delete(pathInfo);
 				delete(segInfo);
 				delete(seg2ndOriInfo);
-				delete(unmapEndInfo);
+				continue;
 			}
+
+			Gap_Info* gapInfo = new Gap_Info();
+			gapInfo->fixGapInPath(pathInfo, segInfo,
+					secondLevelChromosome->getIndexInfo(), incompleteEndRead);
+
+
+			/* FIX ME - FIX THIS LATER 5/28/14 KLM
+			if(pathInfo->finalPathVec.size() == 1)
+				peAlignInfo->pushBackPathInfo2PeAlignInfo(pathInfo, End1OrEnd2, NorOrRcm, indexInfo);
+
+			peAlignInfo->pushBackPathInfo2PeAlignInfo(pathInfo, End1OrEnd2, NorOrRcm, indexInfo);
+			 */
+			delete(gapInfo);
+			delete(pathInfo);
+			delete(segInfo);
+			delete(seg2ndOriInfo);
 		}
+	}
+
+	void fixOneEndUnmappedReadBackwards(Read read, Read incompleteEndRead,
+		PE_Read_Alignment_Info* peAlignInfo, vector<Alignment_Info*> alignmentVector,
+		SecondLevelChromosomeList* secondLevelChromosomeList)
+	{
+
+	}
+
+	void fixOneEndUnmapped(PairedEndRead* peReadInfo, PE_Read_Alignment_Info* peAlignInfo,
+			SecondLevelChromosomeList* secondLevelChromosomeList)
+	{
+		// Fix the first read's ends
+		fixOneEndReadForward(peReadInfo->getFirstRead(), peReadInfo->getSecondReadReverseComplement(),
+			peAlignInfo, peAlignInfo->norAlignmentInfo_PE_1, secondLevelChromosomeList); // End1OrEnd2=true, NorOrRcm=true
+		fixOneEndUnmappedReadBackwards(peReadInfo->getFirstReadReverseComplement(), peReadInfo->getSecondRead(),
+			peAlignInfo, peAlignInfo->rcmAlignmentInfo_PE_1, secondLevelChromosomeList); // End1OrEnd2=true, NorOrRcm=false
+
+		// Fix the second read's ends
+		fixOneEndUnmappedReadBackwards(peReadInfo->getSecondRead(), peReadInfo->getFirstReadReverseComplement(),
+			peAlignInfo, peAlignInfo->norAlignmentInfo_PE_2, secondLevelChromosomeList); // End1OrEnd2=false, NorOrRcm=true
+		fixOneEndReadForward(peReadInfo->getSecondReadReverseComplement(), peReadInfo->getFirstRead(),
+			peAlignInfo, peAlignInfo->rcmAlignmentInfo_PE_2, secondLevelChromosomeList); // End1OrEnd2=false, NorOrRcm=false
 	}
 };

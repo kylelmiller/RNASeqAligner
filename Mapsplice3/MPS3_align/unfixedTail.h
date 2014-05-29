@@ -77,13 +77,13 @@ public:
 	{
 		if(end1)
 		{
-			readName = (readInfo->firstPairedEndRead).readName;
-			readSeqOriginal = (readInfo->firstPairedEndRead).readSeq;
+			readName = readInfo->firstPairedEndRead.getName();
+			readSeqOriginal = readInfo->firstPairedEndRead.getSequence();
 		}
 		else
 		{
-			readName = (readInfo->secondPairedEndRead).readName;
-			readSeqOriginal = (readInfo->secondPairedEndRead).readSeq;
+			readName = readInfo->secondPairedEndRead.getName();
+			readSeqOriginal = readInfo->secondPairedEndRead.getSequence();
 		}
 		alignDirection = alignInfo->alignDirection;
 
@@ -105,13 +105,13 @@ public:
 	{
 		if((alignInfoType == 1) || (alignInfoType == 2))
 		{
-			readName = (readInfo->firstPairedEndRead).readName;
-			readSeqOriginal = (readInfo->firstPairedEndRead).readSeq;
+			readName = (readInfo->firstPairedEndRead).getName();
+			readSeqOriginal = (readInfo->firstPairedEndRead).getSequence();
 		}
 		else
 		{
-			readName = (readInfo->secondPairedEndRead).readName;
-			readSeqOriginal = (readInfo->secondPairedEndRead).readSeq;
+			readName = (readInfo->secondPairedEndRead).getName();
+			readSeqOriginal = (readInfo->secondPairedEndRead).getSequence();
 		}
 		alignDirection = alignInfo->alignDirection;
 

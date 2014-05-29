@@ -39,22 +39,13 @@ public:
 
 	unsigned int null_num; // 2654911540 for mm9_noRandom genome
 	unsigned int indexSize; //2654911539  //sequence length + 1, the length of sa-lcp-down-next 
-	//omp_lock_t lock;
-
-	string int_to_str(int numerical)
-	{
-			char c[100];
-			sprintf(c,"%d",numerical);
-			string str(c);
-			return str;
-	}
 
 	string getInvalidSecondLevelIndexNOstr()
 	{
 		string tmpStr = "invalidSecondLevelIndexNO: \n";
 		for(set<int>::iterator setIter = invalidSecondLevelIndexNOset.begin(); setIter != invalidSecondLevelIndexNOset.end(); setIter ++)
 		{
-			tmpStr += int_to_str(*setIter);
+			tmpStr += Utilities::int_to_str(*setIter);
 			tmpStr += ",";
 		} 
 		tmpStr += "\n";
@@ -219,21 +210,17 @@ public:
 		}
 	}
 
-
 	unsigned int getWholeGenomeLocation(unsigned int chr_name_int, unsigned int locationInWholeGenome)
 	{
-		//cout << "in function chr_name_int: " << chr_name_int << endl;
-		unsigned int chr_local_location;
+		unsigned int chr_local_location = 0;
 		if(chr_name_int == 0)
 		{
 			chr_local_location = locationInWholeGenome;
 		}
 		else if(chr_name_int < chromNum)
 		{
-			//cout << "< chromNum chr_name_int: " << chr_name_int << endl;
 			chr_local_location = locationInWholeGenome 
-				+ chrEndPosInGenome[chr_name_int-1] + 2; 
-			//cout << "chr_local_location: " << chr_local_location << endl;
+				+ chrEndPosInGenome[chr_name_int-1] + 2;
 		}
 		else
 		{
@@ -244,27 +231,7 @@ public:
 
 	unsigned int getWholeGenomeLocation(const string& chromNameStr, unsigned int locationInWholeGenome)
 	{
-		//cout << "in function chr_name_int: " << chr_name_int << endl;
-		
-		int chr_name_int = this->convertStringToInt(chromNameStr);
-		
-		unsigned int chr_local_location;
-		if(chr_name_int == 0)
-		{
-			chr_local_location = locationInWholeGenome;
-		}
-		else if(chr_name_int < chromNum)
-		{
-			//cout << "< chromNum chr_name_int: " << chr_name_int << endl;
-			chr_local_location = locationInWholeGenome 
-				+ chrEndPosInGenome[chr_name_int-1] + 2; 
-			//cout << "chr_local_location: " << chr_local_location << endl;
-		}
-		else
-		{
-			cout << "chr_name_int error: " << chr_name_int << endl;
-		}
-		return chr_local_location;
+		return getWholeGenomeLocation(this->convertStringToInt(chromNameStr), locationInWholeGenome);
 	}
 
 	int getChr(unsigned int locationInWholeGenome)
@@ -293,7 +260,6 @@ public:
 		return chrInt;
 	}
 
-
 	int convertStringToInt(const string& chrName)
 	{
 		
@@ -316,70 +282,4 @@ public:
 		//omp_destroy_lock(&lock);
 		return chrNameInt;
 	}
-
-	/*string printGenomeInfo()
-	{
-		string genomeInfoStr;
-
-		genomeInfoStr = chrNameStr[0] + " " + int_to_str(0) + ": " + int_to_str((int)(chrEndPosInGenome[0]+1)) + "\n";
-		for(int tmp = 1; tmp < chromNum; tmp++)
-		{
-			genomeInfoStr = genomeInfoStr + chrNameStr[tmp] + " " + int_to_str(tmp) + ": "
-				+ int_to_str((int)((chrEndPosInGenome)[tmp]-(chrEndPosInGenome)[tmp-1]-1)) + "\n";
-		}
-
-		return genomeInfoStr;
-	}*/
-
-	/*
-	int convertStringToInt(const string& chrName)
-	{
-		if(chrName == "chr1")
-			return 0;
-		else if(chrName == "chr2")
-			return 1;
-		else if(chrName == "chr3")
-			return 2;
-		else if(chrName == "chr4")
-			return 3;
-		else if(chrName == "chr5")
-			return 4;
-		else if(chrName == "chr6")
-			return 5;
-		else if(chrName == "chr7")
-			return 6;
-		else if(chrName == "chr8")
-			return 7;
-		else if(chrName == "chr9")
-			return 8;
-		else if(chrName == "chr10")
-			return 9;
-		else if(chrName == "chr11")
-			return 10;
-		else if(chrName == "chr12")
-			return 11;
-		else if(chrName == "chr13")
-			return 12;
-		else if(chrName == "chr14")
-			return 13;
-		else if(chrName == "chr15")
-			return 14;
-		else if(chrName == "chr16")
-			return 15;
-		else if(chrName == "chr17")
-			return 16;
-		else if(chrName == "chr18")
-			return 17;
-		else if(chrName == "chr19")
-			return 18;
-		else if(chrName == "chrX")
-			return 19;
-		else if(chrName == "chrY")
-			return 20;
-		else if(chrName == "chrM")
-			return 21;
-		else 
-			return 22;
-	}*/
-
 };

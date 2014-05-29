@@ -28,6 +28,15 @@ private:
 	unsigned int* _preIndexIntervalStartArray;
 	unsigned int* _preIndexIntervalEndArray;
 
+	unsigned int getChildDownValue(unsigned int index)
+	{
+		if(_verifyChild[index] == 4)
+			return _child[_child[index]-1];
+		else if (_verifyChild[index] == 2)
+			return _child[index];
+		else
+			return 0;
+	}
 public:
 	Chromosome(unsigned int* sa, BYTE* lcp, unsigned int* child, BYTE* verifyChild, char* chrom,
 			Index_Info* indexInfo, int* preIndexMappedLengthArray,
@@ -83,6 +92,15 @@ public:
 		return _indexInfo;
 	}
 
+	unsigned int getLcp(unsigned int start, unsigned int end)
+	{
+		unsigned int index = (_verifyChild[end]==1) * _child[end];
+		if(start >= index || end < index)
+		index = getChildDownValue(start);
+
+		return _lcp[index];
+	}
+
 	/*
 	 * Gets the location of a given read based on INDEX_KMER_LENGTH
 	 * nucleotides of the read starting at stop_loc_overall
@@ -91,7 +109,7 @@ public:
 		int* mappedLength, unsigned int* indexIntervalStart,
 		unsigned int* indexIntervalEnd)
 	{
-		if (read.readSeq.find("N") != read.readSeq.npos)
+		if (read.getSequence().find("N") != read.getSequence().npos)
 			return false;
 
 		unsigned int preIndexNO = 0;
@@ -100,7 +118,7 @@ public:
 		// Build a hash based on INDEX_KMER_LENGTH nucleotides
 		for(int i=stop_loc_overall + INDEX_KMER_LENGTH - 1; i>=stop_loc_overall; i--)
 		{
-			preIndexNO = preIndexNO + baseChar2intArray[(read.readSeq.at(i) - 'A')] * baseForCount;
+			preIndexNO = preIndexNO + baseChar2intArray[(read.getSequence().at(i) - 'A')] * baseForCount;
 			baseForCount = baseForCount * CHARACTER_OFFSET;
 		}
 
@@ -112,5 +130,35 @@ public:
 		// Something was found, return true
 		return true;
 	}
+
+	void getFirstInterval(char ch, unsigned int *interval_begin, unsigned int *interval_end)
+	{
+		switch(ch)
+		{
+			case 'C':
+				*interval_begin = (_verifyChild[0]>2) * _child[0];
+				*interval_end = (_verifyChild[*interval_begin]>2) * _child[*interval_begin] - 1;
+				break;
+			case 'A':
+				*interval_begin = 0;
+				*interval_end = (_verifyChild[0]>2) * _child[0] - 1;
+				break;
+			case 'G':
+			{
+				unsigned int g_child_next_tmp = (_verifyChild[0]>2) * _child[0];
+				*interval_begin = (_verifyChild[g_child_next_tmp]>2) * _child[g_child_next_tmp];
+				*interval_end = (_verifyChild[*interval_begin]>2) * _child[*interval_begin] - 1;
+			}
+				break;
+			case 'T':
+			default:
+				unsigned int t_child_next_tmp = (_verifyChild[0]>2) * _child[0];
+				unsigned int t_child_next_tmp2 = (_verifyChild[t_child_next_tmp]>2) * _child[t_child_next_tmp];
+				*interval_begin = (_verifyChild[t_child_next_tmp2]>2) * _child[t_child_next_tmp2];
+				*interval_end = (_verifyChild[*interval_begin]>2) * _child[*interval_begin] - 1;
+				break;
+		}
+	}
 };
+
 #endif

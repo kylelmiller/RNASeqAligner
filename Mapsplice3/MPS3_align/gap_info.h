@@ -24,39 +24,27 @@ public:
 
 	bool fixGapInPath(Path_Info* pathInfo, Seg_Info* segInfo, Index_Info* indexInfo, Read readSeq_inProcess)
 	{
-		//cout << "start to fixGapInPath ..." << endl;
 		bool fixGapInPathBool = false;
 		int pathVecSize = pathInfo->PathVec_seg.size();
 
 		for(int tmpPathNO = 0; tmpPathNO < pathVecSize; tmpPathNO ++)
 		{
-			//cout << "...... start to fix path " << int_to_str(tmpPathNO + 1) << endl;
 			if(!(pathInfo->PathValidBoolVec[tmpPathNO]))
 			{
-				//newPathFixed = false;
 				pathInfo->PathFixedBoolVec.push_back(false);				
 				continue;
 			}
 
-			//cout << "...... start to fix path " << int_to_str(tmpPathNO + 1) << endl;
-
 			int firstSegGroupNO = (pathInfo->PathVec_seg[tmpPathNO])[0].first;
-			int firstSegLength = (segInfo->norSegmentLength)[firstSegGroupNO];
-
-			//cout << "firstSegGroupNO: " << firstSegGroupNO << endl
-			//	<< " firstSegLength: " << firstSegLength << endl;
+			int firstSegLength = segInfo->getSegment(firstSegGroupNO)->getLength();
 
 			Splice_Info* newPathSpliceInfo = new Splice_Info();
 			Jump_Code firstJumpCode(firstSegLength, "M");
 			newPathSpliceInfo->jump_code.push_back(firstJumpCode);
 
 			int newPathMismatchNum = 0;
-			
 			bool newPathFixed = true;
-			
 			int tmpPathSegSize = pathInfo->PathVec_seg[tmpPathNO].size();
-			
-			//cout << "tmpPathSegSize: " << tmpPathSegSize << endl;
 
 			for(int tmpPathSegNO = 0; tmpPathSegNO < tmpPathSegSize-1; tmpPathSegNO++)
 			{
@@ -64,94 +52,66 @@ public:
 				int tmpSegGroupNO = (pathInfo->PathVec_seg[tmpPathNO])[tmpPathSegNO].first;
 				int tmpSegCandiNO = (pathInfo->PathVec_seg[tmpPathNO])[tmpPathSegNO].second;
 
-				//cout << "...... tmpSegGroupNO: " << tmpSegGroupNO+1 << endl;
-				//cout << "...... tmpSegCandiNO: " << tmpSegCandiNO+1 << endl;
-
 				int tmpSegGroupNO_next = (pathInfo->PathVec_seg[tmpPathNO])[tmpPathSegNO+1].first;
 				int tmpSegCandiNO_next = (pathInfo->PathVec_seg[tmpPathNO])[tmpPathSegNO+1].second;
 
-				//cout << "...... tmpSegGroupNO_next: " << tmpSegGroupNO_next+1 << endl;
-				//cout << "...... tmpSegCandiNO_next: " << tmpSegCandiNO_next+1 << endl;
-
 				int tmpRelation = segInfo->checkSegRelation(tmpSegGroupNO, tmpSegCandiNO, tmpSegGroupNO_next, tmpSegCandiNO_next);
 				
-				/*if((relation == FIX_TOO_CLOSE) || (relation == FIX_TOO_FAR) || (relation == FIX_NO_RELATIONSHIP))
-				{
-					return false;
-				}*/
-
-
-				//cout << "...... relation: " << tmpRelation << endl;
-
 				int tmpSegmentLocInRead_1 = (segInfo->norSegmentLocInRead)[tmpSegGroupNO];
 				int tmpSegmentLocInRead_2 = (segInfo->norSegmentLocInRead)[tmpSegGroupNO_next];
-				//cout << "tmpSegmentLocInRead_1: " << tmpSegmentLocInRead_1 << endl;
-				//cout << "tmpSegmentLocInRead_2: " << tmpSegmentLocInRead_2 << endl;
 				int tmpSegmentLength_1 = (segInfo->norSegmentLength)[tmpSegGroupNO];
 				int tmpSegmentLength_2 = (segInfo->norSegmentLength)[tmpSegGroupNO_next];
-				//cout << "tmpSegmentLength_1: " << tmpSegmentLength_1 << endl;
-				//cout << "tmpSegmentLength_2: " << tmpSegmentLength_2 << endl;
 
 				unsigned int tmpSegmentMapPosInWholeGenome_1 = *(segInfo->norSegmentAlignLoc + tmpSegGroupNO * CANDALILOC + tmpSegCandiNO);
 				unsigned int tmpSegmentMapPosInWholeGenome_2 = *(segInfo->norSegmentAlignLoc + tmpSegGroupNO_next * CANDALILOC + tmpSegCandiNO_next);
-
-				//cout << "tmpSegmentMapPosInWholeGenome_1: " << tmpSegmentMapPosInWholeGenome_1 << endl;
-				//cout << "tmpSegmentMapPosInWholeGenome_2: " << tmpSegmentMapPosInWholeGenome_2 << endl;
 
 				unsigned int tmpChrNameInt, tmpChrPosInt;
 				indexInfo->getChrLocation(tmpSegmentMapPosInWholeGenome_1, &tmpChrNameInt, &tmpChrPosInt);
 				string tmpChrNameStr_1 = indexInfo->chrNameStr[tmpChrNameInt];
 				int tmpSegmentMapPos_1 = tmpChrPosInt;
-				//cout << "...... tmpChrMapPos_1: " << tmpSegmentMapPos_1 << endl;
 				indexInfo->getChrLocation(tmpSegmentMapPosInWholeGenome_2, &tmpChrNameInt, &tmpChrPosInt);
 				string tmpChrNameStr_2 = indexInfo->chrNameStr[tmpChrNameInt];
 				int tmpSegmentMapPos_2 = tmpChrPosInt;
-				//cout << "...... tmpChrMapPos_2: " << tmpSegmentMapPos_2 << endl;
 				
 				string tmpChrNameStr;
 				if(tmpChrNameStr_1 == tmpChrNameStr_2)
 				{
 					tmpChrNameStr = tmpChrNameStr_1;
-					//cout << "...... tmpChrName: " << tmpChrNameStr << endl;
 				}
 				else
 				{
-					//cout << "...... different chrName " << endl;
 					newPathFixed = false;
 					pathInfo->PathFixedBoolVec.push_back(newPathFixed);
 					break;
 				}
 
-				bool tmpDoubleAnchorFixed = fixDoubleAnchor_extendBack(newPathSpliceInfo, tmpRelation, tmpSegmentLocInRead_1, tmpSegmentLocInRead_2,
-					tmpSegmentLength_1, tmpSegmentLength_2, tmpSegmentMapPos_1, tmpSegmentMapPos_2, readSeq_inProcess.readSeq, indexInfo, tmpChrNameStr, &tmpMismatchNum);
+				bool tmpDoubleAnchorFixed = fixDoubleAnchor_extendBack(
+					newPathSpliceInfo,
+					tmpRelation,
+					tmpSegmentLocInRead_1,
+					tmpSegmentLocInRead_2,
+					tmpSegmentLength_1,
+					tmpSegmentLength_2,
+					tmpSegmentMapPos_1,
+					tmpSegmentMapPos_2,
+					readSeq_inProcess.getSequence(),
+					indexInfo,
+					tmpChrNameStr,
+					&tmpMismatchNum);
 
 				newPathMismatchNum = newPathMismatchNum + tmpMismatchNum;
-				//cout << "...... tmpDoubleAnchorFixed: "<< tmpDoubleAnchorFixed << endl;
 				if(!tmpDoubleAnchorFixed)
 				{
-					if((tmpRelation == FIX_DELETION_GAP)||(tmpRelation == FIX_DELETION_NEIGHBOUR)
-						||(tmpRelation == FIX_INSERTION_GAP)||(tmpRelation == FIX_INSERTION_NEIGHBOUR)
-						||(tmpRelation == FIX_MATCH))
-					{
-
-						//cout << endl << "fixing match/indel failed: " << tmpRelation << endl;
-						//cout << " failed at gap:  " << tmpSegGroupNO+1 << "," << tmpSegCandiNO+1 << "--" 
-						//	<< tmpSegGroupNO_next + 1 << "," << tmpSegCandiNO_next+1 << endl << endl;
-					}
 					newPathFixed = false;
 					pathInfo->PathFixedBoolVec.push_back(newPathFixed);
 					break;					
 				}
 			}
-	
-			//cout << "newPathFixed: " << newPathFixed << endl;
 
 			if(newPathFixed)
 			{
-				newPathSpliceInfo->getFinalJumpCode();	
-				//cout << "finish getting final jumpcode" << endl;
+				newPathSpliceInfo->getFinalJumpCode();
 				bool allJumpCodeValidBool = newPathSpliceInfo->allFinalJumpCodeValid();
-				//cout << "allJumpCodeValidBool" << allJumpCodeValidBool << endl;
 				if(allJumpCodeValidBool)
 				{
 					(pathInfo->PathFixedBoolVec).push_back(allJumpCodeValidBool);
@@ -164,11 +124,9 @@ public:
 				}
 			}
 		}
-		//cout << "start to get finalPath " << endl;
-		//pathInfo->getFinalPath(indexInfo, segInfo, readLength);
+
 		pathInfo->getFinalPath_extend2HeadTail(indexInfo, segInfo, readSeq_inProcess);
 
-		//cout << "finish getting finalPath" << endl;
 		fixGapInPathBool = true;
 		return fixGapInPathBool;
 	}

@@ -10,23 +10,6 @@ class FixOneEndUnmappedInfo
 public:
 	FixOneEndUnmappedInfo()
 	{}
-/*
-
-	void setUnmapEndInfoBackwards(Alignment_Info* alignInfo, Index_Info* indexInfo)
-	{
-		chrNameStr = alignInfo->alignChromName;
-		chrMapPos_start = alignInfo->alignChromPos;
-		chrMapPos_end = alignInfo->getEndMatchedPosInChr();
-
-		mapPosIntervalStart = chrMapPos_start - READ_ALIGN_AREA_LENGTH;
-		mapPosIntervalEnd = chrMapPos_end;
-
-		int chrNameInt = indexInfo->convertStringToInt(chrNameStr);
-
-		// Xinan: need to debug
-		secondLevelIndexNum = indexInfo->getSecondLevelIndexFromChrAndPos(chrNameInt, chrMapPos_start);
-		chrPosStartIn2ndLevelIndex = indexInfo->getChrPosFromSecondLevelIndexPos(chrNameInt, secondLevelIndexNum, 1);
-	}*/
 
 	void fixOneEndReadForward(Read read, Read incompleteEndRead, PE_Read_Alignment_Info* peAlignInfo,
 		vector<Alignment_Info*> alignmentVector, SecondLevelChromosomeList* secondLevelChromosomeList)
@@ -49,13 +32,15 @@ public:
 			mapPosIntervalEnd = alignmentInfo->getEndMatchedPosInChr() + READ_ALIGN_AREA_LENGTH;
 
 			SecondLevelChromosome* secondLevelChromosome =
-				secondLevelChromosomeList->getSecondLevelChromosome(alignmentVector[i]);
+				secondLevelChromosomeList->getSecondLevelChromosome(
+						alignmentInfo->alignChromName,
+						alignmentInfo->alignChromPos);
 
 			if(secondLevelChromosome == NULL)
 				continue;
 
 			Seg2ndOri_Info* seg2ndOriInfo = new Seg2ndOri_Info();
-			if(!seg2ndOriInfo->mapMainSecondLevel_compressedIndexWILLBEFINAL(read, secondLevelChromosome))
+			if(!seg2ndOriInfo->mapMainSecondLevel_compressedIndex(read, secondLevelChromosome))
 			{
 				delete seg2ndOriInfo;
 				continue;

@@ -70,14 +70,6 @@ public:
 	Alignment_Info()
 	{}
 
-	string int_to_str(int numerical)
-	{
-			char c[100];
-			sprintf(c,"%d",numerical);
-			string str(c);
-			return str;
-	}
-
 	int unfixedHeadLength()
 	{
 		return cigarStringJumpCode[0].len;
@@ -439,11 +431,11 @@ public:
 			XF = XF + (spliceJunctionVec[tmp].second).flankString + ","; 
 		}		
 
-		samString = readName + "\t" + int_to_str(FLAG) + "\t" + RNAME + "\t"
-			+ int_to_str(POS) + "\t" + int_to_str(MAPQ) + "\t" + CIGAR 
-			+ "\t" + RNEXT + "\t" + int_to_str(PNEXT) + "\t" 
-			+ int_to_str(TLEN) + "\t" + readSeq + "\t" + qualitySeq + "\tNM:i:"+ 
-			int_to_str(NM) + "\tIH:i:" + int_to_str(IH) + "\tHI:i:" + int_to_str(HI) 
+		samString = readName + "\t" + Utilities::int_to_str(FLAG) + "\t" + RNAME + "\t"
+			+ Utilities::int_to_str(POS) + "\t" + Utilities::int_to_str(MAPQ) + "\t" + CIGAR
+			+ "\t" + RNEXT + "\t" + Utilities::int_to_str(PNEXT) + "\t"
+			+ Utilities::int_to_str(TLEN) + "\t" + readSeq + "\t" + qualitySeq + "\tNM:i:"+
+			Utilities::int_to_str(NM) + "\tIH:i:" + Utilities::int_to_str(IH) + "\tHI:i:" + Utilities::int_to_str(HI)
 			+ "\tXS:A:" + XS + "\tXF:Z:" + XF;
 
 
@@ -707,11 +699,11 @@ public:
 
 
 		samString = readName + "\t" + 
-			int_to_str(FLAG) + "\t" + RNAME + "\t"
-			+ int_to_str(POS) + "\t" + int_to_str(MAPQ) + "\t" + CIGAR 
-			+ "\t" + RNEXT + "\t" + int_to_str(PNEXT) + "\t" 
-			+ int_to_str(TLEN) + "\t" + readSeq + "\t" + 
-			QUAL + "\tNM:i:" + int_to_str(mismatchNum) + "\tXS:A:" + strandStr + "\tXF:Z:";
+			Utilities::int_to_str(FLAG) + "\t" + RNAME + "\t"
+			+ Utilities::int_to_str(POS) + "\t" + Utilities::int_to_str(MAPQ) + "\t" + CIGAR
+			+ "\t" + RNEXT + "\t" + Utilities::int_to_str(PNEXT) + "\t"
+			+ Utilities::int_to_str(TLEN) + "\t" + readSeq + "\t" +
+			QUAL + "\tNM:i:" + Utilities::int_to_str(mismatchNum) + "\tXS:A:" + strandStr + "\tXF:Z:";
 		for(int tmp = 0; tmp < spliceJunctionVec.size(); tmp++)
 		{
 			samString = samString + (spliceJunctionVec[tmp].second).flankString + ","; 
@@ -768,12 +760,12 @@ public:
 		string TLENstr; 
 		string mismatchNumStr;
 		
-		FLAGstr = int_to_str(FLAG);
-		POSstr = int_to_str(POS);
-		MAPQstr = int_to_str(MAPQ);
-		PNEXTstr = int_to_str(PNEXT);
-		TLENstr = int_to_str(TLEN);
-		mismatchNumStr = int_to_str(mismatchNum);
+		FLAGstr = Utilities::int_to_str(FLAG);
+		POSstr = Utilities::int_to_str(POS);
+		MAPQstr = Utilities::int_to_str(MAPQ);
+		PNEXTstr = Utilities::int_to_str(PNEXT);
+		TLENstr = Utilities::int_to_str(TLEN);
+		mismatchNumStr = Utilities::int_to_str(mismatchNum);
 
 		samString = readName + "\t" 
 			+ FLAGstr + "\t" 
@@ -846,14 +838,14 @@ public:
 		string IHstr;
 		string HIstr;
 
-		FLAGstr = int_to_str(FLAG);
-		POSstr = int_to_str(POS);
-		MAPQstr = int_to_str(MAPQ);
-		PNEXTstr = int_to_str(PNEXT);
-		TLENstr = int_to_str(TLEN);
-		mismatchNumStr = int_to_str(mismatchNum);
-		IHstr = int_to_str(IH_num);
-		HIstr = int_to_str(HI_num);
+		FLAGstr = Utilities::int_to_str(FLAG);
+		POSstr = Utilities::int_to_str(POS);
+		MAPQstr = Utilities::int_to_str(MAPQ);
+		PNEXTstr = Utilities::int_to_str(PNEXT);
+		TLENstr = Utilities::int_to_str(TLEN);
+		mismatchNumStr = Utilities::int_to_str(mismatchNum);
+		IHstr = Utilities::int_to_str(IH_num);
+		HIstr = Utilities::int_to_str(HI_num);
 
 		samString = readName + "\t" 
 			+ FLAGstr + "\t" 
@@ -931,14 +923,14 @@ public:
 		string IHstr;
 		string HIstr;
 
-		FLAGstr = int_to_str(FLAG);
-		POSstr = int_to_str(POS);
-		MAPQstr = int_to_str(MAPQ);
-		PNEXTstr = int_to_str(PNEXT);
-		TLENstr = int_to_str(TLEN);
-		mismatchNumStr = int_to_str(mismatchNum);
-		IHstr = int_to_str(IH_num);
-		HIstr = int_to_str(HI_num);
+		FLAGstr = Utilities::int_to_str(FLAG);
+		POSstr = Utilities::int_to_str(POS);
+		MAPQstr = Utilities::int_to_str(MAPQ);
+		PNEXTstr = Utilities::int_to_str(PNEXT);
+		TLENstr = Utilities::int_to_str(TLEN);
+		mismatchNumStr = Utilities::int_to_str(mismatchNum);
+		IHstr = Utilities::int_to_str(IH_num);
+		HIstr = Utilities::int_to_str(HI_num);
 
 		samString = readName + "\t" 
 			+ FLAGstr + "\t" 
@@ -1018,14 +1010,14 @@ public:
 		string IHstr;
 		string HIstr;
 
-		FLAGstr = int_to_str(FLAG);
-		POSstr = int_to_str(POS);
-		MAPQstr = int_to_str(MAPQ);
-		PNEXTstr = int_to_str(PNEXT);
-		TLENstr = int_to_str(TLEN);
-		mismatchNumStr = int_to_str(mismatchNum);
-		IHstr = int_to_str(IH_num);
-		HIstr = int_to_str(HI_num);
+		FLAGstr = Utilities::int_to_str(FLAG);
+		POSstr = Utilities::int_to_str(POS);
+		MAPQstr = Utilities::int_to_str(MAPQ);
+		PNEXTstr = Utilities::int_to_str(PNEXT);
+		TLENstr = Utilities::int_to_str(TLEN);
+		mismatchNumStr = Utilities::int_to_str(mismatchNum);
+		IHstr = Utilities::int_to_str(IH_num);
+		HIstr = Utilities::int_to_str(HI_num);
 
 		samString = readName + "\t" 
 			+ FLAGstr + "\t" 
@@ -1106,14 +1098,14 @@ public:
 		string IHstr;
 		string HIstr;
 
-		FLAGstr = int_to_str(FLAG);
-		POSstr = int_to_str(POS);
-		MAPQstr = int_to_str(MAPQ);
-		PNEXTstr = int_to_str(PNEXT);
-		TLENstr = int_to_str(TLEN);
-		mismatchNumStr = int_to_str(mismatchNum);
-		IHstr = int_to_str(IH_num);
-		HIstr = int_to_str(HI_num);
+		FLAGstr = Utilities::int_to_str(FLAG);
+		POSstr = Utilities::int_to_str(POS);
+		MAPQstr = Utilities::int_to_str(MAPQ);
+		PNEXTstr = Utilities::int_to_str(PNEXT);
+		TLENstr = Utilities::int_to_str(TLEN);
+		mismatchNumStr = Utilities::int_to_str(mismatchNum);
+		IHstr = Utilities::int_to_str(IH_num);
+		HIstr = Utilities::int_to_str(HI_num);
 
 		samString = readName + "\t" 
 			+ FLAGstr + "\t" 
@@ -1297,14 +1289,6 @@ public:
 
 	vector<bool> otherEndUnmappedBoolVec;
 
-	string int_to_str(int numerical)
-	{
-			char c[100];
-			sprintf(c,"%d",numerical);
-			string str(c);
-			return str;
-	}
-
 	bool betterNewOtherEndAlignInfoBool(
 		//int oriAlignInfo_mappedLength, int newAlignInfo_mappedLength,
 		//int oriAlignInfo_mismatchNum, int newAlignInfo_mismatchNum
@@ -1412,9 +1396,7 @@ public:
 		int readLength_1 = line2.length() - 1;
 		int readLength_2 = line5.length() - 1;
 
-		peReadInfo->getFastaFormatReadInfo(readNameStr_1, readNameStr_2,
-			//line2.substr(0, readLength_1), line5.substr(0, readLength_2)
-			line2, line5);
+		peReadInfo->setReadData(readNameStr_1, readNameStr_2, line2, line5);
 		this->getPeReadAlignmentInfo(line7, line8, line9, line10,
 			Nor1Num, Rcm1Num, Nor2Num, Rcm2Num);
 	}		
@@ -1447,12 +1429,7 @@ public:
 		startSearchPos = foundSearchPos + 1; foundSearchPos = line4.find("\t", startSearchPos);		
 		Rcm2Num = atoi((line4.substr(startSearchPos, foundSearchPos-1-startSearchPos+1)).c_str());	
 
-		//int readLength_1 = line2.length() - 1;
-		//int readLength_2 = line5.length() - 1;
-	
-		peReadInfo->get_PE_Read_Info(readNameStr_1, readNameStr_2,
-			//line2.substr(0, readLength_1), line5.substr(0, readLength_2)
-			line2, line5);
+		peReadInfo->setReadData(readNameStr_1, readNameStr_2, line2, line5);
 		this->getPeReadAlignmentInfo(line7, line8, line9, line10,
 			Nor1Num, Rcm1Num, Nor2Num, Rcm2Num);
 	}
@@ -2294,11 +2271,16 @@ public:
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-	string getTmpAlignInfo(const string& readName_1_ori,
-		const string& readName_2_ori, const string& readOriSeq_1,
-		const string& readOriSeq_2, const string& readOriQualSeq_1,
-		const string& readOriQualSeq_2)
+	string getTmpAlignInfo(PairedEndRead* pairedEndRead)
 	{
+		string readName_1_ori = pairedEndRead->getFirstRead().getName();
+		string readOriSeq_1 = pairedEndRead->getFirstRead().getSequence();
+		string readOriQualSeq_1 = pairedEndRead->getFirstRead().getQuality();
+
+		string readName_2_ori = pairedEndRead->getSecondRead().getName();
+		string readOriSeq_2 = pairedEndRead->getSecondRead().getSequence();
+		string readOriQualSeq_2 = pairedEndRead->getSecondRead().getQuality();
+
 		int readNameSize_1 = readName_1_ori.length();
 		int readNameSize_2 = readName_2_ori.length();
 
@@ -2306,12 +2288,12 @@ public:
 		string readName_2 = readName_2_ori.substr(0, readNameSize_2 - 2);
 
 		string tmpAlignInfoStr = "\n" + readName_1 + "\t"
-			+ int_to_str(norAlignmentInfo_PE_1.size()) + "\t"
-			+ int_to_str(rcmAlignmentInfo_PE_1.size()) + "\n"
+			+ Utilities::int_to_str(norAlignmentInfo_PE_1.size()) + "\t"
+			+ Utilities::int_to_str(rcmAlignmentInfo_PE_1.size()) + "\n"
 			+ readOriSeq_1 + "\n" + readOriQualSeq_1 + "\n"
 			+ readName_2 + "\t"
-			+ int_to_str(norAlignmentInfo_PE_2.size()) + "\t"
-			+ int_to_str(rcmAlignmentInfo_PE_2.size()) + "\n"
+			+ Utilities::int_to_str(norAlignmentInfo_PE_2.size()) + "\t"
+			+ Utilities::int_to_str(rcmAlignmentInfo_PE_2.size()) + "\n"
 			+ readOriSeq_2 + "\n" + readOriQualSeq_2;
 
 		Alignment_Info* tmpAlignInfo;
@@ -2325,9 +2307,9 @@ public:
 			tmpAlignInfo = norAlignmentInfo_PE_1[tmp];
 			tmpNorAlignInfo_1 = tmpNorAlignInfo_1
 				+ tmpAlignInfo->alignChromName + ","
-				+ int_to_str(tmpAlignInfo->alignChromPos) + ","
+				+ Utilities::int_to_str(tmpAlignInfo->alignChromPos) + ","
 				+ tmpAlignInfo->jumpCodeVec2Str() + ","
-				+ int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
+				+ Utilities::int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
 		}
 		string tmpRcmAlignInfo_1;
 		for(int tmp = 0; tmp < rcmAlignmentInfo_PE_1.size(); tmp++)
@@ -2339,9 +2321,9 @@ public:
 			tmpAlignInfo = rcmAlignmentInfo_PE_1[tmp];
 			tmpRcmAlignInfo_1 = tmpRcmAlignInfo_1
 				+ tmpAlignInfo->alignChromName + ","
-				+ int_to_str(tmpAlignInfo->alignChromPos) + ","
+				+ Utilities::int_to_str(tmpAlignInfo->alignChromPos) + ","
 				+ tmpAlignInfo->jumpCodeVec2Str() + ","
-				+ int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
+				+ Utilities::int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
 		}
 		string tmpNorAlignInfo_2;
 		for(int tmp = 0; tmp < norAlignmentInfo_PE_2.size(); tmp++)
@@ -2353,9 +2335,9 @@ public:
 			tmpAlignInfo = norAlignmentInfo_PE_2[tmp];
 			tmpNorAlignInfo_2 = tmpNorAlignInfo_2
 				+ tmpAlignInfo->alignChromName + ","
-				+ int_to_str(tmpAlignInfo->alignChromPos) + ","
+				+ Utilities::int_to_str(tmpAlignInfo->alignChromPos) + ","
 				+ tmpAlignInfo->jumpCodeVec2Str() + ","
-				+ int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
+				+ Utilities::int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
 		}
 		string tmpRcmAlignInfo_2;
 		for(int tmp = 0; tmp < rcmAlignmentInfo_PE_2.size(); tmp++)
@@ -2367,9 +2349,9 @@ public:
 			tmpAlignInfo = rcmAlignmentInfo_PE_2[tmp];
 			tmpRcmAlignInfo_2 = tmpRcmAlignInfo_2
 				+ tmpAlignInfo->alignChromName + ","
-				+ int_to_str(tmpAlignInfo->alignChromPos) + ","
+				+ Utilities::int_to_str(tmpAlignInfo->alignChromPos) + ","
 				+ tmpAlignInfo->jumpCodeVec2Str() + ","
-				+ int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
+				+ Utilities::int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
 		}
 
 		tmpAlignInfoStr = tmpAlignInfoStr + "\n"
@@ -2380,11 +2362,16 @@ public:
 		return tmpAlignInfoStr;
 	}
 
-	string getTmpAlignInfoForFinalPair(const string& readName_1_ori,
-		const string& readName_2_ori, const string& readOriSeq_1,
-		const string& readOriSeq_2, const string& readOriQualSeq_1,
-		const string& readOriQualSeq_2)
+	string getTmpAlignInfoForFinalPair(PairedEndRead* pairedEndRead)
 	{
+		string readName_1_ori = pairedEndRead->getFirstRead().getName();
+		string readOriSeq_1 = pairedEndRead->getFirstRead().getSequence();
+		string readOriQualSeq_1 = pairedEndRead->getFirstRead().getQuality();
+
+		string readName_2_ori = pairedEndRead->getSecondRead().getName();
+		string readOriSeq_2 = pairedEndRead->getSecondRead().getSequence();
+		string readOriQualSeq_2 = pairedEndRead->getSecondRead().getQuality();
+
 		int readNameSize_1 = readName_1_ori.length();
 		int readNameSize_2 = readName_2_ori.length();
 
@@ -2392,12 +2379,12 @@ public:
 		string readName_2 = readName_2_ori.substr(0, readNameSize_2 - 2);
 
 		string tmpAlignInfoStr = "\n" + readName_1 + "\t"
-			+ int_to_str(finalAlignPair_Nor1Rcm2.size()) + "\t"
-			+ int_to_str(finalAlignPair_Nor2Rcm1.size()) + "\n"
+			+ Utilities::int_to_str(finalAlignPair_Nor1Rcm2.size()) + "\t"
+			+ Utilities::int_to_str(finalAlignPair_Nor2Rcm1.size()) + "\n"
 			+ readOriSeq_1 + "\n" + readOriQualSeq_1 + "\n"
 			+ readName_2 + "\t"
-			+ int_to_str(finalAlignPair_Nor2Rcm1.size()) + "\t"
-			+ int_to_str(finalAlignPair_Nor1Rcm2.size()) + "\n"
+			+ Utilities::int_to_str(finalAlignPair_Nor2Rcm1.size()) + "\t"
+			+ Utilities::int_to_str(finalAlignPair_Nor1Rcm2.size()) + "\n"
 			+ readOriSeq_2 + "\n" + readOriQualSeq_2;
 
 		Alignment_Info* tmpAlignInfo;
@@ -2412,9 +2399,9 @@ public:
 			tmpAlignInfo = norAlignmentInfo_PE_1[tmp];
 			tmpNorAlignInfo_1 = tmpNorAlignInfo_1
 				+ tmpAlignInfo->alignChromName + ","
-				+ int_to_str(tmpAlignInfo->alignChromPos) + ","
+				+ Utilities::int_to_str(tmpAlignInfo->alignChromPos) + ","
 				+ tmpAlignInfo->jumpCodeVec2Str() + ","
-				+ int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
+				+ Utilities::int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
 		}
 		string tmpRcmAlignInfo_1;
 		for(int tmpNor2Rcm1 = 0; tmpNor2Rcm1 < finalAlignPair_Nor2Rcm1.size(); tmpNor2Rcm1++)
@@ -2425,9 +2412,9 @@ public:
 			tmpAlignInfo = rcmAlignmentInfo_PE_1[tmp];
 			tmpRcmAlignInfo_1 = tmpRcmAlignInfo_1
 				+ tmpAlignInfo->alignChromName + ","
-				+ int_to_str(tmpAlignInfo->alignChromPos) + ","
+				+ Utilities::int_to_str(tmpAlignInfo->alignChromPos) + ","
 				+ tmpAlignInfo->jumpCodeVec2Str() + ","
-				+ int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
+				+ Utilities::int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
 		}
 		string tmpNorAlignInfo_2;
 		for(int tmpNor2Rcm1 = 0; tmpNor2Rcm1 < finalAlignPair_Nor2Rcm1.size(); tmpNor2Rcm1++)
@@ -2438,9 +2425,9 @@ public:
 			tmpAlignInfo = norAlignmentInfo_PE_2[tmp];
 			tmpNorAlignInfo_2 = tmpNorAlignInfo_2
 				+ tmpAlignInfo->alignChromName + ","
-				+ int_to_str(tmpAlignInfo->alignChromPos) + ","
+				+ Utilities::int_to_str(tmpAlignInfo->alignChromPos) + ","
 				+ tmpAlignInfo->jumpCodeVec2Str() + ","
-				+ int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
+				+ Utilities::int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
 		}
 		string tmpRcmAlignInfo_2;
 		for(int tmpNor1Rcm2 = 0; tmpNor1Rcm2 < finalAlignPair_Nor1Rcm2.size(); tmpNor1Rcm2++)
@@ -2451,9 +2438,9 @@ public:
 			tmpAlignInfo = rcmAlignmentInfo_PE_2[tmp];
 			tmpRcmAlignInfo_2 = tmpRcmAlignInfo_2
 				+ tmpAlignInfo->alignChromName + ","
-				+ int_to_str(tmpAlignInfo->alignChromPos) + ","
+				+ Utilities::int_to_str(tmpAlignInfo->alignChromPos) + ","
 				+ tmpAlignInfo->jumpCodeVec2Str() + ","
-				+ int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
+				+ Utilities::int_to_str(tmpAlignInfo->mismatchNum) + ",\t";
 		}
 		tmpAlignInfoStr = tmpAlignInfoStr + "\n"
 			+ "Nor_1:\t" + tmpNorAlignInfo_1 + "\n"
@@ -2476,10 +2463,11 @@ public:
 
 	string getSAMformatForFinalPair_secondaryOrNot(PairedEndRead* pairedEndRead)
 	{
-		string readName_1_ori = pairedEndRead->firstPairedEndRead.readName;
-		string readName_2_ori = pairedEndRead->secondPairedEndRead.readName;
-		string readSeq_1 = pairedEndRead->firstPairedEndRead.readSeq;
-		string readSeq_2 = pairedEndRead->secondPairedEndRead.readSeq;
+		string readName_1_ori = pairedEndRead->getFirstRead().getName();
+		string readSeq_1 = pairedEndRead->getFirstRead().getSequence();
+
+		string readName_2_ori = pairedEndRead->getSecondRead().getName();
+		string readSeq_2 = pairedEndRead->getSecondRead().getSequence();
 
 		int readNameSize_1 = readName_1_ori.length();
 		int readNameSize_2 = readName_2_ori.length();
@@ -2547,10 +2535,16 @@ public:
 		return returnStr;
 	}	
 
-	string getSAMformatForUnpairedAlignments_secondaryOrNot(
-		const string& readName_1_ori, const string& readName_2_ori,
-		const string& readSeq_1, const string& readSeq_2)
+	string getSAMformatForUnpairedAlignments_secondaryOrNot(PairedEndRead* pairedEndRead)
 	{
+		string readName_1_ori = pairedEndRead->getFirstRead().getName();
+		string readSeq_1 = pairedEndRead->getFirstRead().getSequence();
+		string readOriQualSeq_1 = pairedEndRead->getFirstRead().getQuality();
+
+		string readName_2_ori = pairedEndRead->getSecondRead().getName();
+		string readSeq_2 = pairedEndRead->getSecondRead().getSequence();
+		string readOriQualSeq_2 = pairedEndRead->getSecondRead().getQuality();
+
 		string peAlignSamStr;
 
 		int readNameSize_1 = readName_1_ori.length();
@@ -2624,11 +2618,14 @@ public:
 		return peAlignSamStr.substr(0,peAlignSamStr.length()-1);
 	}
 
-	string getSAMformatForBothEndsUnmapped(
-		const string& readName_1_ori, const string& readName_2_ori,
-		const string& readSeq_1, const string& readSeq_2
-		)
+	string getSAMformatForBothEndsUnmapped(PairedEndRead* pairedEndRead)
 	{
+		string readName_1_ori = pairedEndRead->getFirstRead().getName();
+		string readSeq_1 = pairedEndRead->getFirstRead().getSequence();
+
+		string readName_2_ori = pairedEndRead->getSecondRead().getName();
+		string readSeq_2 = pairedEndRead->getSecondRead().getSequence();
+
 		int readNameSize_1 = readName_1_ori.length();
 		int readNameSize_2 = readName_2_ori.length();
 

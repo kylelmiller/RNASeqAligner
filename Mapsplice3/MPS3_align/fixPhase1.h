@@ -1,6 +1,7 @@
 #include <string>
 #include <string.h>
 #include "splice_info.h"
+#include "chromosome.h"
 
 using namespace std;
 

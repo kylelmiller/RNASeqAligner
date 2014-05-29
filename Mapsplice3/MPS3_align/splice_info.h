@@ -20,31 +20,9 @@ public:
 	~Jump_Code()
 	{}
 
-	string int_to_str(int numerical)
-	{
-			char c[100];
-			sprintf(c,"%d",numerical);
-			string str(c);
-			return str;
-	}
-	
 	string toString()
 	{
-		return int_to_str(len) + type;
-	}
-	
-	string toString(int add_value)
-	{
-		return int_to_str(len + add_value) + type;
-	}
-	
-	string toStringConvertDeletion(int max_del_len)
-	{
-		if(type == "N" && len <= max_del_len)
-		{
-			return int_to_str(len) + "D";
-		}
-		return int_to_str(len) + type;
+		return Utilities::int_to_str(len) + type;
 	}
 };
 
@@ -54,13 +32,6 @@ public:
 	Splice_Info()
 	{ 
 		mapped_len = -1;	
-	}
-	string int_to_str(int numerical)
-	{
-			char c[100];
-			sprintf(c,"%d",numerical);
-			string str(c);
-			return str;
 	}
 
 	Splice_Info(const Splice_Info& copy_info)
@@ -155,18 +126,6 @@ public:
 				mapped_len += jump_code[i].len;
 			}
 		}	
-	}
-	
-	void set_value(string line, bool pairend)
-	{
-	}
-
-	void set_value_single(string line)
-	{
-	}
-
-	void set_value_pairend(string line)
-	{
 	}
 
 	~Splice_Info()
@@ -418,24 +377,24 @@ public:
 
 	string getFirstJumpCodeLengthStr()
 	{
-		return int_to_str(final_jump_code[0].len);
+		return Utilities::int_to_str(final_jump_code[0].len);
 	}
 
 	string getSecondJumpCodeLengthStr()
 	{
-		return int_to_str(final_jump_code[1].len);
+		return Utilities::int_to_str(final_jump_code[1].len);
 	}
 
 	string getPenultimateJumpCodeLengthStr()
 	{
 		int jumpCodeSize = final_jump_code.size();
-		return int_to_str(final_jump_code[jumpCodeSize-2].len);
+		return Utilities::int_to_str(final_jump_code[jumpCodeSize-2].len);
 	}
 
 	string getEndJumpCodeLengthStr()
 	{
 		int jumpCodeSize = final_jump_code.size();
-		return int_to_str(final_jump_code[jumpCodeSize-1].len);
+		return Utilities::int_to_str(final_jump_code[jumpCodeSize-1].len);
 	}
 
 	unsigned int getLastMatchSegCorreAlignPosForShortTail(unsigned int mapPos, int readLength) // assume the first matched base of read's map pos is 1
@@ -486,9 +445,6 @@ public:
 		int endBaseMapPos = startMapPos + tmpMapPos - 1;
 		return endBaseMapPos;
 	}
-
-
-
 
 	string printSecondLevelFinalCigarStringForLongHead(int secondJumpCodeLength, const string& otherCigarString)
 	{

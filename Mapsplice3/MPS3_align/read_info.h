@@ -11,6 +11,11 @@ class Read
 {
 private:
 
+	// Member variables
+	string _name;
+	string _sequence;
+	string _quality;
+
 	string reverseComplement(const char& character)
 	{
 		switch(character)
@@ -41,30 +46,67 @@ private:
 		string rc = "";
 		for(int i = 0; i < length(); i++)
 		{
-			rc += reverseComplement(readSeq.at(length() - 1 - i));
+			rc += reverseComplement(_sequence.at(length() - 1 - i));
 		}
 		return rc;
 	}
 
 	string getReverseComplementQuaility()
 	{
-		int length = readQual.size();
-		string resultString = readQual.substr(length-1, 1);
+		int length = _quality.size();
+		string resultString = _quality.substr(length-1, 1);
 		for (int i = 1; i < length; i++)
-			resultString = resultString + readQual.substr(length - 1 - i, 1);
+			resultString = resultString + _quality.substr(length - 1 - i, 1);
 
 		return resultString;
 	}
 
 public:
-
-	string readName;
-	string readSeq;
-	string readQual;
-
 	int length()
 	{
-		return readSeq.length();
+		return _sequence.length();
+	}
+
+	/*
+	 * Sets the name of this read
+	 */
+	void setName(string value)
+	{
+		_name = value;
+	}
+
+	/*
+	 * Sets the value of this sequence
+	 */
+	void setSequence(string value)
+	{
+		_sequence = value;
+	}
+
+	/*
+	 * Set quality score
+	 */
+	void setQualityScore(string value)
+	{
+		_quality = value;
+	}
+
+	string getName()
+	{
+		return _name;
+	}
+
+	/*
+	 * Gets the nucleotide sequence of this read
+	 */
+	string getSequence()
+	{
+		return _sequence;
+	}
+
+	string getQuality()
+	{
+		return _quality;
 	}
 
 	/*
@@ -73,9 +115,9 @@ public:
 	Read getReverseComplement()
 	{
 		Read reverseComplementRead;
-		reverseComplementRead.readName = readName;
-		reverseComplementRead.readSeq = getReverseComplementString();
-		reverseComplementRead.readQual = getReverseComplementQuaility();
+		reverseComplementRead._name = _name;
+		reverseComplementRead._sequence = getReverseComplementString();
+		reverseComplementRead._quality = getReverseComplementQuaility();
 
 		return reverseComplementRead;
 	}
@@ -118,27 +160,16 @@ public:
 	}
 	 */
 
-	void get_PE_Read_Info(const string& readName1, const string& readName2,
+	void setReadData(const string& readName1, const string& readName2,
 		const string& readSeq1, const string& readSeq2)
 	{
-		(firstPairedEndRead.readName) = readName1;
-		(firstPairedEndRead.readSeq) = readSeq1;
+		firstPairedEndRead.setName(readName1);
+		firstPairedEndRead.setSequence(readSeq1);
+		firstPairedEndRead.setQualityScore("*");
 
-		(secondPairedEndRead.readName) = readName2;
-		(secondPairedEndRead.readSeq) = readSeq2;
-	}
-
-	void getFastaFormatReadInfo(const string& readName_1, const string& readName_2, 
-		const string& readSeq_1, const string& readSeq_2)
-	{
-		firstPairedEndRead.readName = readName_1;
-		firstPairedEndRead.readSeq = readSeq_1;
-		firstPairedEndRead.readQual = "*";
-
-		secondPairedEndRead.readName = readName_2;
-		secondPairedEndRead.readSeq = readSeq_2;
-		secondPairedEndRead.readQual = "*";
-
+		secondPairedEndRead.setName(readName2);
+		secondPairedEndRead.setSequence(readSeq2);
+		secondPairedEndRead.setQualityScore("*");
 	}
 
 	Read getFirstRead()

@@ -3,6 +3,7 @@
 
 #include "seg_info.h"
 
+// FIX ME - KLM 5/30/14 THIS NEEDS TO GET REWORKED
 class SpliceJunction_Alignment
 {
 public:
@@ -1650,7 +1651,7 @@ public:
 		//cout << "rcmAlignmentInfo_PE_2.size():  " << rcmAlignmentInfo_PE_2.size() << endl;
 	}
 
-	void pushBackPathInfo2PeAlignInfo(Path_Info* newPathInfo, bool End1OrEnd2,
+	void pushBackPathInfo2PeAlignInfo(Path* newPathInfo, bool End1OrEnd2,
 		bool NorOrRcm, Index_Info* indexInfo) // Note: End1OrEnd2, NorOrRcm are both describing the other end alignment
 	{
 		//cout << "End1OrEnd2: " << End1OrEnd2 << endl;
@@ -1715,8 +1716,8 @@ public:
 
 	}
 
-	PE_Read_Alignment_Info(Path_Info* pathInfo_nor1, Path_Info* pathInfo_rcm1, 
-			Path_Info* pathInfo_nor2, Path_Info* pathInfo_rcm2, Index_Info* indexInfo)
+	PE_Read_Alignment_Info(Path* pathInfo_nor1, Path* pathInfo_rcm1, 
+			Path* pathInfo_nor2, Path* pathInfo_rcm2, Index_Info* indexInfo)
 	{
 		//cout << "start PE_Read_Alignment_Info " << endl;
 		for(int tmpPath = 0; tmpPath < pathInfo_nor1->finalPathVec.size(); tmpPath++)
@@ -2273,19 +2274,13 @@ public:
 
 	string getTmpAlignInfo(PairedEndRead* pairedEndRead)
 	{
-		string readName_1_ori = pairedEndRead->getFirstRead().getName();
+		string readName_1 = pairedEndRead->getFirstRead().getName();
 		string readOriSeq_1 = pairedEndRead->getFirstRead().getSequence();
 		string readOriQualSeq_1 = pairedEndRead->getFirstRead().getQuality();
 
-		string readName_2_ori = pairedEndRead->getSecondRead().getName();
+		string readName_2 = pairedEndRead->getSecondRead().getName();
 		string readOriSeq_2 = pairedEndRead->getSecondRead().getSequence();
 		string readOriQualSeq_2 = pairedEndRead->getSecondRead().getQuality();
-
-		int readNameSize_1 = readName_1_ori.length();
-		int readNameSize_2 = readName_2_ori.length();
-
-		string readName_1 = readName_1_ori.substr(0, readNameSize_1 - 2);
-		string readName_2 = readName_2_ori.substr(0, readNameSize_2 - 2);
 
 		string tmpAlignInfoStr = "\n" + readName_1 + "\t"
 			+ Utilities::int_to_str(norAlignmentInfo_PE_1.size()) + "\t"
@@ -2364,19 +2359,13 @@ public:
 
 	string getTmpAlignInfoForFinalPair(PairedEndRead* pairedEndRead)
 	{
-		string readName_1_ori = pairedEndRead->getFirstRead().getName();
+		string readName_1 = pairedEndRead->getFirstRead().getName();
 		string readOriSeq_1 = pairedEndRead->getFirstRead().getSequence();
 		string readOriQualSeq_1 = pairedEndRead->getFirstRead().getQuality();
 
-		string readName_2_ori = pairedEndRead->getSecondRead().getName();
+		string readName_2 = pairedEndRead->getSecondRead().getName();
 		string readOriSeq_2 = pairedEndRead->getSecondRead().getSequence();
 		string readOriQualSeq_2 = pairedEndRead->getSecondRead().getQuality();
-
-		int readNameSize_1 = readName_1_ori.length();
-		int readNameSize_2 = readName_2_ori.length();
-
-		string readName_1 = readName_1_ori.substr(0, readNameSize_1 - 2);
-		string readName_2 = readName_2_ori.substr(0, readNameSize_2 - 2);
 
 		string tmpAlignInfoStr = "\n" + readName_1 + "\t"
 			+ Utilities::int_to_str(finalAlignPair_Nor1Rcm2.size()) + "\t"
@@ -2463,18 +2452,12 @@ public:
 
 	string getSAMformatForFinalPair_secondaryOrNot(PairedEndRead* pairedEndRead)
 	{
-		string readName_1_ori = pairedEndRead->getFirstRead().getName();
+		string readName_1 = pairedEndRead->getFirstRead().getName();
 		string readSeq_1 = pairedEndRead->getFirstRead().getSequence();
 
-		string readName_2_ori = pairedEndRead->getSecondRead().getName();
+		string readName_2 = pairedEndRead->getSecondRead().getName();
 		string readSeq_2 = pairedEndRead->getSecondRead().getSequence();
 
-		int readNameSize_1 = readName_1_ori.length();
-		int readNameSize_2 = readName_2_ori.length();
-
-		string readName_1 = readName_1_ori.substr(0, readNameSize_1 - 2);
-		string readName_2 = readName_2_ori.substr(0, readNameSize_2 - 2);
- 
 		string tmpSamStr;
 
 		int IH_Nor1Rcm2 = finalAlignPair_Nor1Rcm2.size();
@@ -2537,21 +2520,15 @@ public:
 
 	string getSAMformatForUnpairedAlignments_secondaryOrNot(PairedEndRead* pairedEndRead)
 	{
-		string readName_1_ori = pairedEndRead->getFirstRead().getName();
+		string readName_1 = pairedEndRead->getFirstRead().getName();
 		string readSeq_1 = pairedEndRead->getFirstRead().getSequence();
 		string readOriQualSeq_1 = pairedEndRead->getFirstRead().getQuality();
 
-		string readName_2_ori = pairedEndRead->getSecondRead().getName();
+		string readName_2 = pairedEndRead->getSecondRead().getName();
 		string readSeq_2 = pairedEndRead->getSecondRead().getSequence();
 		string readOriQualSeq_2 = pairedEndRead->getSecondRead().getQuality();
 
 		string peAlignSamStr;
-
-		int readNameSize_1 = readName_1_ori.length();
-		int readNameSize_2 = readName_2_ori.length();
-
-		string readName_1 = readName_1_ori.substr(0, readNameSize_1 - 2);
-		string readName_2 = readName_2_ori.substr(0, readNameSize_2 - 2);
 
 		int IH_Nor1 = norAlignmentInfo_PE_1.size();
 		int IH_Rcm1 = rcmAlignmentInfo_PE_1.size();	
@@ -2620,17 +2597,11 @@ public:
 
 	string getSAMformatForBothEndsUnmapped(PairedEndRead* pairedEndRead)
 	{
-		string readName_1_ori = pairedEndRead->getFirstRead().getName();
+		string readName_1 = pairedEndRead->getFirstRead().getName();
 		string readSeq_1 = pairedEndRead->getFirstRead().getSequence();
 
-		string readName_2_ori = pairedEndRead->getSecondRead().getName();
+		string readName_2 = pairedEndRead->getSecondRead().getName();
 		string readSeq_2 = pairedEndRead->getSecondRead().getSequence();
-
-		int readNameSize_1 = readName_1_ori.length();
-		int readNameSize_2 = readName_2_ori.length();
-
-		string readName_1 = readName_1_ori.substr(0, readNameSize_1 - 2);
-		string readName_2 = readName_2_ori.substr(0, readNameSize_2 - 2);
 
 		string peAlignSamStr;
 		peAlignSamStr = readName_1 + "\t77\t*\t0\t0\t*\t*\t0\t0\t" + readSeq_1 + "\t*\tIH:i:0\tHI:i:0\n"

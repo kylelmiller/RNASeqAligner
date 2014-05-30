@@ -194,6 +194,7 @@ public:
 			*interval_end = end;
 	}
 };
+Index_Info* SecondLevelChromosome::_indexInfo = NULL;
 
 class SecondLevelChromosomeList
 {

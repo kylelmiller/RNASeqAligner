@@ -1,6 +1,6 @@
 all: alignAll 
 
-OPTFLAGS = -O0 -g -rdynamic
+OPTFLAGS = -O0 -g -rdynamic -std=c++0x
 OUTPUTDIR = bin/
 
 CFLAGS += $(OPTFLAGS) -fopenmp

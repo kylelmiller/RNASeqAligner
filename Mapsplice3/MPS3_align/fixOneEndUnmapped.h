@@ -50,7 +50,7 @@ public:
 				mapPosIntervalEnd, chrPosStartIn2ndLevelIndex,
 				secondLevelChromosome->getIndexInfo(), chrNameStr);
 
-			Path_Info* pathInfo = new Path_Info();
+			Path* pathInfo = new Path();
 			pathInfo->getPossiPathFromSeg(segInfo);
 
 			int pathValidNum = pathInfo->pathValidNumInt();
@@ -62,7 +62,7 @@ public:
 				continue;
 			}
 
-			Gap_Info* gapInfo = new Gap_Info();
+			Gap* gapInfo = new Gap();
 			gapInfo->fixGapInPath(pathInfo, segInfo,
 					secondLevelChromosome->getIndexInfo(), incompleteEndRead);
 

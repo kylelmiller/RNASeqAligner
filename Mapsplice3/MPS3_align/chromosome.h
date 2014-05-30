@@ -116,9 +116,9 @@ public:
 		int baseForCount = 1;
 
 		// Build a hash based on INDEX_KMER_LENGTH nucleotides
-		for(int i=stop_loc_overall + INDEX_KMER_LENGTH - 1; i>=stop_loc_overall; i--)
+		for(int i=stop_loc_overall + INDEX_KMER_LENGTH - 1; i>=stop_loc_overall && i>=0; i--)
 		{
-			preIndexNO = preIndexNO + baseChar2intArray[(read.getSequence().at(i) - 'A')] * baseForCount;
+			preIndexNO = preIndexNO + baseChar2intArray[read.getSequence().at(i) - 'A'] * baseForCount;
 			baseForCount = baseForCount * CHARACTER_OFFSET;
 		}
 

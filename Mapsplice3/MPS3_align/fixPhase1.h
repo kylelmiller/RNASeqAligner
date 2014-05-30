@@ -19,15 +19,15 @@ public:
 	bool normalMapMain_PE;
 	bool rcmMapMain_PE;
 
-	Path_Info* pathInfo_Nor1;
-	Path_Info* pathInfo_Rcm1;
-	Path_Info* pathInfo_Nor2;
-	Path_Info* pathInfo_Rcm2;	
+	Path* pathInfo_Nor1;
+	Path* pathInfo_Rcm1;
+	Path* pathInfo_Nor2;
+	Path* pathInfo_Rcm2;	
 
-	Gap_Info* gapInfo_Nor1;
-	Gap_Info* gapInfo_Rcm1;
-	Gap_Info* gapInfo_Nor2;
-	Gap_Info* gapInfo_Rcm2;
+	Gap* gapInfo_Nor1;
+	Gap* gapInfo_Rcm1;
+	Gap* gapInfo_Nor2;
+	Gap* gapInfo_Rcm2;
 
 	unsigned int norValLength;// = 0;
 	unsigned int norValLength_PE;// = 0;
@@ -48,15 +48,15 @@ public:
 		segInfo_Nor2 = new Seg_Info();
 		segInfo_Rcm2 = new Seg_Info();	
 
-		pathInfo_Nor1 = new Path_Info();
-		pathInfo_Rcm1 = new Path_Info();
-		pathInfo_Nor2 = new Path_Info();
-		pathInfo_Rcm2 = new Path_Info();
+		pathInfo_Nor1 = new Path();
+		pathInfo_Rcm1 = new Path();
+		pathInfo_Nor2 = new Path();
+		pathInfo_Rcm2 = new Path();
 
-		gapInfo_Nor1 = new Gap_Info();
-		gapInfo_Rcm1 = new Gap_Info();			
-		gapInfo_Nor2 = new Gap_Info();
-		gapInfo_Rcm2 = new Gap_Info();		
+		gapInfo_Nor1 = new Gap();
+		gapInfo_Rcm1 = new Gap();			
+		gapInfo_Nor2 = new Gap();
+		gapInfo_Rcm2 = new Gap();		
 	}
 
 	~FixPhase1Info()

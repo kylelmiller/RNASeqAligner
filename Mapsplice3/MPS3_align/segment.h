@@ -14,12 +14,14 @@ private:
 	unsigned int _alignmentNumber;
 	unsigned int _alignmentLocation[CANDALILOC];
 public:
-	Segment()
+	Segment(unsigned int length, unsigned int locationInRead, unsigned int alignmentNumber)
 	{
-		_length = 0;
-		_locationInRead = 0;
-		_alignmentNumber = 0;
+		_length = length;
+		_locationInRead = locationInRead;
+		_alignmentNumber = alignmentNumber;
 	}
+
+	Segment() : Segment(0, 0, 0) { }
 
 	bool isLong()
 	{

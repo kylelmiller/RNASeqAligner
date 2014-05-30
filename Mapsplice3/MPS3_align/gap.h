@@ -10,19 +10,19 @@ To fix:
 
 using namespace std;
 
-class Gap_Info
+class Gap
 {
 public:
 	int LengthOfSeqPerMismatchAllowed;
 	int FixSpliceBuffer;
 
-	Gap_Info()
+	Gap()
 	{
 		LengthOfSeqPerMismatchAllowed = 10;
 		FixSpliceBuffer = 4;
 	}
 
-	bool fixGapInPath(Path_Info* pathInfo, Seg_Info* segInfo, Index_Info* indexInfo, Read readSeq_inProcess)
+	bool fixGapInPath(Path* pathInfo, Seg_Info* segInfo, Index_Info* indexInfo, Read readSeq_inProcess)
 	{
 		bool fixGapInPathBool = false;
 		int pathVecSize = pathInfo->PathVec_seg.size();
@@ -56,14 +56,16 @@ public:
 				int tmpSegCandiNO_next = (pathInfo->PathVec_seg[tmpPathNO])[tmpPathSegNO+1].second;
 
 				int tmpRelation = segInfo->checkSegRelation(tmpSegGroupNO, tmpSegCandiNO, tmpSegGroupNO_next, tmpSegCandiNO_next);
-				
-				int tmpSegmentLocInRead_1 = (segInfo->norSegmentLocInRead)[tmpSegGroupNO];
-				int tmpSegmentLocInRead_2 = (segInfo->norSegmentLocInRead)[tmpSegGroupNO_next];
-				int tmpSegmentLength_1 = (segInfo->norSegmentLength)[tmpSegGroupNO];
-				int tmpSegmentLength_2 = (segInfo->norSegmentLength)[tmpSegGroupNO_next];
 
-				unsigned int tmpSegmentMapPosInWholeGenome_1 = *(segInfo->norSegmentAlignLoc + tmpSegGroupNO * CANDALILOC + tmpSegCandiNO);
-				unsigned int tmpSegmentMapPosInWholeGenome_2 = *(segInfo->norSegmentAlignLoc + tmpSegGroupNO_next * CANDALILOC + tmpSegCandiNO_next);
+				Segment* firstSegment = segInfo->getSegment(tmpSegGroupNO);
+				Segment* secondSegment = segInfo->getSegment(tmpSegGroupNO_next);
+
+				int tmpSegmentLocInRead_1 = firstSegment->getLocationInRead();
+				int tmpSegmentLocInRead_2 = secondSegment->getLocationInRead();
+				int tmpSegmentLength_1 = firstSegment->getLength();
+				int tmpSegmentLength_2 = secondSegment->getLength();
+				unsigned int tmpSegmentMapPosInWholeGenome_1 = firstSegment->getAlignmentLocation(tmpSegCandiNO);
+				unsigned int tmpSegmentMapPosInWholeGenome_2 = secondSegment->getAlignmentLocation(tmpSegCandiNO_next);
 
 				unsigned int tmpChrNameInt, tmpChrPosInt;
 				indexInfo->getChrLocation(tmpSegmentMapPosInWholeGenome_1, &tmpChrNameInt, &tmpChrPosInt);

@@ -1,5 +1,5 @@
-#ifndef __READ_INFO_H_INCLUDED__
-#define __READ_INFO_H_INCLUDED__
+#ifndef __READ_H_INCLUDED__
+#define __READ_H_INCLUDED__
 
 #include <string>
 #include <string.h>
@@ -124,73 +124,5 @@ public:
 
 };
 
-class PairedEndRead
-{
-
-public:
-
-	Read firstPairedEndRead;
-	Read secondPairedEndRead;
-
-	PairedEndRead()
-	{}
-	/* FIX ME - DELETE LATER 5/28/14
-	bool checkEnd1OrEnd2WithAlignInfoTypeNo(int alignInfoType)
-	{
-		if(alignInfoType <= 2)
-			return true;
-		else
-			return false;
-	}
-
-	bool checkNorOrRcmWithAlignInfoTypeNo(int alignInfoType)
-	{
-		if((alignInfoType == 1)||(alignInfoType == 3))
-			return true;
-		else
-			return false;
-	}
-
-	int checkReadLengthWithAlignInfoTypeNo(int alignInfoType)
-	{
-		if(alignInfoType <= 2)
-			return firstPairedEndRead.length();
-		else
-			return secondPairedEndRead.length();
-	}
-	 */
-
-	void setReadData(const string& readName1, const string& readName2,
-		const string& readSeq1, const string& readSeq2)
-	{
-		firstPairedEndRead.setName(readName1);
-		firstPairedEndRead.setSequence(readSeq1);
-		firstPairedEndRead.setQualityScore("*");
-
-		secondPairedEndRead.setName(readName2);
-		secondPairedEndRead.setSequence(readSeq2);
-		secondPairedEndRead.setQualityScore("*");
-	}
-
-	Read getFirstRead()
-	{
-		return firstPairedEndRead;
-	}
-
-	Read getSecondRead()
-	{
-		return secondPairedEndRead;
-	}
-
-	Read getFirstReadReverseComplement()
-	{
-		return firstPairedEndRead.getReverseComplement();
-	}
-
-	Read getSecondReadReverseComplement()
-	{
-		return secondPairedEndRead.getReverseComplement();
-	}
-};
 
 #endif

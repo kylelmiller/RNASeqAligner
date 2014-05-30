@@ -20,9 +20,11 @@
 #include "constantDefinitions.h"
 #include "segmentMapping.h"
 #include "splice_info.h"
-#include "read_info.h"
+#include "read.h"
+#include "pairedEndRead.h"
 #include "seg_info.h"
-#include "gap_info.h"
+#include "path.h"
+#include "gap.h"
 #include "align_info.h"
 #include "spliceJunction_info.h"
 #include "unfixedHead.h"
@@ -300,7 +302,7 @@ int main(int argc, char**argv)
 	ifstream inputRead_ifs(InputReadFile);
 	ifstream inputRead_PE_ifs(InputReadFile_PE);
 
-	vector<PairedEndRead*> pairedEndReads(firstMappingRecordNumber);
+	vector<PairedEndRead*> pairedEndReads;
 
 	vector<string> PeAlignSamStrVec_complete(firstMappingRecordNumber);
 	vector<string> PeAlignInfoStrVec_inCompletePair(firstMappingRecordNumber);
@@ -366,9 +368,11 @@ int main(int argc, char**argv)
     			getline(inputRead_PE_ifs, line);
     		}
 
-    		PairedEndRead* peRead = new PairedEndRead();
-    		peRead->setReadData(readNameOne, readNameTwo, readSequenceOne, readSequenceTwo);
-    		pairedEndReads.push_back(peRead);
+    		pairedEndReads.push_back(new PairedEndRead(
+				readNameOne,
+				readNameTwo,
+				readSequenceOne,
+				readSequenceTwo));
 		}
 
 		#ifdef CAL_TIME	
@@ -1348,7 +1352,7 @@ int main(int argc, char**argv)
 		remove(OutputSamFile_oneEndMapped_alignInfo.c_str());
 		remove(tmpAlignCompleteRead.c_str());
 	}
-	delete(indexInfo);
+	//delete indexInfo;
 
 	nowtime = time(NULL);
 	local = localtime(&nowtime);

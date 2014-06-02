@@ -13,8 +13,13 @@ class Chromosome
 private:
 
 	// Constants
-	static const int INDEX_KMER_LENGTH = 14;
 	static const short CHARACTER_OFFSET = 4;
+
+	const int baseChar2intArray[NUMBER_OF_LETTERS_IN_THE_ALPHABET] = {0, 100, 1, 100, 100, 100, 2,
+				100, 100, 100, 100, 100, 100, 100,
+				100, 100, 100, 100, 100, 3,
+				100, 100, 100, 100, 100, 100};
+
 
 	// Member Variables
 	unsigned int* _suffixArray;
@@ -96,35 +101,50 @@ public:
 	{
 		unsigned int index = (_verifyChild[end]==1) * _child[end];
 		if(start >= index || end < index)
-		index = getChildDownValue(start);
+			index = getChildDownValue(start);
 
 		return _lcp[index];
+	}
+
+	/*
+	 *
+	 */
+	bool couldContainSegment(unsigned int length)
+	{
+		return length > FIRST_LEVEL_INDEX_KMER_LENGTH;
 	}
 
 	/*
 	 * Gets the location of a given read based on INDEX_KMER_LENGTH
 	 * nucleotides of the read starting at stop_loc_overall
 	 */
-	bool getMappedLocation(Read read, unsigned int stop_loc_overall,
+	bool getMappedLocation(Read read, unsigned int startLocation,
 		int* mappedLength, unsigned int* indexIntervalStart,
 		unsigned int* indexIntervalEnd)
 	{
-		if (read.getSequence().find("N") != read.getSequence().npos)
+		string stringToSearch = read.getSequence().substr(startLocation, FIRST_LEVEL_INDEX_KMER_LENGTH);
+
+		// If there is an N in our substring then return false since we can't find that
+		if (stringToSearch.find("N") != stringToSearch.npos)
 			return false;
 
 		unsigned int preIndexNO = 0;
 		int baseForCount = 1;
 
 		// Build a hash based on INDEX_KMER_LENGTH nucleotides
-		for(int i=stop_loc_overall + INDEX_KMER_LENGTH - 1; i>=stop_loc_overall && i>=0; i--)
+		for(int i=FIRST_LEVEL_INDEX_KMER_LENGTH - 1; i>=0; i--)
 		{
-			preIndexNO = preIndexNO + baseChar2intArray[read.getSequence().at(i) - 'A'] * baseForCount;
+			preIndexNO = preIndexNO + baseChar2intArray[stringToSearch.at(i) - 'A'] * baseForCount;
 			baseForCount = baseForCount * CHARACTER_OFFSET;
 		}
 
 		// Get the information about the read based on the generated hash
 		*mappedLength = _preIndexMappedLengthArray[preIndexNO];
+
+		// Given the length of the substring this is the first index in the SA that it occurs
 		*indexIntervalStart = _preIndexIntervalStartArray[preIndexNO];
+
+		// Given the length of the substring this is the last index in the SA that is occurs
 		*indexIntervalEnd = _preIndexIntervalEndArray[preIndexNO];
 
 		// Something was found, return true

@@ -235,6 +235,14 @@ class Seg_Info
 {
 private:
 
+	/*
+	 * Constants
+	 */
+	const unsigned int CHARACTER_SKIP_DISTANCE = 1;
+
+	/*
+	 * Member Variables
+	 */
 	int _longSegMinLength;
 	vector<Segment*> _segments;
 
@@ -412,427 +420,73 @@ public:
 
 	bool mapMain_SegInfo_preIndex(Read read, Chromosome* chrom)
 	{
-		unsigned int segmentNumber = 0; // current segment number
-		unsigned int stop_loc = 0; // location in one segment for iterations
-		unsigned int stop_loc_overall = 0; //location in the whole read for iterations
-		unsigned int segment_align_SArange[2] = {0,0};//legal align location in SA
-		unsigned int segment_align_rangeNum = 0;
+		unsigned int currentStartLocation = 0;
+		unsigned int suffixArrayRange = 0;
 		unsigned int interval_begin, interval_end;
 		char* localRead = (char*)read.getSequence().c_str();
 
-		while (stop_loc_overall < read.length())
+		// We will continue to attempt to map as long as there is a segment left
+		// that meets our minimum segment length
+		while (read.length() > currentStartLocation && chrom->couldContainSegment(read.length() - currentStartLocation))
 		{
 			/////   K-mer search  /////
-			bool KmerSearchFound = false;
 			int KmerMappedLength;
 			unsigned int KmerSearchIndexIntervalStart = 0;
 			unsigned int KmerSearchIndexIntervalEnd = 0;
 
-			// If we hit our kmer limit then we fail
-			if(read.length() - stop_loc_overall >= INDEX_KMER_LENGTH)
-				KmerSearchFound = chrom->getMappedLocation(
-					read,
-					stop_loc_overall,
-					&KmerMappedLength,
-					&KmerSearchIndexIntervalStart,
-					&KmerSearchIndexIntervalEnd);
-
-	   	 	unsigned int start = 0;
-			unsigned int end = chrom->getIndexInfo()->indexSize - 1;
-	   	 	unsigned int minimum = 0;
-
 	   	 	// If we don't find a match then skip 1 nucleotide, create
 	   	 	// a new segment and attempt to match another 14 nucleotides
-	   	 	if(!KmerSearchFound)
+	   	 	if(!chrom->getMappedLocation(
+				read,
+				currentStartLocation,
+				&KmerMappedLength,
+				&KmerSearchIndexIntervalStart,
+				&KmerSearchIndexIntervalEnd))
 	   	 	{
-	   	 		// if the nucleotide is an 'N'
-		   	 	if(	(*localRead != 'A') &&
-					(*localRead != 'C') &&
-					(*localRead != 'G') &&
-					(*localRead != 'T'))
-		   	 	{
-		   	 		if(segmentNumber >= SEGMENTNUM)
-		   	 			return false;
-
-		   	 		segment_align_SArange[0] = 1;
-		   	 		segment_align_SArange[1] = 0;
-
-					addNewSegment(1, stop_loc_overall, 0);
-
-					stop_loc = 1;
-					localRead = localRead + stop_loc + 1;
-					stop_loc_overall = stop_loc_overall + stop_loc + 1;
-		   	 		continue;
-		   	 	}
-
-		   	 	chrom->getFirstInterval(*localRead, &interval_begin, &interval_end);
-	   	 	}
-	   	 	else // K-mer found in preIndex base
-	   	 	{
-	   	 		interval_begin = KmerSearchIndexIntervalStart;
-	   	 		interval_end = KmerSearchIndexIntervalEnd;
+	   	 		// Didn't find anything, skip and attempt to map again
+				localRead += CHARACTER_SKIP_DISTANCE;
+				currentStartLocation += CHARACTER_SKIP_DISTANCE;
+				continue;
 	   	 	}
 
-	   	 	segment_align_SArange[0] = interval_begin;
-	   	 	segment_align_SArange[1] = interval_end;
-   	 		segment_align_rangeNum = interval_end - interval_begin + 1;
+	   	 	// The range of indices in the suffix array which matches our substring
+			interval_begin = KmerSearchIndexIntervalStart;
+			interval_end = KmerSearchIndexIntervalEnd;
+   	 		suffixArrayRange = interval_end - interval_begin + 1;
 
-   	 		while(minimum + stop_loc_overall < read.length())
+   	 		unsigned int walkLimit = interval_begin == interval_end
+				? read.length() - currentStartLocation
+				: min(chrom->getLcp(interval_begin, interval_end), read.length() - currentStartLocation);
+
+			unsigned int walkSteps;
+			for(walkSteps=0;
+				walkSteps < walkLimit &&
+				read.getSequence()[currentStartLocation + walkSteps] == chrom->getReference()[chrom->getSuffixArray()[interval_begin] + walkSteps];
+				walkSteps++)
 			{
-   	   	 		unsigned int oldMinimum = minimum;
-
-				if(interval_begin != interval_end)
-				{
-					minimum = min(
-						chrom->getLcp(interval_begin, interval_end),
-						read.length() - stop_loc_overall);
-
-		   	 		unsigned int walkSteps;
-					for(walkSteps=0;
-						walkSteps < minimum - oldMinimum &&
-						read.getSequence().at(oldMinimum + walkSteps) == chrom->getReference()[chrom->getSuffixArray()[interval_begin] + oldMinimum + walkSteps];
-						walkSteps++)
-					{
-					}
-
-					// If this is true then we know we stopped walking because we hit
-					// an unmatched nucleotide
-					if(walkSteps >= minimum - oldMinimum)
-					{
-						stop_loc = oldMinimum + walkSteps;
-						break;
-					}
-				}
-				else // (interval_begin == interval_end)
-				{
-
-					unsigned int walkSteps;
-					// Compares the read to the reference, character by character
-					for(walkSteps=0;
-						walkSteps<read.length() - minimum - stop_loc_overall &&
-						read.getSequence().at(minimum + walkSteps) == chrom->getReference()[chrom->getSuffixArray()[interval_begin] + minimum + walkSteps];
-						walkSteps++)
-					{
-					}
-
-					// If we didn't match the entire read, note where we stopped
-		    		if(walkSteps < read.length() - minimum - stop_loc_overall)
-		    			stop_loc = minimum + walkSteps;
-
-		    		// Store the alignment information
-	          		segment_align_SArange[0] = interval_begin;
-	            	segment_align_SArange[1] = interval_end;
-	            	segment_align_rangeNum = interval_end - interval_begin + 1;
-		    		break;
-				}
-			} // while(minimum + stop_loc_overall < read.length())
-
-    		if(getNumberOfSegments() > SEGMENTNUM || getNumberOfSegments() > read.length() / 5)
-   	 			return false;
-
-   	 		// Segment Mapping
-	    	if (interval_end >= interval_begin)
-	    	{
-				addNewSegment(read.length() - stop_loc_overall, stop_loc_overall, segment_align_rangeNum);
-	   	 		Segment* segment = getCurrentSegment();
-				for (unsigned int i=0; i < min(segment_align_rangeNum, (unsigned int)CANDALILOC); i++)
-					segment->setAlignmentLocation(chrom->getSuffixArray()[segment_align_SArange[0] + i] + 1, i);
-				break;
 			}
-			else
-			{
-				// if read-align failed at some location, then restart from that location
-				addNewSegment(stop_loc, stop_loc_overall, segment_align_rangeNum);
-				Segment* segment = getCurrentSegment();
 
-				for (unsigned int i=0; i<min(segment_align_rangeNum, (unsigned int)CANDALILOC); i++)
-					segment->setAlignmentLocation(chrom->getSuffixArray()[segment_align_SArange[0] + i] + 1,i);
+			// This next line is wrong it should be this addNewSegment(walkSteps - 1, currentStartLocation, suffixArrayRange);
+			// Needs to be changed in concert with the rest of the code
+			addNewSegment(read.length() - currentStartLocation, currentStartLocation, suffixArrayRange);
 
-				localRead = localRead + stop_loc + 1;
-				stop_loc_overall = stop_loc_overall + stop_loc + 1;
-			}
+			Segment* segment = getCurrentSegment();
+			for (unsigned int i=0; i < min(suffixArrayRange, (unsigned int)CANDALILOC); i++)
+				segment->setAlignmentLocation(chrom->getSuffixArray()[interval_begin + i] + 1, i);
+
+			// if read-align failed at some location, then restart from that location
+			localRead += walkSteps;
+			currentStartLocation += walkSteps;
+
+			// FIXME - KLM 6/2/14: So, this is wrong but it's how it originally was.
+			// We only map a 14 length segment then call it a day, rather than trying to map
+			// as many segments as we can. This needs to be changed in conjunction with
+			// the rest of the code
+			break;
+
 		} // while(stop_loc_overall < read.length())
 
 		return true;
 	}
-/*
-	bool mapMain_SegInfo_preIndex(char *read, unsigned int* sa, BYTE* lcpCompress, 
-		unsigned int* child, char* chrom, 
-		unsigned int* valLength, BYTE* verifyChild, int readLength, Index_Info* indexInfo,
-		int* PreIndexMappedLengthArray, unsigned int* PreIndexIntervalStartArray,
-		unsigned int* PreIndexIntervalEndArray)
-	{
-		string readStringStr = read;
-
-		unsigned int norSegmentNum = 0;
-		unsigned int stop_loc = 0; // location in one segment for iterations
-		unsigned int stop_loc_overall = 0; //location in the whole read for iterations
-		unsigned int segment_length = 0;
-		unsigned int segment_length_max = 0;//used to compare with segment_length for each segment to get the maximum length segment
-		unsigned int segment_align_SArange[2] = {0,0};//legal align location in SA
-		unsigned int segment_align_rangeNum = 0;
-		unsigned int interval_begin, interval_end;
-		*valLength = 0;
-		char* read_local = read;
-
-		while (stop_loc_overall < readLength) //- 15)
-		{
-			bool queryFound = true;
-
-			/////   K-mer search  /////
-			bool KmerSearchFound = false;
-			int KmerMappedLength;
-			unsigned int KmerSearchIndexIntervalStart = 0;
-			unsigned int KmerSearchIndexIntervalEnd = 0;
-
-			// If we hit our kmer limit then we fail
-			if(readLength - stop_loc_overall < INDEX_KMER_LENGTH)
-				KmerSearchFound = false;
-			else
-				KmerSearchFound = this->getIndexInterval_PreIndex(
-					readStringStr.substr(stop_loc_overall, INDEX_KMER_LENGTH),
-					&KmerMappedLength,
-					&KmerSearchIndexIntervalStart,
-					&KmerSearchIndexIntervalEnd,
-					PreIndexMappedLengthArray,
-					PreIndexIntervalStartArray,
-					PreIndexIntervalEndArray);
-
-	   	 	unsigned int start = 0,
-				end = indexInfo->indexSize - 1,
-				c = 0,
-				iterateNum = 0;
-	   	 	unsigned int Min;
-
-	   	 	if(!KmerSearchFound)
-	   	 	{	
-		   	 	if(	(*read_local != 'A') &&
-					(*read_local != 'C') &&
-					(*read_local != 'G') &&
-					(*read_local != 'T'))
-		   	 	{
-		   	 		queryFound = false;
-		   	 		stop_loc = 0;
-		   	 		segment_align_SArange[0] = 1;
-		   	 		segment_align_SArange[1] = 0;
-		   	 		segment_align_rangeNum = 0;
-		   	 		queryFound = false;   	 			
-		   	 		
-		   	 		if(norSegmentNum >= SEGMENTNUM)
-		   	 		{
-		   	 			segmentNum = SEGMENTNUM;
-		   	 			return false;
-		   	 		}
-		   	 		
-		   	 		norSegmentNum++;
-
-		   	 		norSegmentLength[norSegmentNum - 1] = 1;
-					norSegmentLocInRead[norSegmentNum - 1] = stop_loc_overall + 1;
-					norSegmentAlignNum[norSegmentNum - 1] = 0;
-
-					stop_loc = 1;	
-					read_local = read_local + stop_loc + 1;
-					stop_loc_overall = stop_loc_overall + stop_loc + 1;   	 		
-		   	 		continue;		   	 		
-		   	 	}
-
-		   	 	getFirstInterval(*read_local, &interval_begin, &interval_end, child, verifyChild);
-		   	 	segment_align_SArange[0] = interval_begin;
-		   	 	segment_align_SArange[1] = interval_end;
-		   	 	segment_align_rangeNum = interval_end - interval_begin + 1;
-	   	 	}
-	   	 	else // K-mer found in preIndex base
-	   	 	{
-	   	 		interval_begin = KmerSearchIndexIntervalStart;
-	   	 		interval_end = KmerSearchIndexIntervalEnd;
-	    	 	segment_align_SArange[0] = interval_begin;
-	   	 		segment_align_SArange[1] = interval_end;
-	   	 		segment_align_rangeNum = interval_end - interval_begin + 1;
-	   	 	}
-
-	   	 	while((c + stop_loc_overall < readLength) && queryFound == true)
-	   	 	{
-	   	 		iterateNum++;
-	   	 		if(iterateNum + stop_loc_overall > readLength)
-	   	 			return false;
-
-	   	 		unsigned int c_old = c;
-
-				if(interval_begin != interval_end)
-				{ 
-					Min = min(
-						getlcp(interval_begin, interval_end, lcpCompress, child, verifyChild),
-						readLength - stop_loc_overall);
-					c = Min;
-
-					unsigned int loc_pos = 0;
-
-					for(loc_pos = 0; loc_pos < Min - c_old; loc_pos++)
-					{
-						queryFound = (*(read_local+c_old+loc_pos) == *(chrom+sa[interval_begin]+c_old+loc_pos));
-
-						if (!queryFound)
-							break;
-					}
-
-	            	if(!queryFound)
-	            	{
-	            		stop_loc = c_old + loc_pos;
-	            		break;
-	            	}
-
-	            	if(*(read_local+c) == 'N')
-	            	{
-	            		queryFound = false; 
-	            		stop_loc = c;
-	            		break;
-	            	}
-					start = interval_begin; end = interval_end;
-
-					if (c + stop_loc_overall == readLength)
-						break;
-
-					unsigned int interval_begin_ori = interval_begin;
-					unsigned int interval_end_ori = interval_end;
-
-			    	getInterval(start, end, c, *(read_local+c), &interval_begin,
-						&interval_end, sa, child, chrom, verifyChild);
-
-			    	if(interval_begin > interval_end)
-			    	{
-			    		queryFound = false;
-			    		stop_loc = c-1;
-	          			segment_align_SArange[0] = interval_begin_ori;
-	            		segment_align_SArange[1] = interval_end_ori;
-	            		
-	            		segment_align_rangeNum = interval_end_ori - interval_begin_ori + 1;		    			
-			    		break;
-			    	}
-			    	else
-			    	{
-	          			segment_align_SArange[0] = interval_begin;
-	            		segment_align_SArange[1] = interval_end;
-
-	            		segment_align_rangeNum = interval_end - interval_begin + 1;
-			    	}
-				}
-				else // (interval_begin == interval_end)
-				{
-					unsigned int loc_pos;
-
-					// Compares the read to the reference, character by character
-					for(loc_pos = 0; loc_pos < readLength - c - stop_loc_overall; loc_pos++)
-					{
-						queryFound = (*(read_local+c+loc_pos) == *(chrom+sa[interval_begin]+c+loc_pos));
-						if (!queryFound)
-							break;
-					}
-
-					// If we didn't match the entire read, note where we stopped
-		    		if(!queryFound)
-		    			stop_loc = c+loc_pos;
-
-		    		// Store the alignment information
-	          		segment_align_SArange[0] = interval_begin;
-	            	segment_align_SArange[1] = interval_end;
-	            	segment_align_rangeNum = interval_end - interval_begin + 1;
-		    		break;
-		    	}
-			} //end while
-
-			///  SEGMENT MAP RESULT ///
-
-	    	if (queryFound && (interval_end >= interval_begin)) 
-	    	{
-
-	    		norSegmentNum++;
-	    		if(norSegmentNum > SEGMENTNUM)
-	    		{
-	    			segmentNum = (SEGMENTNUM);
-	    			return false;
-	    		}
-	   	 		if(norSegmentNum > (int)(readLength / 5))
-	   	 		{
-	   	 			segmentNum = (int)(readLength / 5);
-	   	 			return false;
-	   	 		}
-
-	    		unsigned int tmpSegLength = readLength - stop_loc_overall;
-
-				if(tmpSegLength >= minValSegLength)
-					*valLength = *valLength + tmpSegLength;
-
-	    		norSegmentLength[norSegmentNum - 1] = tmpSegLength;
-
-	    		*(norSegmentLocInRead + norSegmentNum - 1) = stop_loc_overall + 1;
-	    		*(norSegmentAlignNum + norSegmentNum - 1) = segment_align_rangeNum;
-
-				for (unsigned int alignment_num = 0; alignment_num < min(segment_align_rangeNum, (unsigned int)CANDALILOC); alignment_num++)
-	    			*(norSegmentAlignLoc + (norSegmentNum - 1) * CANDALILOC + alignment_num) = sa[segment_align_SArange[0] + alignment_num] + 1;
-
-				break;
-			}
-			else 
-			{    
-				norSegmentNum++;
-
-				if(norSegmentNum > (int)(readLength / 5) || norSegmentNum > SEGMENTNUM)
-				{
-					segmentNum = (int)(readLength / 5) > SEGMENTNUM
-						? SEGMENTNUM
-						: (int)(readLength / 5);
-
-					return false;
-				}
-
-				norSegmentLength[norSegmentNum - 1] = stop_loc;
-
-				if(stop_loc >= minValSegLength )
-					*valLength = *valLength + stop_loc;
-
-				norSegmentLocInRead[norSegmentNum - 1] = stop_loc_overall + 1;
-				norSegmentAlignNum[norSegmentNum - 1] = segment_align_rangeNum;
-
-				for (unsigned int alignment_num = 0; alignment_num < min(segment_align_rangeNum, (unsigned int)CANDALILOC); alignment_num++)
-			    {    			
-	    			*(norSegmentAlignLoc + (norSegmentNum - 1) * CANDALILOC + alignment_num) = sa[segment_align_SArange[0] + alignment_num] + 1;
-	    		}
-
-				unsigned int stop_loc_overall_ori = stop_loc_overall;
-				read_local = read_local + stop_loc + 1;
-				stop_loc_overall = stop_loc_overall + stop_loc + 1;
-			}		
-	   	}
-
-		segmentNum = norSegmentNum;
-		return true;
-	}
-*/
-	bool getIndexInterval_PreIndex(const string& readPreStr, int* mappedLength, 
-		unsigned int* indexIntervalStart, unsigned int* indexIntervalEnd,
-		int* PreIndexMappedLengthArray, unsigned int* PreIndexIntervalStartArray,
-		unsigned int* PreIndexIntervalEndArray)
-	{
-		if (readPreStr.find("N") != readPreStr.npos)
-			return false;
-
-		int preIndexStrSize = readPreStr.length();
-
-		unsigned int preIndexNO = 0;
-
-		int baseForCount = 1;
-		for(int tmp = preIndexStrSize - 1; tmp >= 0; tmp--)
-		{
-			preIndexNO = preIndexNO + baseChar2intArray[(readPreStr.at(tmp) - 'A')] * baseForCount;
-			baseForCount = baseForCount * 4;
-		}
-
-		(*mappedLength) = PreIndexMappedLengthArray[preIndexNO];
-		(*indexIntervalStart) = PreIndexIntervalStartArray[preIndexNO];
-		(*indexIntervalEnd) = PreIndexIntervalEndArray[preIndexNO];
-
-		return true;
-	}
-
 };
 #endif

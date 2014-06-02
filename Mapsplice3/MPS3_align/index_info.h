@@ -3,20 +3,20 @@
 #include <string.h>
 #include <map>
 
+#include "constantDefinitions.h"
+
 using namespace std;
-
-int INDEX_KMER_LENGTH = 14;
-
-int baseChar2intArray[26] = {0, 100, 1, 100, 100, 100, 2,
-			100, 100, 100, 100, 100, 100, 100,
-			100, 100, 100, 100, 100, 3, 
-			100, 100, 100, 100, 100, 100};
-
-int baseCharCount2intArray[14][26] = {0};
-
 
 class Index_Info
 {
+private:
+
+	/*
+	 * Member Variables
+	 */
+	int baseCharCount2intArray[FIRST_LEVEL_INDEX_KMER_LENGTH][NUMBER_OF_LETTERS_IN_THE_ALPHABET] = { { 0 } };
+
+
 public:
 	string chromString;
 	unsigned int genomeLength;
@@ -57,15 +57,15 @@ public:
 
 	Index_Info(ifstream& inputIndexInfoFile)
 	{
-		for(int tmp1 = 0; tmp1 < INDEX_KMER_LENGTH; tmp1++)
+		for(int tmp1 = 0; tmp1 < FIRST_LEVEL_INDEX_KMER_LENGTH; tmp1++)
 		{
-			for(int tmp2 = 0; tmp2 < 26/*# of letters alphabet*/; tmp2++)
+			for(int tmp2 = 0; tmp2 < NUMBER_OF_LETTERS_IN_THE_ALPHABET; tmp2++)
 			{
 				baseCharCount2intArray[tmp1][tmp2] = 100;
 			}
 		}
 		int tmpBaseCount = 1;
-		for(int tmp3 = 0; tmp3 < INDEX_KMER_LENGTH; tmp3++)
+		for(int tmp3 = 0; tmp3 < FIRST_LEVEL_INDEX_KMER_LENGTH; tmp3++)
 		{
 			baseCharCount2intArray[tmp3][0] = 0*tmpBaseCount;
 			baseCharCount2intArray[tmp3][2] = 1*tmpBaseCount;
@@ -144,10 +144,7 @@ public:
 	void buildChrNameMap()
 	{
 		for(int tmp = 0; tmp < chromNum; tmp++)
-		{
 			chrNameMap.insert(pair <string, int> (chrNameStr[tmp], tmp));
-		}
-
 	}
 
 	int getSecondLevelIndexFromChrAndPos(int chrNameInt, int chrMapPos)
@@ -155,34 +152,19 @@ public:
 		int tmpTimes = chrMapPos/secondLevelIndexNormalSize;
 		int partsTimeBase = 0;
 		for(int tmp = 0; tmp < chrNameInt; tmp++)
-		{
 			partsTimeBase += secondLevelIndexPartsNum[tmp];
-		}
-		return	(partsTimeBase + tmpTimes + 1); 
-	}
 
-	int getSecondLevelIndexFromChrStrAndPos(string chrNameStr, int chrMapPos)
-	{
-		int chrNameInt = this->convertStringToInt(chrNameStr);
-		int tmpTimes = chrMapPos/secondLevelIndexNormalSize;
-		int partsTimeBase = 0;
-		for(int tmp = 0; tmp < chrNameInt; tmp++)
-		{
-			partsTimeBase += secondLevelIndexPartsNum[tmp];
-		}
-		return	(partsTimeBase + tmpTimes + 1); 
-	} 
+		return partsTimeBase + tmpTimes + 1;
+	}
 
 	int getChrPosFromSecondLevelIndexPos(int chrNameInt, int secondLevelIndexNum, int secondLevelIndexPos)
 	{
 		int partsTimeBase = 0;
 		for(int tmp = 0; tmp < chrNameInt; tmp++)
-		{
 			partsTimeBase += secondLevelIndexPartsNum[tmp];
-		}
 
 		int tmpSecondLevelIndexNO = secondLevelIndexNum - partsTimeBase;
-		return ( (tmpSecondLevelIndexNO-1) * secondLevelIndexNormalSize + secondLevelIndexPos);	
+		return (tmpSecondLevelIndexNO - 1) * secondLevelIndexNormalSize + secondLevelIndexPos;
 	}
 
 	void getChrLocation(unsigned int locationInWholeGenome, unsigned int *chr_name_int, unsigned int *chr_local_location)
@@ -195,18 +177,12 @@ public:
 		else
 		{
 			for(int tmp = 1; tmp < chrEndPosInGenome.size(); tmp++)
-			{
 				if( (locationInWholeGenome >= chrEndPosInGenome[tmp-1] + 2) 
 					&& (locationInWholeGenome <= chrEndPosInGenome[tmp]) )
 				{
 					*chr_name_int = tmp;
 					*chr_local_location = locationInWholeGenome - chrEndPosInGenome[tmp-1] - 2;
 				}
-				else
-				{
-					continue;
-				}
-			}
 		}
 	}
 
@@ -227,37 +203,6 @@ public:
 			cout << "chr_name_int error: " << chr_name_int << endl;
 		}
 		return chr_local_location;
-	}
-
-	unsigned int getWholeGenomeLocation(const string& chromNameStr, unsigned int locationInWholeGenome)
-	{
-		return getWholeGenomeLocation(this->convertStringToInt(chromNameStr), locationInWholeGenome);
-	}
-
-	int getChr(unsigned int locationInWholeGenome)
-	{
-		int chrInt;
-		if(locationInWholeGenome <= chrEndPosInGenome[0])
-		{
-			chrInt = 0;
-		}
-		else
-		{
-			for(int tmp = 1; tmp < chromNum; tmp++)
-			{
-				if( (locationInWholeGenome >= chrEndPosInGenome[tmp-1] + 2) 
-					&& (locationInWholeGenome <= chrEndPosInGenome[tmp]) )
-				{
-					chrInt = tmp;
-					break;
-				}
-				else
-				{
-					continue;
-				}				
-			}
-		}
-		return chrInt;
 	}
 
 	int convertStringToInt(const string& chrName)

@@ -77,14 +77,6 @@ public:
 	}
 
 	/*
-	 * Sets the alignment number of this segment
-	 */
-	void setAlignmentNumber(unsigned int value)
-	{
-		_alignmentNumber = value;
-	}
-
-	/*
 	 * Sets the alignment location value
 	 */
 	void setAlignmentLocation(unsigned int value, unsigned int index)

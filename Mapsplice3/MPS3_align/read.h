@@ -62,7 +62,7 @@ private:
 	}
 
 public:
-	int length()
+	unsigned int length()
 	{
 		return _sequence.length();
 	}

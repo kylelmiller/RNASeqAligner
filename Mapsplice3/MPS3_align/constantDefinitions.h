@@ -1,3 +1,8 @@
+
+#ifndef __CONSTANT_DEFINITIONS_H_INCLUDED__
+#define __CONSTANT_DEFINITIONS_H_INCLUDED__
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -88,3 +93,7 @@ const int FIX_SOFTCLIPPING = 11;
 const int FIX_REMAPPING_SHORT_HEAD = 12;
 const int FIX_REMAPPING_SHORT_TAIL = 13;
 
+const int NUMBER_OF_LETTERS_IN_THE_ALPHABET = 26;
+const int FIRST_LEVEL_INDEX_KMER_LENGTH = 14;
+
+#endif

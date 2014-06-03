@@ -8,6 +8,8 @@
 #include "secondLevelChromosome.h"
 #include "chromosome.h"
 #include "segment.h"
+#include "splice_info.h"
+#include "seg_info.h"
 
 using namespace std;
 
@@ -34,13 +36,10 @@ public:
 	~Path()
 	{
 		for(int tmp = 0; tmp < fixedPathVec.size(); tmp++)
-		{
-			delete(fixedPathVec[tmp].second);
-		}
+			delete fixedPathVec[tmp].second;
+
 		for(int tmp = 0; tmp < finalPathVec.size(); tmp++)
-		{
-			delete(finalPathVec[tmp].second);
-		}
+			delete finalPathVec[tmp].second;
 	}
 
 	int pathValidNumInt()
@@ -102,7 +101,9 @@ public:
 			{
 				chromSubSeqInProcess_head = (indexInfo->chromStr[tmpChrNameInt]).substr(tmpPathFinalMapPos - tmpUnfixedHeadLength - 1, tmpUnfixedHeadLength);
 
-				scoreStringBool_head = score_string(readSubSeqInProcess_head, chromSubSeqInProcess_head, max_mismatch_head, mismatch_bits_head, comb_bits_head);
+				// So, this is important
+				// it gives a score to the alignment, i think
+				scoreStringBool_head = Utilities::scoreString(readSubSeqInProcess_head, chromSubSeqInProcess_head, max_mismatch_head, mismatch_bits_head, comb_bits_head);
 			}
 
 			//cout << "scoreStringBool_head " << scoreStringBool_head << endl;
@@ -148,8 +149,10 @@ public:
 			{
 				chromSubSeqInProcess_tail = (indexInfo->chromStr[tmpChrNameInt]).substr(endMappedBaseMapPos, tmpUnfixedTailLength);
 
+				// this is important
+				// it gives a score to the alignment, i think
 				scoreStringBool_tail
-					= score_string(readSubSeqInProcess_tail, chromSubSeqInProcess_tail,
+					= Utilities::scoreString(readSubSeqInProcess_tail, chromSubSeqInProcess_tail,
 						max_mismatch_tail, mismatch_bits_tail, comb_bits_tail);
 			}
 
@@ -182,19 +185,6 @@ public:
 			fixedPathMismatchVec[tmpPath] = newMismatchNum;
 
 			finalPathVec.push_back(pair< pair<int, int>, Splice_Info*> (pair<int,int> (tmpPathFinalMapChr, tmpPathFinalMapPos), tmpSpliceInfo) );
-		}
-	}
-
-	void addNewSegGroupToCurrentPathInfoVec(Segment* segment, Seg_Info* segInfo)
-	{
-		for(int i=0; i<segment->getAlignmentNumber(); i++)
-		{
-			this->addNewSegCandiToCurrentPathInfoVec_matchIndelUniqueSpliceMultiPath(
-				segment,
-				i,
-				segInfo,
-				segment->isLong(),
-				PathVec_seg.size());
 		}
 	}
 
@@ -309,6 +299,7 @@ public:
 		}
 	}
 
+	// FIXME - KLM 6/2/14 WHAT IS THE POINT OF THIS?
 	bool getPossiPathFromSeg(Seg_Info* segInfo)
 	{
 		bool possiPathExists = false;
@@ -326,14 +317,6 @@ public:
 			PathVec_seg.push_back(tmpPathElementVec);
 			PathValidBoolVec.push_back(true);
 			vector< pair<int,int> > ().swap(tmpPathElementVec);
-		}
-
-		for(int i=firstLongSegNO + 1; i < segInfo->getNumberOfSegments(); i++)
-		{
-			if(segInfo->getSegment(i)->getAlignmentNumber() > CANDALILOC)
-				continue;
-
-			this->addNewSegGroupToCurrentPathInfoVec(segInfo->getSegment(i), segInfo);
 		}
 
 		return true;

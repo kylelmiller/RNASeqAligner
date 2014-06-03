@@ -1,3 +1,6 @@
+#ifndef __SAM_2_JUNC_H_INCLUDED__
+#define __SAM_2_JUNC_H_INCLUDED__
+
 /*
  *    fusionsam2junc_filteranchor_newfmt.cpp
  *    MapSplice
@@ -40,13 +43,30 @@
 #include <map>
 #include <queue>
 #include <list>
+#include <ext/hash_map> //g++ only
 
 #include <cmath>
 #include <errno.h>
 #include <time.h>
 #include <string.h>
 
+using __gnu_cxx::hash;
+using __gnu_cxx::hash_map;
+
+namespace __gnu_cxx
+{
+	template<typename Traits, typename Allocator>
+	struct hash<std::basic_string<char, Traits, Allocator> >
+	{
+		size_t operator()(const std::basic_string<char, Traits, Allocator>& __s) const
+		{
+			return __stl_hash_string(__s.c_str());
+		}
+	};
+}
+
 using namespace std;
+
 
 #define IS_PAIRED 0x0001
 #define IS_PAIRED_MAPPED 0x0002
@@ -59,6 +79,9 @@ using namespace std;
 #define IS_PRIMARY 0x0100
 #define IS_FAILED_QUAL_CHECK 0x0200
 #define IS_PCR_DUP 0x0400
+
+const size_t THIRTY_TWO = 32;
+const size_t LOWER_THIRTY_TWO_MASK = ALL_BITS_ON >> THIRTY_TWO;
 
 struct JuncInfo{
 	JuncInfo(/*int pm, *//*const string fs, */size_t loc, size_t suffix_len, size_t rw, size_t tagidx, unsigned short mis, size_t strand, string insert = "") : /*prim(pm), *//*flankstr(fs),*/ p(rw - 1, 0), positive_count(0), negative_count(0)
@@ -770,3 +793,5 @@ Covert2JuncComb(const char* junc_filename, vector<string>& m_mapreads_files, int
 
 	SortJuncComb(junc_filename, chrom_dir, min_intron, max_intron);
 }
+
+#endif

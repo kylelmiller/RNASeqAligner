@@ -1,3 +1,6 @@
+#ifndef __GAP_H_INCLUDED__
+#define __GAP_H_INCLUDED__
+
 /* 
 To fix:
 	1. get # of mismatches: score_string, ...
@@ -7,6 +10,12 @@ To fix:
 
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "genomeScan.h"
+#include "path.h"
+#include "seg_info.h"
+#include "index_info.h"
+#include "read.h"
 
 using namespace std;
 
@@ -250,7 +259,7 @@ public:
 			//cout << "readSeqInProcess: " << endl << readSubSeqInProcess << endl;
 			//cout << "chromSeqInProcess: " << endl << chromSubSeqInProcess << endl;
 
-			bool scoreStringBool = score_string(readSubSeqInProcess, chromSubSeqInProcess, max_mismatch, mismatch_bits, comb_bits);// need to debug
+			bool scoreStringBool = Utilities::scoreString(readSubSeqInProcess, chromSubSeqInProcess, max_mismatch, mismatch_bits, comb_bits);// need to debug
 			
 			//cout << "scoreStringBool: " << scoreStringBool << endl;
 			if(scoreStringBool)
@@ -313,7 +322,7 @@ public:
 			//cout << "readSeqInProcess: " << endl << readSubSeqInProcess << endl;
 			//cout << "chromSeqInProcess: " << endl << chromSubSeqInProcess << endl;
 
-			bool scoreStringBool = score_string(readSubSeqInProcess, chromSubSeqInProcess, max_mismatch, mismatch_bits, comb_bits);// need to debug
+			bool scoreStringBool = Utilities::scoreString(readSubSeqInProcess, chromSubSeqInProcess, max_mismatch, mismatch_bits, comb_bits);// need to debug
 			
 			//cout << "scoreStringBool: " << scoreStringBool << endl;
 			if(scoreStringBool)
@@ -595,3 +604,5 @@ public:
 		return fixDoubleAnchorBool_Splice;
 	}
 };
+
+#endif

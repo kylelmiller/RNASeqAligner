@@ -1,6 +1,14 @@
+
+#ifndef __FIX_PHASE_ONE_H_INCLUDED__
+#define __FIX_PHASE_ONE_H_INCLUDED__
+
 #include <string>
 #include <string.h>
-#include "splice_info.h"
+
+#include "pairedEndRead.h"
+#include "seg_info.h"
+#include "path.h"
+#include "gap.h"
 #include "chromosome.h"
 
 using namespace std;
@@ -138,3 +146,5 @@ public:
 			pairedEndRead->getSecondReadReverseComplement());
 	}
 };
+
+#endif

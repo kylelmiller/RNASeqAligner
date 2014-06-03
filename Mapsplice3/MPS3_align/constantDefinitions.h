@@ -96,4 +96,12 @@ const int FIX_REMAPPING_SHORT_TAIL = 13;
 const int NUMBER_OF_LETTERS_IN_THE_ALPHABET = 26;
 const int FIRST_LEVEL_INDEX_KMER_LENGTH = 14;
 
+const size_t BITS_SUPPORTED = 64;
+const size_t LAST_TWO_BIT = 3;
+const size_t LAST_THIRD_FOUTH = LAST_TWO_BIT << 2;
+
+const size_t ALL_BITS_ON = static_cast<size_t>(-1);
+const size_t LEAST_SIG_BIT = static_cast<size_t>(1);
+const size_t MOST_SIG_BIT = static_cast<size_t>(0x8000000000000000);
+
 #endif

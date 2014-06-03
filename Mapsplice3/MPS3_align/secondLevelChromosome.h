@@ -10,6 +10,8 @@
 
 #include <vector>
 
+#include "index_info.h"
+
 using namespace std;
 
 class SecondLevelChromosome
@@ -227,4 +229,5 @@ public:
 		return _chroms[secondLevelIndexNum];
 	}
 };
+
 #endif

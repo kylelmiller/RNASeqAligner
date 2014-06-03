@@ -1,6 +1,9 @@
 #ifndef __ALIGN_INFO_H_INCLUDED__
 #define __ALIGN_INFO_H_INCLUDED__
 
+#include "path.h"
+#include "pairedEndRead.h"
+#include "splice_info.h"
 #include "seg_info.h"
 
 // FIX ME - KLM 5/30/14 THIS NEEDS TO GET REWORKED

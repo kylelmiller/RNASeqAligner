@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdexcept>
 
+#include "read.h"
+
 using namespace std;
 
 class PairedEndRead

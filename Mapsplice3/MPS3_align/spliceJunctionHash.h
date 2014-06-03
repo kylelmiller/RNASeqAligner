@@ -1,12 +1,18 @@
+#ifndef __SPLICE_JUNCTION_HASH_H_INCLUDED__
+#define __SPLICE_JUNCTION_HASH_H_INCLUDED__
+
 #include <string>
 #include <string.h>
 #include <map>
 #include <set>
 
+#include "index_info.h"
+
 using namespace std;
 
 typedef map<string, set<int> > SpliceEndStrHash; // SJ hash (in 2nd hash, key = anchor string)
 typedef map<int, SpliceEndStrHash> SplicePosHash;
+
 typedef SplicePosHash::iterator SplicePosHashIter; 
 typedef SpliceEndStrHash::iterator SpliceEndStrHashIter;
 
@@ -17,7 +23,7 @@ typedef map<int, set<int> > SJareaHash; //( areaNO = pos/100 ) intermediate hash
 typedef SJareaHash::iterator SJareaHashIter;
 
 
-class SJhash_Info
+class SpliceJunctionHash
 {
 public: 
 	vector<SplicePosHash> spliceJunctionNormal; // size = chromNum in index_info file
@@ -33,7 +39,7 @@ public:
 	vector<SJareaHash> SJstartPosAreaHash;
 	vector<SJareaHash> SJendPosAreaHash;
 
-	SJhash_Info()
+	SpliceJunctionHash()
 	{
 		areaSize = 1000;
 		anchorStringLength = 3;
@@ -320,3 +326,5 @@ public:
 		this->insert2StringHash(chrInt, spliceStartPos, spliceEndPos, indexInfo);
 	}
 };
+
+#endif

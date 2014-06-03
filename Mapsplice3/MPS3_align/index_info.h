@@ -1,9 +1,13 @@
+#ifndef __INDEX_INFO_H_INCLUDED__
+#define __INDEX_INFO_H_INCLUDED__
+
 #include <stdlib.h>
 #include <string>
 #include <string.h>
 #include <map>
 
 #include "constantDefinitions.h"
+#include "utilities.h"
 
 using namespace std;
 
@@ -228,3 +232,5 @@ public:
 		return chrNameInt;
 	}
 };
+
+#endif

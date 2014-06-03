@@ -8,6 +8,7 @@
 #include "secondLevelChromosome.h"
 #include "chromosome.h"
 #include "segment.h"
+#include "read.h"
 
 using namespace std;
 

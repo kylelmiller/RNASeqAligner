@@ -1,3 +1,6 @@
+#ifndef __CHROMOSOME_H_INCLUDED__
+#define __CHROMOSOME_H_INCLUDED__
+
 /*****************
  * This class is used to store all
  * data related to the reference which
@@ -5,8 +8,9 @@
  * child tables and the reference
  ****************/
 
-#ifndef __CHROMOSOME_H_INCLUDED__
-#define __CHROMOSOME_H_INCLUDED__
+#include "index_info.h"
+#include "constantDefinitions.h"
+#include "read.h"
 
 class Chromosome
 {

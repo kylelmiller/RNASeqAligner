@@ -79,7 +79,7 @@ public:
 		return cigarStringJumpCode[0].len;
 	}
 
-	int unfxiedTailLength()
+	int unfixedTailLength()
 	{
 		int jumpCodeNum = cigarStringJumpCode.size();
 		return cigarStringJumpCode[jumpCodeNum - 1].len;
@@ -1144,6 +1144,7 @@ public:
 
 	bool checkOverlapPairAlignment(Alignment_Info* secondAlignmentInfo) // parameter is another alignment 
 	{
+		//cout << "start to check overlapArea SJ ..." << endl;
 		bool SJinOverlapAreaNoConflict = true;
 
 		int overlapStartPos = secondAlignmentInfo->alignChromPos;
@@ -1154,7 +1155,8 @@ public:
 		vector< pair<int, int> > rcmAlignSJvecInOverlapArea;
 		for(int tmp = 0; tmp < (this->spliceJunctionVec).size(); tmp++)
 		{
-			if(((this->spliceJunctionVec)[tmp].second).SJdonerEnd <= overlapStartPos)
+			if((((this->spliceJunctionVec)[tmp].second).SJdonerEnd >= overlapStartPos)
+				&&(((this->spliceJunctionVec)[tmp].second).SJacceptorStart <= overlapEndPos))
 			{
 				tmpDonerPosInChr = ((this->spliceJunctionVec)[tmp].second).SJdonerEnd;
 				tmpAcceptorPosInChr = ((this->spliceJunctionVec)[tmp].second).SJacceptorStart;
@@ -1166,7 +1168,8 @@ public:
 
 		for(int tmp = 0; tmp < (secondAlignmentInfo->spliceJunctionVec).size(); tmp++)
 		{
-			if(((secondAlignmentInfo->spliceJunctionVec)[tmp].second).SJacceptorStart >= overlapEndPos)
+			if((((secondAlignmentInfo->spliceJunctionVec)[tmp].second).SJacceptorStart <= overlapEndPos)
+				&&(((secondAlignmentInfo->spliceJunctionVec)[tmp].second).SJdonerEnd >= overlapStartPos))
 			{
 				tmpDonerPosInChr = ((secondAlignmentInfo->spliceJunctionVec)[tmp].second).SJdonerEnd;
 				tmpAcceptorPosInChr = ((secondAlignmentInfo->spliceJunctionVec)[tmp].second).SJacceptorStart;
@@ -1175,6 +1178,8 @@ public:
 			else
 			{}
 		} 
+		//cout << "norAlignSJvecInOverlapArea.size(): " << norAlignSJvecInOverlapArea.size() << endl;
+		//cout << "rcmAlignSJvecInOverlapArea.size(): " << rcmAlignSJvecInOverlapArea.size() << endl;
 
 		if(norAlignSJvecInOverlapArea.size() == rcmAlignSJvecInOverlapArea.size())
 		{
@@ -1201,6 +1206,7 @@ public:
 
 	bool checkOverlapPairAlignment_new(Alignment_Info* secondAlignmentInfo) // parameter is another alignment 
 	{
+		//cout << "start to check overlap SJ" << endl;
 		bool SJinOverlapAreaNoConflict = true;
 
 		int overlapStartPos_1 = this->alignChromPos;
@@ -1211,7 +1217,7 @@ public:
 		int overlapStartPos;
 		int overlapEndPos;
 		
-		if(overlapStartPos_1 > overlapStartPos)
+		if(overlapStartPos_1 > overlapStartPos_2)
 			overlapStartPos = overlapStartPos_1;
 		else
 			overlapStartPos = overlapStartPos_2;
@@ -1221,13 +1227,16 @@ public:
 		else
 			overlapEndPos = overlapEndPos_2;
 
+		//cout << "overlapStartPos: " << overlapStartPos << endl;
+		//cout << "overlapEndPos: " << overlapEndPos << endl;
 
 		int tmpDonerPosInChr, tmpAcceptorPosInChr;
 		vector< pair<int, int> > norAlignSJvecInOverlapArea;
 		vector< pair<int, int> > rcmAlignSJvecInOverlapArea;
 		for(int tmp = 0; tmp < (this->spliceJunctionVec).size(); tmp++)
 		{
-			if(((this->spliceJunctionVec)[tmp].second).SJdonerEnd <= overlapStartPos)
+			if((((this->spliceJunctionVec)[tmp].second).SJdonerEnd >= overlapStartPos)
+				&&(((this->spliceJunctionVec)[tmp].second).SJacceptorStart <= overlapEndPos))
 			{
 				tmpDonerPosInChr = ((this->spliceJunctionVec)[tmp].second).SJdonerEnd;
 				tmpAcceptorPosInChr = ((this->spliceJunctionVec)[tmp].second).SJacceptorStart;
@@ -1239,7 +1248,8 @@ public:
 
 		for(int tmp = 0; tmp < (secondAlignmentInfo->spliceJunctionVec).size(); tmp++)
 		{
-			if(((secondAlignmentInfo->spliceJunctionVec)[tmp].second).SJacceptorStart >= overlapEndPos)
+			if((((secondAlignmentInfo->spliceJunctionVec)[tmp].second).SJacceptorStart <= overlapEndPos)
+				&&(((secondAlignmentInfo->spliceJunctionVec)[tmp].second).SJdonerEnd >= overlapStartPos))
 			{
 				tmpDonerPosInChr = ((secondAlignmentInfo->spliceJunctionVec)[tmp].second).SJdonerEnd;
 				tmpAcceptorPosInChr = ((secondAlignmentInfo->spliceJunctionVec)[tmp].second).SJacceptorStart;
@@ -1248,7 +1258,8 @@ public:
 			else
 			{}
 		} 
-
+		//cout << "norAlignSJvecInOverlapArea.size(): " << norAlignSJvecInOverlapArea.size() << endl;
+		//cout << "rcmAlignSJvecInOverlapArea.size(): " << rcmAlignSJvecInOverlapArea.size() << endl;
 		if(norAlignSJvecInOverlapArea.size() == rcmAlignSJvecInOverlapArea.size())
 		{
 			for(int tmp = 0; tmp < norAlignSJvecInOverlapArea.size(); tmp++)
@@ -1285,13 +1296,440 @@ public:
 	vector< pair< int, vector<int> > > oriAlignPair_Nor1Rcm2;
 	vector< pair< int, vector<int> > > oriAlignPair_Nor2Rcm1;
 
-	vector< pair< int, int > > oriAlignPair_Nor1Rcm2_filtered;
-	vector< pair< int, int > > oriAlignPair_Nor2Rcm1_filtered;	
+	vector< pair<int, int> > oriAlignPair_Nor1Rcm2_new;
+	vector< string > oriAlignPairNew_chrNameVec_Nor1Rcm2;
+	vector< int > oriAlignPairNew_startMapPosVec_Nor1Rcm2;
+	vector< int > oriAlignPairNew_endMapPosVec_Nor1Rcm2;
+	vector< int > oriAlignPairNew_mappedLength_Nor1Rcm2;
+	vector< int > oriAlignPairNew_mismatchNum_Nor1Rcm2;
+	vector< int > oriAlignPairNew_pairDistance_Nor1Rcm2;
+	vector< double > oriAlignPairNew_score_Nor1Rcm2;
+	//vector< int > oriAlignPairNew_score_Nor1Rcm2;
+
+	vector< pair<int, int> > oriAlignPair_Nor2Rcm1_new; 
+	vector< string > oriAlignPairNew_chrNameVec_Nor2Rcm1;
+	vector< int > oriAlignPairNew_startMapPosVec_Nor2Rcm1;
+	vector< int > oriAlignPairNew_endMapPosVec_Nor2Rcm1;
+	vector< int > oriAlignPairNew_mappedLength_Nor2Rcm1;
+	vector< int > oriAlignPairNew_mismatchNum_Nor2Rcm1;
+	vector< int > oriAlignPairNew_pairDistance_Nor2Rcm1;
+	vector< double > oriAlignPairNew_score_Nor2Rcm1;
+	//vector< int > oriAlignPairNew_score_Nor1Rcm2;
+
+	//vector< pair< int, int > > oriAlignPair_Nor1Rcm2_filtered;
+	//vector< pair< int, int > > oriAlignPair_Nor2Rcm1_filtered;	
+
+	vector< vector< int > > oriAlignPairGroupedByRegion_Nor1Rcm2;
+	vector< vector< int > > oriAlignPairGroupedByRegion_Nor2Rcm1;
 
 	vector< pair< int, int > > finalAlignPair_Nor1Rcm2;
 	vector< pair< int, int > > finalAlignPair_Nor2Rcm1;
 
+
 	vector<bool> otherEndUnmappedBoolVec;
+
+	void oriAlignPair2oriAlignPairNew()
+	{
+		for(int tmp1 = 0; tmp1 < oriAlignPair_Nor1Rcm2.size(); tmp1++)
+		{
+			int tmpPair_NO_1 =  (oriAlignPair_Nor1Rcm2[tmp1].first);
+			int tmpSize = (oriAlignPair_Nor1Rcm2[tmp1].second).size();
+			for(int tmp2 = 0; tmp2 < tmpSize; tmp2++)
+			{
+				int tmpPair_NO_2 = (oriAlignPair_Nor1Rcm2[tmp1].second)[tmp2];
+
+				string tmpChrName = (norAlignmentInfo_PE_1[tmpPair_NO_1])->alignChromName;
+				int tmpChrMapPosStart_nor = (norAlignmentInfo_PE_1[tmpPair_NO_1])->alignChromPos;
+				int tmpChrMapPosEnd_nor = (norAlignmentInfo_PE_1[tmpPair_NO_1])->endMatchedPosInChr;
+				int tmpMappedLength_nor = (norAlignmentInfo_PE_1[tmpPair_NO_1])->mappedLength();
+				int tmpMismatchNum_nor = (norAlignmentInfo_PE_1[tmpPair_NO_1])->mismatchNum;
+
+				int tmpChrMapPosStart_rcm = (rcmAlignmentInfo_PE_2[tmpPair_NO_2])->alignChromPos;
+				int tmpChrMapPosEnd_rcm = (rcmAlignmentInfo_PE_2[tmpPair_NO_2])->endMatchedPosInChr;
+				int tmpMappedLength_rcm = (rcmAlignmentInfo_PE_2[tmpPair_NO_2])->mappedLength();
+				int tmpMismatchNum_rcm = (rcmAlignmentInfo_PE_2[tmpPair_NO_2])->mismatchNum;
+
+				int tmpChrMapPosStart, tmpChrMapPosEnd;
+				if(tmpChrMapPosStart_nor <= tmpChrMapPosStart_rcm)
+				{
+					tmpChrMapPosStart = tmpChrMapPosStart_nor;
+				}
+				else
+				{
+					tmpChrMapPosStart = tmpChrMapPosStart_rcm;
+				}
+
+				if(tmpChrMapPosEnd_nor <= tmpChrMapPosEnd_rcm)
+				{
+					tmpChrMapPosEnd = tmpChrMapPosEnd_rcm;
+				}
+				else
+				{
+					tmpChrMapPosEnd = tmpChrMapPosEnd_nor;
+				}
+				int tmpMappedLength = tmpMappedLength_nor + tmpMappedLength_rcm;
+				int tmpMismatchNum = tmpMismatchNum_nor + tmpMismatchNum_rcm;
+				int tmpPairDistance = tmpChrMapPosStart_rcm - tmpChrMapPosEnd_nor;
+
+				oriAlignPair_Nor1Rcm2_new.push_back(pair<int, int> (tmpPair_NO_1, tmpPair_NO_2) );
+				oriAlignPairNew_chrNameVec_Nor1Rcm2.push_back(tmpChrName);
+				oriAlignPairNew_startMapPosVec_Nor1Rcm2.push_back(tmpChrMapPosStart);
+				oriAlignPairNew_endMapPosVec_Nor1Rcm2.push_back(tmpChrMapPosEnd);
+				oriAlignPairNew_mappedLength_Nor1Rcm2.push_back(tmpMappedLength);
+				oriAlignPairNew_mismatchNum_Nor1Rcm2.push_back(tmpMismatchNum);
+				oriAlignPairNew_pairDistance_Nor1Rcm2.push_back(tmpPairDistance);
+			}
+		}
+
+		for(int tmp1 = 0; tmp1 < oriAlignPair_Nor2Rcm1.size(); tmp1++)
+		{
+			int tmpPair_NO_1 = (oriAlignPair_Nor2Rcm1[tmp1]).first;
+			int tmpSize = (oriAlignPair_Nor2Rcm1[tmp1].second).size();
+			for(int tmp2 = 0; tmp2 < tmpSize; tmp2++)
+			{
+				int tmpPair_NO_2 = (oriAlignPair_Nor2Rcm1[tmp1].second)[tmp2];
+
+				string tmpChrName = (norAlignmentInfo_PE_2[tmpPair_NO_1])->alignChromName;
+				int tmpChrMapPosStart_nor = norAlignmentInfo_PE_2[tmpPair_NO_1]->alignChromPos;
+				int tmpChrMapPosEnd_nor = norAlignmentInfo_PE_2[tmpPair_NO_1]->endMatchedPosInChr;
+				int tmpMappedLength_nor = norAlignmentInfo_PE_2[tmpPair_NO_1]->mappedLength();
+				int tmpMismatchNum_nor = norAlignmentInfo_PE_2[tmpPair_NO_1]->mismatchNum;
+
+				int tmpChrMapPosStart_rcm = rcmAlignmentInfo_PE_1[tmpPair_NO_2]->alignChromPos;
+				int tmpChrMapPosEnd_rcm = rcmAlignmentInfo_PE_1[tmpPair_NO_2]->endMatchedPosInChr;
+				int tmpMappedLength_rcm = rcmAlignmentInfo_PE_1[tmpPair_NO_2]->mappedLength();
+				int tmpMismatchNum_rcm = rcmAlignmentInfo_PE_1[tmpPair_NO_2]->mismatchNum;
+
+				int tmpChrMapPosStart, tmpChrMapPosEnd;
+				if(tmpChrMapPosStart_nor <= tmpChrMapPosStart_rcm)
+				{
+					tmpChrMapPosStart = tmpChrMapPosStart_nor;
+				}
+				else
+				{
+					tmpChrMapPosStart = tmpChrMapPosStart_rcm;
+				}
+
+				if(tmpChrMapPosEnd_nor <= tmpChrMapPosEnd_rcm)
+				{
+					tmpChrMapPosEnd = tmpChrMapPosEnd_rcm;
+				}
+				else
+				{
+					tmpChrMapPosEnd = tmpChrMapPosEnd_nor;
+				}
+				int tmpMappedLength = tmpMappedLength_nor + tmpMappedLength_rcm;
+				int tmpMismatchNum = tmpMismatchNum_nor + tmpMismatchNum_rcm;
+				int tmpPairDistance = tmpChrMapPosStart_rcm - tmpChrMapPosEnd_nor;
+
+				oriAlignPair_Nor2Rcm1_new.push_back(pair<int, int> (tmpPair_NO_1, tmpPair_NO_2) );
+				oriAlignPairNew_chrNameVec_Nor2Rcm1.push_back(tmpChrName);
+				oriAlignPairNew_startMapPosVec_Nor2Rcm1.push_back(tmpChrMapPosStart);
+				oriAlignPairNew_endMapPosVec_Nor2Rcm1.push_back(tmpChrMapPosEnd);
+				oriAlignPairNew_mappedLength_Nor2Rcm1.push_back(tmpMappedLength);
+				oriAlignPairNew_mismatchNum_Nor2Rcm1.push_back(tmpMismatchNum);
+				oriAlignPairNew_pairDistance_Nor2Rcm1.push_back(tmpPairDistance);
+			}
+		}
+	}
+
+	void oriAlignPairGroupedByRegion()
+	{
+		vector < string > oriPairRegionChrVec_Nor1Rcm2;
+		vector< pair <int, int> > oriPairRegionPosVec_Nor1Rcm2;
+
+		vector < string > oriPairRegionChrVec_Nor2Rcm1;
+		vector< pair <int, int> > oriPairRegionPosVec_Nor2Rcm1;
+
+		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp ++)
+		{
+			int tmpPairStartMapPos = oriAlignPairNew_startMapPosVec_Nor1Rcm2[tmp];
+			int tmpPairEndMapPos = oriAlignPairNew_endMapPosVec_Nor1Rcm2[tmp];
+			string tmpPairChrName = oriAlignPairNew_chrNameVec_Nor1Rcm2[tmp];
+
+			int regionVecSize = oriPairRegionPosVec_Nor1Rcm2.size();
+			bool overlapRegionFound = false;
+			for(int tmp2 = 0; tmp2 < regionVecSize; tmp2++)
+			{
+				string tmpRegionChr = oriPairRegionChrVec_Nor1Rcm2[tmp2];
+				int tmpRegionStartPos = oriPairRegionPosVec_Nor1Rcm2[tmp2].first;
+				int tmpRegionEndPos = oriPairRegionPosVec_Nor1Rcm2[tmp2].second;
+				if ( ( tmpPairChrName == tmpRegionChr ) &&
+					( !( (tmpPairStartMapPos >= tmpRegionEndPos) || ( tmpPairEndMapPos <= tmpRegionStartPos ) ) ) )
+				{
+					overlapRegionFound = true;					
+					if(tmpPairStartMapPos < tmpRegionStartPos)
+						oriPairRegionPosVec_Nor1Rcm2[tmp2].first = tmpPairStartMapPos;
+					if(tmpPairEndMapPos > tmpRegionEndPos)
+						oriPairRegionPosVec_Nor1Rcm2[tmp2].second = tmpPairEndMapPos;
+					oriAlignPairGroupedByRegion_Nor1Rcm2[tmp2].push_back(tmp);
+					break;
+				}
+			}
+
+			if(!overlapRegionFound)
+			{
+				vector<int> newIntVec;
+				newIntVec.push_back(tmp);
+				oriAlignPairGroupedByRegion_Nor1Rcm2.push_back(newIntVec);
+				oriPairRegionChrVec_Nor1Rcm2.push_back(tmpPairChrName);
+				oriPairRegionPosVec_Nor1Rcm2.push_back(pair<int,int> (tmpPairStartMapPos, tmpPairEndMapPos));
+			}
+		}
+
+		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp ++)
+		{
+			int tmpPairStartMapPos = oriAlignPairNew_startMapPosVec_Nor2Rcm1[tmp];
+			int tmpPairEndMapPos = oriAlignPairNew_endMapPosVec_Nor2Rcm1[tmp];
+			string tmpPairChrName = oriAlignPairNew_chrNameVec_Nor2Rcm1[tmp];
+
+			int regionVecSize = oriPairRegionPosVec_Nor2Rcm1.size();
+			bool overlapRegionFound = false;
+			for(int tmp2 = 0; tmp2 < regionVecSize; tmp2++)
+			{
+				string tmpRegionChr = oriPairRegionChrVec_Nor2Rcm1[tmp2];
+				int tmpRegionStartPos = oriPairRegionPosVec_Nor2Rcm1[tmp2].first;
+				int tmpRegionEndPos = oriPairRegionPosVec_Nor2Rcm1[tmp2].second;
+				if ( ( tmpPairChrName == tmpRegionChr ) &&
+					( !( (tmpPairStartMapPos >= tmpRegionEndPos) || ( tmpPairEndMapPos <= tmpRegionStartPos ) ) ) )
+				{
+					overlapRegionFound = true;					
+					if(tmpPairStartMapPos < tmpRegionStartPos)
+						oriPairRegionPosVec_Nor2Rcm1[tmp2].first = tmpPairStartMapPos;
+					if(tmpPairEndMapPos > tmpRegionEndPos)
+						oriPairRegionPosVec_Nor2Rcm1[tmp2].second = tmpPairEndMapPos;
+					oriAlignPairGroupedByRegion_Nor2Rcm1[tmp2].push_back(tmp);
+					break;
+				}
+			}
+
+			if(!overlapRegionFound)
+			{
+				vector<int> newIntVec;
+				newIntVec.push_back(tmp);
+				oriAlignPairGroupedByRegion_Nor2Rcm1.push_back(newIntVec);
+				oriPairRegionChrVec_Nor2Rcm1.push_back(tmpPairChrName);
+				oriPairRegionPosVec_Nor2Rcm1.push_back(pair<int,int> (tmpPairStartMapPos, tmpPairEndMapPos));
+			}
+		}
+	}
+
+	void getScoreForEachPair_mapLen_mis_peDis()
+	{
+		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp++)
+		{
+			int tmpMappedLength = oriAlignPairNew_mappedLength_Nor1Rcm2[tmp];
+			int tmpMismatchNum = oriAlignPairNew_mismatchNum_Nor1Rcm2[tmp];
+			int tmpPairDistance = oriAlignPairNew_pairDistance_Nor1Rcm2[tmp];
+			double tmpPairDistance_score;
+			if(tmpPairDistance >= 500)
+				tmpPairDistance_score = 0.1;
+			else if(tmpPairDistance <= 0)
+				tmpPairDistance_score = 0;
+			else
+				tmpPairDistance_score = (double)tmpPairDistance/5000;
+			
+			double tmpScore = tmpMappedLength - tmpMismatchNum - tmpPairDistance_score;
+
+			oriAlignPairNew_score_Nor1Rcm2.push_back(tmpScore);
+		}
+
+		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp++)
+		{
+			int tmpMappedLength = oriAlignPairNew_mappedLength_Nor2Rcm1[tmp];
+			int tmpMismatchNum = oriAlignPairNew_mismatchNum_Nor2Rcm1[tmp];
+			int tmpPairDistance = oriAlignPairNew_pairDistance_Nor2Rcm1[tmp];
+			double tmpPairDistance_score;
+			if(tmpPairDistance > 500)
+				tmpPairDistance_score = 0.1;
+			else if(tmpPairDistance <= 0)
+				tmpPairDistance_score = 0;
+			else
+				tmpPairDistance_score = (double)tmpPairDistance/5000;
+			double tmpScore = tmpMappedLength - tmpMismatchNum - tmpPairDistance_score;
+
+			oriAlignPairNew_score_Nor2Rcm1.push_back(tmpScore);
+		}
+	}
+
+	void getScoreForEachPair_mapLen_mis()
+	{
+		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp++)
+		{
+			int tmpMappedLength = oriAlignPairNew_mappedLength_Nor1Rcm2[tmp];
+			int tmpMismatchNum = oriAlignPairNew_mismatchNum_Nor1Rcm2[tmp];
+			//int tmpPairDistance = oriAlignPairNew_pairDistance_Nor1Rcm2[tmp];
+			//if(tmpPairDistance > 500)
+			//	tmpPairDistance_score = 0.1;
+			//else
+			//	tmpPairDistance_score = 0;
+			double tmpScore = tmpMappedLength - tmpMismatchNum;// - tmpPairDistance_score;
+
+			oriAlignPairNew_score_Nor1Rcm2.push_back(tmpScore);
+		}
+
+		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp++)
+		{
+			int tmpMappedLength = oriAlignPairNew_mappedLength_Nor2Rcm1[tmp];
+			int tmpMismatchNum = oriAlignPairNew_mismatchNum_Nor2Rcm1[tmp];
+			//int tmpPairDistance = oriAlignPairNew_pairDistance_Nor2Rcm1[tmp];
+			//if(tmpPairDistance > 500)
+			//	tmpPairDistance_score = 0.1;
+			//else
+			//	tmpPairDistance_score = 0;
+			double tmpScore = tmpMappedLength - tmpMismatchNum;// - tmpPairDistance_score;
+
+			oriAlignPairNew_score_Nor2Rcm1.push_back(tmpScore);
+		}
+	}
+
+	void chooseBestAlignment_selectRandomOneIfMulti()
+	{
+		//cout << "start pairing ..." << endl;
+		this->pairingAlignment2OriPair();
+		//cout << "start oriAlignPair2oriAlignPairNew ..." << endl;
+		this->oriAlignPair2oriAlignPairNew();
+		//cout << "start getScoreForEachPair_mapLen_mis_peDis ..." << endl;
+		this->getScoreForEachPair_mapLen_mis_peDis();
+		//cout << "start oriAlignPair2finalPair ..." << endl;
+
+		int selectedBestAlignmentNO = 0;// = 0;
+		bool selectedBestAlignment_Nor1Rcm2 = true;// = true;
+		double tmpBestScore = 0;
+
+		if(oriAlignPair_Nor1Rcm2_new.size() + oriAlignPair_Nor2Rcm1_new.size() == 0)
+		{
+			return;
+		}
+
+		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp ++)
+		{
+			double tmpScore = oriAlignPairNew_score_Nor1Rcm2[tmp];
+			if(tmpScore > tmpBestScore)
+			{
+				tmpBestScore = tmpScore;
+				selectedBestAlignmentNO = tmp;
+				selectedBestAlignment_Nor1Rcm2 = true;
+			}
+		}
+
+		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp ++)
+		{
+			double tmpScore = oriAlignPairNew_score_Nor2Rcm1[tmp];
+			if(tmpScore > tmpBestScore)
+			{
+				tmpBestScore = tmpScore;
+				selectedBestAlignmentNO = tmp;
+				selectedBestAlignment_Nor1Rcm2 = false;
+			}
+		}
+
+		if(selectedBestAlignment_Nor1Rcm2)
+		{
+			finalAlignPair_Nor1Rcm2.push_back(oriAlignPair_Nor1Rcm2_new[selectedBestAlignmentNO]);
+		}
+		else
+		{
+			finalAlignPair_Nor2Rcm1.push_back(oriAlignPair_Nor2Rcm1_new[selectedBestAlignmentNO]);
+		}
+	}
+
+	void chooseBestAlignment_selectAllIfMultiBest()
+	{
+		this->pairingAlignment2OriPair();
+		//this->pairingAlignment();
+
+		//cout << "***************" << endl;
+		//cout << this->printOutPairingResults() << endl;
+		//cout << "***************" << endl;
+
+		this->oriAlignPair2oriAlignPairNew();
+		this->getScoreForEachPair_mapLen_mis_peDis();
+		
+		if(oriAlignPair_Nor1Rcm2_new.size() + oriAlignPair_Nor2Rcm1_new.size() == 0)
+		{
+			return;
+		}
+		double DifferenceMin = 0.0001;
+
+		double tmpBestScore = 0.0;
+		int selectedBestAlignmentNO = 0;// = 0;
+		bool selectedBestAlignment_Nor1Rcm2 = true;// = true;
+		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp ++)
+		{
+			double tmpScore = oriAlignPairNew_score_Nor1Rcm2[tmp];
+			if(tmpScore > tmpBestScore)
+			{
+				tmpBestScore = tmpScore;
+				selectedBestAlignmentNO = tmp;
+				selectedBestAlignment_Nor1Rcm2 = true;
+			}
+		}
+		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp ++)
+		{
+			double tmpScore = oriAlignPairNew_score_Nor2Rcm1[tmp];
+			if(tmpScore > tmpBestScore)
+			{
+				tmpBestScore = tmpScore;
+				selectedBestAlignmentNO = tmp;
+				selectedBestAlignment_Nor1Rcm2 = false;
+			}
+		}
+
+		if(selectedBestAlignment_Nor1Rcm2)
+		{
+			for(int tmp = selectedBestAlignmentNO; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp ++)
+			{
+				double tmpScore = oriAlignPairNew_score_Nor1Rcm2[tmp]; 
+				if(fabs(tmpBestScore - tmpScore) < DifferenceMin)
+				{
+					finalAlignPair_Nor1Rcm2.push_back(oriAlignPair_Nor1Rcm2_new[tmp]);					
+				}
+			}
+			for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp ++)
+			{
+				double tmpScore = oriAlignPairNew_score_Nor2Rcm1[tmp];
+				if(fabs(tmpBestScore - tmpScore) < DifferenceMin)
+				{
+					finalAlignPair_Nor2Rcm1.push_back(oriAlignPair_Nor2Rcm1_new[tmp]);
+				}
+			}
+		}
+		else
+		{
+			for(int tmp = selectedBestAlignmentNO; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp ++)
+			{
+				double tmpScore = oriAlignPairNew_score_Nor2Rcm1[tmp];
+				if(fabs(tmpBestScore - tmpScore) < DifferenceMin)
+				{
+					finalAlignPair_Nor2Rcm1.push_back(oriAlignPair_Nor2Rcm1_new[tmp]);
+				}
+			}
+		}
+
+	}
+
+	// printout pairing information for debugging 
+	string printOutPairingResults()
+	{
+		string pairingResults;
+		pairingResults = "pairing results information:\n";
+		pairingResults += "Nor1Rcm2 pair:\n";
+		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp++)
+		{
+			pairingResults = "Pair " + Utilities::int_to_str(tmp + 1) + ": ";
+			pairingResults = pairingResults + Utilities::int_to_str(oriAlignPair_Nor1Rcm2_new[tmp].first)
+				+ ", " + Utilities::int_to_str(oriAlignPair_Nor1Rcm2_new[tmp].second) + "\n";
+		}  
+		pairingResults += "Nor2Rcm1 pair:\n";
+		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp++)
+		{
+			pairingResults = "Pair " + Utilities::int_to_str(tmp + 1) + ": ";
+			pairingResults = pairingResults + Utilities::int_to_str(oriAlignPair_Nor2Rcm1_new[tmp].first)
+				+ ", " + Utilities::int_to_str(oriAlignPair_Nor2Rcm1_new[tmp].second) + "\n";
+		}  	
+		return pairingResults;
+	}
 
 	bool betterNewOtherEndAlignInfoBool(
 		//int oriAlignInfo_mappedLength, int newAlignInfo_mappedLength,
@@ -1913,7 +2351,7 @@ public:
 		}
 	}
 
-	void pairingAlignment() 
+	/*void pairingAlignment() 
 	// get final PE alignment finalXXXAlignmentInfo_PE_X  
 	// from original alignment info XXXAlignmentInfo_PE_X;
 	{
@@ -2204,6 +2642,355 @@ public:
 				(oriAlignPair_Nor2Rcm1[tmpNor2Rcm1NO].first, currentBestRcm1NO) );
 		}
 
+	}*/
+
+	void pairingAlignment2OriPair()
+	{
+		//cout << "start to pair ... " << endl;
+		this->getEndMatchPosForEveryAlignment();
+
+		Alignment_Info* tmpAlignInfo_1;
+		Alignment_Info* tmpAlignInfo_2;
+		bool newEntity = false;
+		//cout << "start to pair Nor1Rcm2... " << endl;
+		for(int tmp = 0; tmp < norAlignmentInfo_PE_1.size(); tmp++) 
+		//pair norAlignmentInfo_PE_1 & rcmAlignmentInfo_PE_2
+		{
+			//cout << "tmp: " << tmp << endl;
+			newEntity = true;
+			tmpAlignInfo_1 = norAlignmentInfo_PE_1[tmp];
+
+			if(tmpAlignInfo_1 -> SJstrand == "X")
+			{
+				//cout << "SJstrand_1 = X" << endl;
+				continue;
+			}
+
+			for(int tmp2 = 0; tmp2 < rcmAlignmentInfo_PE_2.size(); tmp2++)
+			{
+				//cout << "tmp2: " << tmp2 << endl;
+				tmpAlignInfo_2 = rcmAlignmentInfo_PE_2[tmp2];
+				
+				if((tmpAlignInfo_2 -> SJstrand == "X")
+					||((tmpAlignInfo_1 -> SJstrand == "+")&&(tmpAlignInfo_2 -> SJstrand == "-"))
+					||((tmpAlignInfo_1 -> SJstrand == "-")&&(tmpAlignInfo_2 -> SJstrand == "+")))
+				{
+					//cout << "SJstrand_2 = X or conflict strand: " << tmpAlignInfo_1->SJstrand << ", " << tmpAlignInfo_2->SJstrand << endl;
+					continue;
+				}		
+
+				if((tmpAlignInfo_1->alignChromName) == (tmpAlignInfo_2->alignChromName))
+				{
+					if(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->alignChromPos)
+					{
+						if( ((tmpAlignInfo_2->alignChromPos) - (tmpAlignInfo_1->endMatchedPosInChr))< PAIR_READ_DISTANCE_MAX)
+						{
+							//cout << "type 1" << endl;
+							if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
+							{
+								vector<int> newTmpVec;
+								newTmpVec.push_back(tmp2);
+								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								newEntity = false;
+							}
+							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							{
+								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
+							}
+						}
+						else
+						{
+							//cout << "too far away ..." << endl;
+							//two far away 
+						}
+					}
+					else if((tmpAlignInfo_1->alignChromPos <= tmpAlignInfo_2->alignChromPos)
+							&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr))
+					{
+						//cout << "parts of read overlap ..." << endl;
+						//cout << "tmp: " << tmp << " tmp 2: " << tmp2 << endl;
+						//Note: In addition should check whether they cross the same SJs or not
+						if(tmpAlignInfo_1->checkOverlapPairAlignment_new(tmpAlignInfo_2))
+						{
+							//cout << "overlap correct!" << endl;
+							if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
+							{
+								vector<int> newTmpVec;
+								newTmpVec.push_back(tmp2);
+								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								newEntity = false;
+							}
+							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							{
+								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
+							}
+						}
+						else
+						{
+							//cout << "overlap error !" << endl;
+						}
+					}
+					else if(
+						(tmpAlignInfo_1->alignChromPos <= tmpAlignInfo_2->alignChromPos)
+							&&(tmpAlignInfo_1->endMatchedPosInChr > tmpAlignInfo_2->endMatchedPosInChr)
+							&&(tmpAlignInfo_2->unfixedTailExistsBool()) // pe_2 read has unfixed tail
+							 )
+					{
+						//cout << "type 3" << endl;
+						if(tmpAlignInfo_1->checkOverlapPairAlignment_new(tmpAlignInfo_2))
+						{
+							if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
+							{
+								vector<int> newTmpVec;
+								newTmpVec.push_back(tmp2);
+								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								newEntity = false;
+							}
+							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							{
+								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
+							}
+						}
+						else
+						{}
+					}
+					else if (
+						(tmpAlignInfo_1->alignChromPos > tmpAlignInfo_2->alignChromPos)
+							&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr)
+							&&(tmpAlignInfo_1->unfixedHeadExistsBool()) // pe_1 read has unfixed head
+							)
+					{
+						//cout << "type 4" << endl;
+						if(tmpAlignInfo_1->checkOverlapPairAlignment_new(tmpAlignInfo_2))
+						{
+							if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
+							{
+								vector<int> newTmpVec;
+								newTmpVec.push_back(tmp2);
+								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								newEntity = false;
+							}
+							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							{
+								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
+							}
+						}
+						else
+						{}
+					}
+					else if (
+							(tmpAlignInfo_1->unfixedHeadExistsBool()) // pe_1 read has unfixed head
+							&&(tmpAlignInfo_2->unfixedTailExistsBool()) // pe_2 read has unfixed tail
+							&&(tmpAlignInfo_1->alignChromPos > tmpAlignInfo_2->alignChromPos)
+							&&(tmpAlignInfo_1->endMatchedPosInChr > tmpAlignInfo_2->endMatchedPosInChr)
+							//&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr)
+							&&( (tmpAlignInfo_1->endMatchedPosInChr)-(tmpAlignInfo_2->alignChromPos) < PAIR_READ_DISTANCE_MAX)							
+							)
+					{
+						//cout << "type 5" << endl;
+						if(tmpAlignInfo_1->checkOverlapPairAlignment_new(tmpAlignInfo_2))
+						{
+							//cout << "overlap correct" << endl;
+							if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
+							{
+								vector<int> newTmpVec;
+								newTmpVec.push_back(tmp2);
+								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								newEntity = false;
+							}
+							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							{
+								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
+							}
+						}
+						else
+						{
+							//cout << "overlap error " << endl;
+						}
+					}
+					else
+					{
+
+					}
+				}
+				else
+				{
+
+				}
+			}
+		}
+		//cout << "start to pair Nor2Rcm1... " << endl;
+		for(int tmp = 0; tmp < norAlignmentInfo_PE_2.size(); tmp++)
+		{
+			//cout << "tmp: " << tmp << endl;
+			newEntity = true;
+			tmpAlignInfo_1 = norAlignmentInfo_PE_2[tmp];
+			
+			if(tmpAlignInfo_1 -> SJstrand == "X")
+			{
+				//cout << "SJstrand_1 = X" << endl;
+				continue;
+			}
+
+			for(int tmp2 = 0; tmp2 < rcmAlignmentInfo_PE_1.size(); tmp2++)
+			{
+				//cout << "tmp2: " << tmp2 << endl;
+				tmpAlignInfo_2 = rcmAlignmentInfo_PE_1[tmp2];
+
+				if((tmpAlignInfo_2 -> SJstrand == "X")
+					||((tmpAlignInfo_1 -> SJstrand == "+")&&(tmpAlignInfo_2 -> SJstrand == "-"))
+					||((tmpAlignInfo_1 -> SJstrand == "-")&&(tmpAlignInfo_2 -> SJstrand == "+")))
+				{
+					//cout << "SJstrand_2 = X or conflict strand: " << tmpAlignInfo_1->SJstrand << ", " << tmpAlignInfo_2->SJstrand << endl;
+					continue;
+				}					
+				
+				if((tmpAlignInfo_1->alignChromName) == (tmpAlignInfo_2->alignChromName))
+				{
+					if(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->alignChromPos)
+					{
+						//cout << "type 1" << endl;
+						if(((tmpAlignInfo_2->alignChromPos) - (tmpAlignInfo_1->endMatchedPosInChr)) < PAIR_READ_DISTANCE_MAX)
+						{
+							if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
+							{
+								vector<int> newTmpVec;
+								newTmpVec.push_back(tmp2);
+								oriAlignPair_Nor2Rcm1.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								newEntity = false;
+							}
+							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							{
+								(oriAlignPair_Nor2Rcm1[oriAlignPair_Nor2Rcm1.size()-1].second).push_back(tmp2);
+								newEntity = false;
+							}
+						}
+						else
+						{
+							//two far away 
+						}
+					}
+					else if((tmpAlignInfo_1->alignChromPos <= tmpAlignInfo_2->alignChromPos)
+							&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr))
+					{
+						//cout << "parts of read overlap ..." << endl;
+						//cout << "tmp: " << tmp << " tmp 2: " << tmp2 << endl;
+						//Note: In addition should check whether they cross the same SJs or not
+						if(tmpAlignInfo_1->checkOverlapPairAlignment_new(tmpAlignInfo_2))
+						{
+							//cout << "overlap correct " << endl;
+							if(newEntity) //tmp is not in oriAlignPair_Nor2Rcm1
+							{
+								vector<int> newTmpVec;
+								newTmpVec.push_back(tmp2);
+								oriAlignPair_Nor2Rcm1.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								newEntity = false;
+							}
+							else //tmp has already been in oriAlignPair_Nor2Rcm1
+							{
+								(oriAlignPair_Nor2Rcm1[oriAlignPair_Nor2Rcm1.size()-1].second).push_back(tmp2);
+								newEntity = false;
+							}
+						}
+						else
+						{
+							//cout << "overlap error !" << endl;
+						}
+					}
+					else if(
+						(tmpAlignInfo_1->alignChromPos <= tmpAlignInfo_2->alignChromPos)
+							&&(tmpAlignInfo_1->endMatchedPosInChr > tmpAlignInfo_2->endMatchedPosInChr)
+							&&(tmpAlignInfo_2->unfixedTailExistsBool()) // pe_2 read has unfixed tail
+							)
+					{
+						//cout << "type 3" << endl;
+						if(tmpAlignInfo_1->checkOverlapPairAlignment_new(tmpAlignInfo_2))
+						{
+							if(newEntity) //tmp is not in oriAlignPair_Nor2Rcm1
+							{
+								vector<int> newTmpVec;
+								newTmpVec.push_back(tmp2);
+								oriAlignPair_Nor2Rcm1.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								newEntity = false;
+							}
+							else //tmp has already been in oriAlignPair_Nor2Rcm1
+							{
+								(oriAlignPair_Nor2Rcm1[oriAlignPair_Nor2Rcm1.size()-1].second).push_back(tmp2);
+								newEntity = false;
+							}
+						}
+						else
+						{}
+					}
+					else if (
+						(tmpAlignInfo_1->alignChromPos > tmpAlignInfo_2->alignChromPos)
+							&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr)
+							&&(tmpAlignInfo_1->unfixedHeadExistsBool()) // pe_1 read has unfixed head
+							)
+					{
+						//cout << "type 4" << endl;
+						if(tmpAlignInfo_1->checkOverlapPairAlignment_new(tmpAlignInfo_2))
+						{
+							if(newEntity) //tmp is not in oriAlignPair_Nor2Rcm1
+							{
+								vector<int> newTmpVec;
+								newTmpVec.push_back(tmp2);
+								oriAlignPair_Nor2Rcm1.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								newEntity = false;
+							}
+							else //tmp has already been in oriAlignPair_Nor2Rcm1
+							{
+								(oriAlignPair_Nor2Rcm1[oriAlignPair_Nor2Rcm1.size()-1].second).push_back(tmp2);
+								newEntity = false;
+							}
+						}
+						else
+						{}
+					}
+					else if (
+							(tmpAlignInfo_1->unfixedHeadExistsBool()) // pe_1 read has unfixed head
+							&&(tmpAlignInfo_2->unfixedTailExistsBool()) // pe_2 read has unfixed tail
+							&&(tmpAlignInfo_1->alignChromPos > tmpAlignInfo_2->alignChromPos)
+							&&(tmpAlignInfo_1->endMatchedPosInChr > tmpAlignInfo_2->endMatchedPosInChr)
+							//&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr)
+							&&( (tmpAlignInfo_1->endMatchedPosInChr)-(tmpAlignInfo_2->alignChromPos) < PAIR_READ_DISTANCE_MAX)							
+							)
+					{
+						//cout << "type 5" << endl;
+						if(tmpAlignInfo_1->checkOverlapPairAlignment_new(tmpAlignInfo_2))
+						{
+							if(newEntity) //tmp is not in oriAlignPair_Nor2Rcm1
+							{
+								vector<int> newTmpVec;
+								newTmpVec.push_back(tmp2);
+								oriAlignPair_Nor2Rcm1.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								newEntity = false;
+							}
+							else //tmp has already been in oriAlignPair_Nor2Rcm1
+							{
+								(oriAlignPair_Nor2Rcm1[oriAlignPair_Nor2Rcm1.size()-1].second).push_back(tmp2);
+								newEntity = false;
+							}
+						}
+						else
+						{}
+					}
+					else
+					{
+
+					}
+				}
+				else
+				{
+
+				}
+			}
+		}
+		///////////////// 1. only one end read mapped, another one unmapped ///////////////////////
+
+		///////////////// 2. reads can be mapped under both directions //////////////////////////
+
+		///////////////// 3. reads can be mapped to different places in one direction //////////////////
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////

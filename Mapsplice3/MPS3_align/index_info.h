@@ -155,6 +155,18 @@ public:
 		return (tmpSecondLevelIndexNO - 1) * secondLevelIndexNormalSize + secondLevelIndexPos;
 	}
 
+	int getChrNameIntFromSecondLevelIndexNO(int secondLevelIndexNum)
+	{
+		int tmpIndexNOsum = 0;
+		int tmp;
+		for(tmp = 0; tmp < chrNameStr.size(); tmp++)
+		{
+			tmpIndexNOsum += secondLevelIndexPartsNum[tmp];
+			if(tmpIndexNOsum >= secondLevelIndexNum)
+				return tmp;
+		}
+	}
+
 	void getChrLocation(unsigned int locationInWholeGenome, unsigned int *chr_name_int, unsigned int *chr_local_location)
 	{
 		if(locationInWholeGenome <= chrEndPosInGenome[0])

@@ -410,8 +410,10 @@ int main(int argc, char**argv)
 				fixPhase1Info->pathInfo_Nor1, fixPhase1Info->pathInfo_Rcm1, 
 				fixPhase1Info->pathInfo_Nor2, fixPhase1Info->pathInfo_Rcm2, indexInfo);
 
-			peAlignInfo->pairingAlignment();
-			peAlignInfo->chooseBestAlignment();
+			//peAlignInfo->pairingAlignment();
+			//peAlignInfo->chooseBestAlignment();
+
+			peAlignInfo->chooseBestAlignment_selectRandomOneIfMulti();
 
 			#ifdef CAL_TIME
 			getPEalignInfo_end = clock();
@@ -814,8 +816,10 @@ int main(int argc, char**argv)
 
 				fixOneEndUnmapped(peReadInfo, peAlignInfo, secondLevelChroms);
 
-				peAlignInfo->pairingAlignment();
-				peAlignInfo->chooseBestAlignment();
+				//peAlignInfo->pairingAlignment();
+				//peAlignInfo->chooseBestAlignment();
+
+				peAlignInfo->chooseBestAlignment_selectRandomOneIfMulti();
 
 				bool pairExistsBool = peAlignInfo->finalPairExistsBool();
 				bool allAlignmentCompleteBool = peAlignInfo->allAlignmentInFinalPairCompleted();
@@ -1123,8 +1127,10 @@ int main(int argc, char**argv)
 				fixHeadTail_areaAndStringHash(peReadInfo, peAlignInfo, SJ,
 					secondLevelChroms, spliceJunctionHashExists);
 
-				peAlignInfo->pairingAlignment();
-				peAlignInfo->chooseBestAlignment();
+				//peAlignInfo->pairingAlignment();
+				//peAlignInfo->chooseBestAlignment();
+
+				peAlignInfo->chooseBestAlignment_selectRandomOneIfMulti();
 
 				bool pairExistsBool = peAlignInfo->finalPairExistsBool();
 							
@@ -1978,8 +1984,8 @@ void fixOneEndReadForward(Read* read, Read* incompleteEndRead, PE_Read_Alignment
 		gapInfo->fixGapInPath(pathInfo, mappedRead, secondLevelChromosome->getIndexInfo());
 
 		/* FIXME - FIX THIS LATER 5/28/14 KLM
-		if(pathInfo->finalPathVec.size() == 1)
-			peAlignInfo->pushBackPathInfo2PeAlignInfo(pathInfo, End1OrEnd2, NorOrRcm, indexInfo);
+		//if(pathInfo->finalPathVec.size() == 1)
+		//	peAlignInfo->pushBackPathInfo2PeAlignInfo(pathInfo, End1OrEnd2, NorOrRcm, indexInfo);
 
 		peAlignInfo->pushBackPathInfo2PeAlignInfo(pathInfo, End1OrEnd2, NorOrRcm, indexInfo);
 		 */

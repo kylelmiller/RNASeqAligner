@@ -25,7 +25,8 @@
 
 using namespace std;
 
-clock_t read_file_begin, read_file_end, read_file_end2, read_file_end3, 
+#ifdef CAL_TIME
+clock_t read_file_begin, read_file_end, read_file_end2, read_file_end3,
 		align_begin, align_end, align_cost = 0,
     	overall_begin, overall_end, overall_cost = 0,
     	input_begin, input_end, input_cost = 0,
@@ -39,6 +40,7 @@ clock_t read_file_begin, read_file_end, read_file_end2, read_file_end3,
 		getReadInfo_begin, getReadInfo_end, getReadInfo_cost = 0,
 		freeMem_begin, freeMem_end, freeMem_cost = 0,
 		generateReadAlignInfo_begin, generateReadAlignInfo_end, generateReadAlignInfo_cost = 0;
+#endif
 
 unsigned int PairedReadNum = 0, BothUnmappedReadNum = 0, UnpairedReadNum = 0;
 
@@ -171,15 +173,14 @@ int main(int argc, char**argv)
     log_ofs << "start to load preIndex ..." << endl;
 
 	ifstream preIndexMapLengthArray_ifs((preIndexArrayPreStr + "_MapLength").c_str(), ios::binary);
-	ifstream preIndexIntervalStartArray_ifs((preIndexArrayPreStr + "_IntervalStart").c_str(), ios::binary);
-	ifstream preIndexIntervalEndArray_ifs((preIndexArrayPreStr + "_IntervalEnd").c_str(), ios::binary);
-
 	int* preIndexMapLengthArray = (int*)malloc(PreIndexSize * sizeof(int));
 	preIndexMapLengthArray_ifs.read((char*)preIndexMapLengthArray, PreIndexSize * sizeof(int));
 
+	ifstream preIndexIntervalStartArray_ifs((preIndexArrayPreStr + "_IntervalStart").c_str(), ios::binary);
 	unsigned int *preIndexIntervalStartArray = (unsigned int*)malloc(PreIndexSize * sizeof(unsigned int));
     preIndexIntervalStartArray_ifs.read((char*)preIndexIntervalStartArray, PreIndexSize * sizeof(int));
 
+	ifstream preIndexIntervalEndArray_ifs((preIndexArrayPreStr + "_IntervalEnd").c_str(), ios::binary);
 	unsigned int *preIndexIntervalEndArray = (unsigned int*)malloc(PreIndexSize * sizeof(unsigned int));
     preIndexIntervalEndArray_ifs.read((char*)preIndexIntervalEndArray, PreIndexSize * sizeof(int));
 
@@ -198,9 +199,7 @@ int main(int argc, char**argv)
 	///////////////////////////////////////
  
 	log_ofs << "start to load whole genome" << endl;
-	char *chrom;
-
-	chrom = (char*)malloc((indexInfo->indexSize) * sizeof(char));
+	char *chrom = (char*)malloc((indexInfo->indexSize) * sizeof(char));
 	chrom_bit_file_ifs.read((char*)chrom, (indexInfo->indexSize) * sizeof(char)); 
 
 	indexInfo->chromString = chrom;
@@ -218,22 +217,19 @@ int main(int argc, char**argv)
 	}	
 
 	log_ofs << "start to load SA" << endl;
-    unsigned int *sa;
-    sa = (unsigned int*)malloc((indexInfo->indexSize) * sizeof(unsigned int));
+    unsigned int *sa = (unsigned int*)malloc((indexInfo->indexSize) * sizeof(unsigned int));
     SA_file_ifs.read((char*)sa, (indexInfo->indexSize) * sizeof(unsigned int));
+
 	log_ofs << "start to load lcpCompress" << endl;
-	BYTE *lcpCompress;
-	lcpCompress = (BYTE*)malloc((indexInfo->indexSize) * sizeof(BYTE));
+	BYTE *lcpCompress = (BYTE*)malloc((indexInfo->indexSize) * sizeof(BYTE));
 	lcpCompress_file_ifs.read((char*)lcpCompress, (indexInfo->indexSize) * sizeof(BYTE));	
 
 	log_ofs << "start to load childTab " << endl;
-	unsigned int *childTab;
-	childTab = (unsigned int*)malloc((indexInfo->indexSize) * sizeof(unsigned int));
+	unsigned int *childTab = (unsigned int*)malloc((indexInfo->indexSize) * sizeof(unsigned int));
 	childTab_file_ifs.read((char*)childTab, (indexInfo->indexSize) * sizeof(unsigned int));
 
 	log_ofs << "start to load detChild" << endl;
-	BYTE *verifyChild;
-	verifyChild = (BYTE*)malloc((indexInfo->indexSize) * sizeof(BYTE));
+	BYTE *verifyChild = (BYTE*)malloc((indexInfo->indexSize) * sizeof(BYTE));
 	verifyChild_file_ifs.read((char*)verifyChild, (indexInfo->indexSize) * sizeof(BYTE));
 	
 	Chromosome* alignmentChromosome = new Chromosome(
@@ -383,8 +379,7 @@ int main(int argc, char**argv)
     		segMap_begin = clock();
     		#endif
 
-			FixPhase1Info* fixPhase1Info = new FixPhase1Info();
-			fixPhase1Info->fixPhase1_segInfo(pairedEndReads[i], alignmentChromosome);
+			FixPhase1Info* fixPhase1Info = new FixPhase1Info(pairedEndReads[i], alignmentChromosome);
 
 			#ifdef CAL_TIME
 			segMap_end = clock();
@@ -402,7 +397,7 @@ int main(int argc, char**argv)
 			fixGap_begin = clock();
 			#endif
 
-			fixPhase1Info->fixPhase1_gapInfo(pairedEndReads[i], indexInfo);
+			fixPhase1Info->fixPhase1_gapInfo(indexInfo);
 
 			#ifdef CAL_TIME
 			fixGap_end = clock();
@@ -434,8 +429,7 @@ int main(int argc, char**argv)
 			if(outputAlignInfoAndSamForAllPairedAlignmentBool)
 				PeAlignInfoStrVec_completePaired[i] = "";
 
-			bool pairExistsBool = peAlignInfo->finalPairExistsBool();
-			if(pairExistsBool) // some pair exists
+			if(peAlignInfo->finalPairExistsBool()) // some pair exists
 			{
 				bool allAlignmentCompleteBool = peAlignInfo->allAlignmentInFinalPairCompleted();
 				if(allAlignmentCompleteBool)
@@ -463,8 +457,7 @@ int main(int argc, char**argv)
 			}
 			else // no pair exists: 1.one end unmapped; 2. both ends unmapped
 			{
-				bool alignmentExistsBool = peAlignInfo->alignInfoExistsBool();
-				if(alignmentExistsBool) // one end unmapped
+				if(peAlignInfo->alignInfoExistsBool()) // one end unmapped
 				{	
 					PeAlignInfoStrVec_oneEndUnmapped[i] =
 						peAlignInfo->getTmpAlignInfo(pairedEndReads[i]);
@@ -881,8 +874,8 @@ int main(int argc, char**argv)
 				{
 					peAlignInfoVec_pair_complete[tmpOpenMP] = tmpPeAlignInfo_complete_pair;
 				}
-				delete(peReadInfo);
-				delete(peAlignInfo);
+				delete peReadInfo;
+				delete peAlignInfo;
 
 			}
 
@@ -1227,8 +1220,8 @@ int main(int argc, char**argv)
 					peAlignSamVec_incomplete_pair_alignInfo[tmpOpenMP] = tmpPeAlignSamStr_incomplete_pair_alignInfo;
 				}
 
-				delete(peReadInfo);
-				delete(peAlignInfo);
+				delete peReadInfo;
+				delete peAlignInfo;
 			}
 
 			for(int tmp = 0; tmp < realRecordNum; tmp++)
@@ -1265,7 +1258,7 @@ int main(int argc, char**argv)
 		}
 		inputUnfixedHeadTailRecord_ifs.close();
 	}
-	delete(SJ);
+	delete SJ;
 
 	OutputSamFile_fixHeadTail_complete_pair_ofs.close();
 	OutputSamFile_fixHeadTail_incomplete_pair_ofs.close();
@@ -1338,7 +1331,6 @@ int main(int argc, char**argv)
 		remove(OutputSamFile_oneEndMapped_alignInfo.c_str());
 		remove(tmpAlignCompleteRead.c_str());
 	}
-	//delete indexInfo;
 
 	nowtime = time(NULL);
 	local = localtime(&nowtime);
@@ -1353,9 +1345,9 @@ void fixHeadTail_areaAndStringHash(PairedEndRead* peReadInfo, PE_Read_Alignment_
 {
 	Alignment_Info* tmpAlignmentInfo;
 
-	Read currentRead;
+	//Read currentRead;
 
-	/* FIX ME - THIS NEEDS TO BE REWORKED LIKE 'fixOneEndUnmapped.h'
+	/* FIXME - THIS NEEDS TO BE REWORKED
 	 * 5/28/14 KLM
 	//////////////////// fix head //////////////////////////////
 	//cout << "start to fix head" << endl;
@@ -1941,7 +1933,7 @@ void fixHeadTail_areaAndStringHash(PairedEndRead* peReadInfo, PE_Read_Alignment_
 */
 }
 
-void fixOneEndReadForward(Read read, Read incompleteEndRead, PE_Read_Alignment_Info* peAlignInfo,
+void fixOneEndReadForward(Read* read, Read* incompleteEndRead, PE_Read_Alignment_Info* peAlignInfo,
 	vector<Alignment_Info*> alignmentVector, SecondLevelChromosomeList* secondLevelChromosomeList)
 {
 	string chrNameStr;
@@ -1969,35 +1961,23 @@ void fixOneEndReadForward(Read read, Read incompleteEndRead, PE_Read_Alignment_I
 		if(secondLevelChromosome == NULL)
 			continue;
 
-		Seg2ndOri_Info* seg2ndOriInfo = new Seg2ndOri_Info();
-		if(!seg2ndOriInfo->mapMainSecondLevel_compressedIndex(read, secondLevelChromosome))
-		{
-			delete seg2ndOriInfo;
-			continue;
-		}
-
-		Seg_Info* segInfo = new Seg_Info(seg2ndOriInfo, mapPosIntervalStart,
-			mapPosIntervalEnd, chrPosStartIn2ndLevelIndex,
-			secondLevelChromosome->getIndexInfo(), chrNameStr);
+		MappedRead* mappedRead = new MappedRead(read, secondLevelChromosome);
 
 		Path* pathInfo = new Path();
-		pathInfo->getPossiPathFromSeg(segInfo);
+		pathInfo->getPossiPathFromSeg(mappedRead);
 
 		int pathValidNum = pathInfo->pathValidNumInt();
 		if(pathValidNum > 10)
 		{
-			delete(pathInfo);
-			delete(segInfo);
-			delete(seg2ndOriInfo);
+			delete pathInfo;
+			delete mappedRead;
 			continue;
 		}
 
 		Gap* gapInfo = new Gap();
-		gapInfo->fixGapInPath(pathInfo, segInfo,
-				secondLevelChromosome->getIndexInfo(), incompleteEndRead);
+		gapInfo->fixGapInPath(pathInfo, mappedRead, secondLevelChromosome->getIndexInfo());
 
-
-		/* FIX ME - FIX THIS LATER 5/28/14 KLM
+		/* FIXME - FIX THIS LATER 5/28/14 KLM
 		if(pathInfo->finalPathVec.size() == 1)
 			peAlignInfo->pushBackPathInfo2PeAlignInfo(pathInfo, End1OrEnd2, NorOrRcm, indexInfo);
 
@@ -2005,8 +1985,7 @@ void fixOneEndReadForward(Read read, Read incompleteEndRead, PE_Read_Alignment_I
 		 */
 		delete gapInfo;
 		delete pathInfo;
-		delete segInfo;
-		delete seg2ndOriInfo;
+		delete mappedRead;
 	}
 }
 

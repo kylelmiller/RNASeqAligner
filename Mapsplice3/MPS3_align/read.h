@@ -11,11 +11,16 @@ class Read
 {
 private:
 
-	// Member variables
+	/*
+	 * Member variables
+	 */
 	string _name;
 	string _sequence;
 	string _quality;
 
+	/*
+	 * Private Methods
+	 */
 	string reverseComplement(const char& character)
 	{
 		switch(character)
@@ -44,9 +49,9 @@ private:
 	string getReverseComplementString()
 	{
 		string rc = "";
-		for(int i = 0; i < length(); i++)
+		for(int i = 0; i < getLength(); i++)
 		{
-			rc += reverseComplement(_sequence.at(length() - 1 - i));
+			rc += reverseComplement(_sequence.at(getLength() - 1 - i));
 		}
 		return rc;
 	}
@@ -62,33 +67,30 @@ private:
 	}
 
 public:
-	unsigned int length()
+
+	/*
+	 * Constructors
+	 */
+	Read(string name, string sequence, string quality)
+	{
+		_name = name;
+		_sequence = sequence;
+		_quality = quality;
+	}
+
+	Read(Read* other)
+	{
+		_name = other->_name;
+		_sequence = other->_sequence;
+		_quality = other->_quality;
+	}
+
+	/*
+	 * Public Methods
+	 */
+	unsigned int getLength()
 	{
 		return _sequence.length();
-	}
-
-	/*
-	 * Sets the name of this read
-	 */
-	void setName(string value)
-	{
-		_name = value;
-	}
-
-	/*
-	 * Sets the value of this sequence
-	 */
-	void setSequence(string value)
-	{
-		_sequence = value;
-	}
-
-	/*
-	 * Set quality score
-	 */
-	void setQualityScore(string value)
-	{
-		_quality = value;
 	}
 
 	string getName()
@@ -112,14 +114,9 @@ public:
 	/*
 	 * returns the reverse complement of this read
 	 */
-	Read getReverseComplement()
+	Read* getReverseComplement()
 	{
-		Read reverseComplementRead;
-		reverseComplementRead._name = _name;
-		reverseComplementRead._sequence = getReverseComplementString();
-		reverseComplementRead._quality = getReverseComplementQuaility();
-
-		return reverseComplementRead;
+		return  new Read(_name, getReverseComplementString(), getReverseComplementQuaility());
 	}
 
 };

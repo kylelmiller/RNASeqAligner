@@ -1,4 +1,4 @@
-/* FIX ME - THIS NEEDS TO BE SORTED OUT LATER KLM 5/29/14
+/* FIXME - THIS NEEDS TO BE SORTED OUT LATER KLM 5/29/14
 bool mapMainSecondLevelForTargetMapping_compressedIndex(char *read,
 	unsigned int* sa,
 	BYTE* lcpCompress, unsigned int* child, BYTE* verifyChild,

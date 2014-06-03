@@ -14,11 +14,17 @@ class PairedEndRead
 
 public:
 
-	Read firstPairedEndRead;
-	Read secondPairedEndRead;
+	Read* firstPairedEndRead;
+	Read* secondPairedEndRead;
 
 	PairedEndRead()
 	{}
+
+	~PairedEndRead()
+	{
+		delete firstPairedEndRead;
+		delete secondPairedEndRead;
+	}
 
 	PairedEndRead(const string& readName1, const string& readName2,
 			const string& readSeq1, const string& readSeq2)
@@ -29,33 +35,28 @@ public:
 	void setReadData(const string& readName1, const string& readName2,
 		const string& readSeq1, const string& readSeq2)
 	{
-		firstPairedEndRead.setName(readName1);
-		firstPairedEndRead.setSequence(readSeq1);
-		firstPairedEndRead.setQualityScore("*");
-
-		secondPairedEndRead.setName(readName2);
-		secondPairedEndRead.setSequence(readSeq2);
-		secondPairedEndRead.setQualityScore("*");
+		firstPairedEndRead = new Read(readName1, readSeq1, "*");
+		secondPairedEndRead = new Read(readName2, readSeq2, "*");
 	}
 
-	Read getFirstRead()
+	Read* getFirstRead()
 	{
 		return firstPairedEndRead;
 	}
 
-	Read getSecondRead()
+	Read* getSecondRead()
 	{
 		return secondPairedEndRead;
 	}
 
-	Read getFirstReadReverseComplement()
+	Read* getFirstReadReverseComplement()
 	{
-		return firstPairedEndRead.getReverseComplement();
+		return firstPairedEndRead->getReverseComplement();
 	}
 
-	Read getSecondReadReverseComplement()
+	Read* getSecondReadReverseComplement()
 	{
-		return secondPairedEndRead.getReverseComplement();
+		return secondPairedEndRead->getReverseComplement();
 	}
 };
 

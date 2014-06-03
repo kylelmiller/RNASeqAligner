@@ -21,8 +21,6 @@ public:
 		_alignmentNumber = alignmentNumber;
 	}
 
-	Segment() : Segment(0, 0, 0) { }
-
 	bool isLong()
 	{
 		return getLength() >= LONG_SEGMENT_THRESHOLD;

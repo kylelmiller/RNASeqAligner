@@ -9,7 +9,7 @@
 #include "chromosome.h"
 #include "segment.h"
 #include "splice_info.h"
-#include "seg_info.h"
+#include "mappedRead.h"
 
 using namespace std;
 
@@ -46,18 +46,16 @@ public:
 	{
 		int pathValidNum = 0;
 		for(int tmp = 0; tmp < PathValidBoolVec.size(); tmp++)
-		{
 			if(PathValidBoolVec[tmp])
 				pathValidNum++;
-		}
+
 		return pathValidNum;
 	}
 
-	// FIX ME - THIS METHOD NEEDS TO BE CLEANED UP KLM 5/29/14
-	void getFinalPath_extend2HeadTail(Index_Info* indexInfo, Seg_Info* segInfo, Read readSeq_inProcess)
+	// FIXME - THIS METHOD NEEDS TO BE CLEANED UP KLM 5/29/14
+	void getFinalPath_extend2HeadTail(Index_Info* indexInfo, MappedRead* mappedRead)
 	{
-		//cout << "start to get Final path" << endl;
-		if(segInfo->getNumberOfSegments() < 1)
+		if(mappedRead->getNumberOfSegments() < 1)
 			return;
 
 		for(int tmpPath = 0; tmpPath < fixedPathVec.size(); tmpPath++)
@@ -68,7 +66,7 @@ public:
 			int tmpPath1stSegGroupNO = (PathVec_seg[fixedPathNO])[0].first;
 			int tmpPath1stSegCandiNO = (PathVec_seg[fixedPathNO])[0].second;
 
-			Segment* currentSegment = segInfo->getSegment(tmpPath1stSegGroupNO);
+			Segment* currentSegment = mappedRead->getSegment(tmpPath1stSegGroupNO);
 
 			int tmpPathElementSize = (PathVec_seg[fixedPathNO]).size();
 			int tmpPathLastSegGroupNO = (PathVec_seg[fixedPathNO])[tmpPathElementSize - 1].first;
@@ -84,7 +82,7 @@ public:
 			tmpSpliceInfo->jump_code.clear();
 
 			int tmpUnfixedHeadLength = currentSegment->getLocationInRead();
-			string readSubSeqInProcess_head = readSeq_inProcess.getSequence().substr(0, tmpUnfixedHeadLength);
+			string readSubSeqInProcess_head = mappedRead->getRead()->getSequence().substr(0, tmpUnfixedHeadLength);
 
 			bool scoreStringBool_head;
 			string chromSubSeqInProcess_head;
@@ -128,11 +126,11 @@ public:
 			//////////////////////////// add last jump code /////////////////////////////////////////////////////
 			int endMappedBaseMapPos = (fixedPathVec[tmpPath].second)->getEndBaseMapPos_jump_code(tmpPathFinalMapPos);
 			int tmpUnfixedTailLength =
-				readSeq_inProcess.length() -
+				mappedRead->getRead()->getLength() -
 				(currentSegment->getLocationInRead() + currentSegment->getLength());
 
 			string readSubSeqInProcess_tail
-				= readSeq_inProcess.getSequence().substr(readSeq_inProcess.length() - tmpUnfixedTailLength, tmpUnfixedTailLength);
+				= mappedRead->getRead()->getSequence().substr(mappedRead->getRead()->getLength() - tmpUnfixedTailLength, tmpUnfixedTailLength);
 
 			bool scoreStringBool_tail;
 			string chromSubSeqInProcess_tail;
@@ -173,10 +171,8 @@ public:
 
 			tmpSpliceInfo->getFinalJumpCode();
 
-			if((tmpUnfixedHeadLength > 0)&&(scoreStringBool_head))
-			{
-				tmpPathFinalMapPos = tmpPathFinalMapPos - tmpUnfixedHeadLength;
-			}
+			if(tmpUnfixedHeadLength > 0 && scoreStringBool_head)
+				tmpPathFinalMapPos -= tmpUnfixedHeadLength;
 
 			int oldMismatchNum = fixedPathMismatchVec[tmpPath];
 			int newMismatchNum = oldMismatchNum + mismatchNumToAdd;
@@ -202,8 +198,8 @@ public:
 		vector< pair<int,int> >().swap(newPath);
 	}
 
-	// FIX ME - THIS NEEDS TO GET REWORKED KLM 5/30/14
-	int minDistanceWithCurrentPath(Segment* segment, int segCandiNO, Seg_Info* segInfo,  int currentPathNum, int* minSegNumGap)
+	// FIXME - THIS NEEDS TO GET REWORKED KLM 5/30/14
+	int minDistanceWithCurrentPath(Segment* segment, int segCandiNO, MappedRead* mappedRead,  int currentPathNum, int* minSegNumGap)
 	{
 		int minDistance_value = 900000;
 		int minDistance_path = 1000;
@@ -213,9 +209,9 @@ public:
 			int tmpPathElementVecSize = (PathVec_seg[tmpPathElementNO]).size();
 			int tmpPathLastSegGroupNO = ((PathVec_seg[tmpPathElementNO])[tmpPathElementVecSize-1]).first;
 			int tmpPathLastSegCandiNO = ((PathVec_seg[tmpPathElementNO])[tmpPathElementVecSize-1]).second;
-			int tmpSegDistance = segInfo->distanceBetweenSegment(tmpPathLastSegGroupNO, tmpPathLastSegCandiNO,
+			int tmpSegDistance = mappedRead->distanceBetweenSegment(tmpPathLastSegGroupNO, tmpPathLastSegCandiNO,
 					segment, segCandiNO);
-			int tmpSegNumGap = segInfo->getGroupNumber(segment) - tmpPathLastSegGroupNO;
+			int tmpSegNumGap = mappedRead->getGroupNumber(segment) - tmpPathLastSegGroupNO;
 
 			if(tmpSegNumGap <= 0)
 				continue;
@@ -240,59 +236,38 @@ public:
 		return minDistance_value;
 	}
 
-	// FIX ME - THIS NEEDS TO GET REWORKED KLM 5/30/14
+	// FIXME - THIS NEEDS TO GET REWORKED KLM 5/30/14
 	void addNewSegCandiToCurrentPathInfoVec_matchIndelUniqueSpliceMultiPath(Segment* segment,
-			int segCandiNO, Seg_Info* segInfo, bool longSegBool, int currentPathNum)
+			int segCandiNO, MappedRead* mappedRead, bool longSegBool, int currentPathNum)
 	{
 		bool relatedToSomePath = false;
 		int minSegNumGap = 0;
-		int minDistance = minDistanceWithCurrentPath(segment, segCandiNO, segInfo, currentPathNum, &minSegNumGap);
 
-		if(minDistance <= MAX_DELETION_LENGTH)
+		int minDistance = minDistanceWithCurrentPath(segment, segCandiNO, mappedRead, currentPathNum, &minSegNumGap);
+		int compareDistance = minDistance <= MAX_DELETION_LENGTH
+			? MAX_DELETION_LENGTH
+			: SPLICEDISTANCE;
+
+		for(int tmpPathElementNO = 0; tmpPathElementNO < currentPathNum; tmpPathElementNO++)
 		{
-			for(int tmpPathElementNO = 0; tmpPathElementNO < currentPathNum; tmpPathElementNO++)
+			int tmpPathElementVecSize = (PathVec_seg[tmpPathElementNO]).size();
+			int tmpPathLastSegGroupNO = ((PathVec_seg[tmpPathElementNO])[tmpPathElementVecSize-1]).first;
+			int tmpPathLastSegCandiNO = ((PathVec_seg[tmpPathElementNO])[tmpPathElementVecSize-1]).second;
+			int tmpSegDistance = mappedRead->distanceBetweenSegment(tmpPathLastSegGroupNO, tmpPathLastSegCandiNO,
+					segment, segCandiNO);
+			int tmpSegNumGap = mappedRead->getGroupNumber(segment) - tmpPathLastSegGroupNO;
+			if(tmpSegDistance <= compareDistance && tmpSegNumGap <= minSegNumGap)
 			{
-				int tmpPathElementVecSize = (PathVec_seg[tmpPathElementNO]).size();
-				int tmpPathLastSegGroupNO = ((PathVec_seg[tmpPathElementNO])[tmpPathElementVecSize-1]).first;
-				int tmpPathLastSegCandiNO = ((PathVec_seg[tmpPathElementNO])[tmpPathElementVecSize-1]).second;
-				int tmpSegDistance = segInfo->distanceBetweenSegment(tmpPathLastSegGroupNO, tmpPathLastSegCandiNO,
-						segment, segCandiNO);
-				int tmpSegNumGap = segInfo->getGroupNumber(segment) - tmpPathLastSegGroupNO;
-				if((tmpSegDistance <= MAX_DELETION_LENGTH)&&(tmpSegNumGap <= minSegNumGap))
-				{
-					//cout << "tmpPathElementNO: " << tmpPathElementNO << endl;
-					PathValidBoolVec[tmpPathElementNO] = false;
-					this->copyOldPath_AddSegCandi_AddNewPath(tmpPathElementNO, segInfo->getGroupNumber(segment), segCandiNO);
-					relatedToSomePath = true;
-				}
-			}
-		}
-		else
-		{
-			for(int tmpPathElementNO = 0; tmpPathElementNO < currentPathNum; tmpPathElementNO ++)
-			{
-
-				int tmpPathElementVecSize = (PathVec_seg[tmpPathElementNO]).size();
-				int tmpPathLastSegGroupNO = ((PathVec_seg[tmpPathElementNO])[tmpPathElementVecSize-1]).first;
-				int tmpPathLastSegCandiNO = ((PathVec_seg[tmpPathElementNO])[tmpPathElementVecSize-1]).second;
-				int tmpSegDistance = segInfo->distanceBetweenSegment(tmpPathLastSegGroupNO, tmpPathLastSegCandiNO,
-						segment, segCandiNO);
-				int tmpSegNumGap = segInfo->getGroupNumber(segment) - tmpPathLastSegGroupNO;
-				if((tmpSegDistance < SPLICEDISTANCE)&&(tmpSegNumGap <= minSegNumGap))
-				{
-					relatedToSomePath = true;
-
-					PathValidBoolVec[tmpPathElementNO] = false;
-					this->copyOldPath_AddSegCandi_AddNewPath(tmpPathElementNO, segInfo->getGroupNumber(segment), segCandiNO);
-				}
+				PathValidBoolVec[tmpPathElementNO] = false;
+				this->copyOldPath_AddSegCandi_AddNewPath(tmpPathElementNO, mappedRead->getGroupNumber(segment), segCandiNO);
+				relatedToSomePath = true;
 			}
 		}
 
-		if((!relatedToSomePath)&&
-			(longSegBool))
+		if(!relatedToSomePath && longSegBool)
 		{
 			vector< pair<int,int> > tmpPathElementVec;
-			tmpPathElementVec.push_back( pair<int,int> (segInfo->getGroupNumber(segment), segCandiNO) );
+			tmpPathElementVec.push_back( pair<int,int> (mappedRead->getGroupNumber(segment), segCandiNO) );
 			PathVec_seg.push_back(tmpPathElementVec);
 			PathValidBoolVec.push_back(true);
 			vector< pair<int,int> >().swap(tmpPathElementVec);
@@ -300,15 +275,14 @@ public:
 	}
 
 	// FIXME - KLM 6/2/14 WHAT IS THE POINT OF THIS?
-	bool getPossiPathFromSeg(Seg_Info* segInfo)
+	bool getPossiPathFromSeg(MappedRead* mappedRead)
 	{
-		bool possiPathExists = false;
-		int firstLongSegNO = segInfo->getFirstLongSegNO();
+		int firstLongSegNO = mappedRead->getFirstLongSegNO();
 
 		if(firstLongSegNO < 0)
 			return false;
 
-		Segment* currentSegment = segInfo->getSegment(firstLongSegNO);
+		Segment* currentSegment = mappedRead->getSegment(firstLongSegNO);
 
 		for(int i=0; i<currentSegment->getAlignmentNumber(); i++)
 		{

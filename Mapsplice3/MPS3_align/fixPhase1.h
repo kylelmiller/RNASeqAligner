@@ -6,7 +6,7 @@
 #include <string.h>
 
 #include "pairedEndRead.h"
-#include "seg_info.h"
+#include "mappedRead.h"
 #include "path.h"
 #include "gap.h"
 #include "chromosome.h"
@@ -17,15 +17,10 @@ class FixPhase1Info
 {
 public:
 
-	Seg_Info* segInfo_Nor1;
-	Seg_Info* segInfo_Rcm1;
-	Seg_Info* segInfo_Nor2;
-	Seg_Info* segInfo_Rcm2;
-
-	bool normalMapMain;
-	bool rcmMapMain;
-	bool normalMapMain_PE;
-	bool rcmMapMain_PE;
+	MappedRead* firstNormalMappedRead;
+	MappedRead* firstReverseCompMappedRead;
+	MappedRead* secondNormalMappedRead;
+	MappedRead* secondReverseCompMappedRead;
 
 	Path* pathInfo_Nor1;
 	Path* pathInfo_Rcm1;
@@ -37,24 +32,21 @@ public:
 	Gap* gapInfo_Nor2;
 	Gap* gapInfo_Rcm2;
 
-	unsigned int norValLength;// = 0;
-	unsigned int norValLength_PE;// = 0;
-	unsigned int rcmValLength;// = 0;
-	unsigned int rcmValLength_PE;// = 0;
-	unsigned int minValLengthToStitch;// = MIN_LENGTH_TO_STITCH;
-	
-	FixPhase1Info()
+	FixPhase1Info(PairedEndRead* pairedEndRead, Chromosome* chrom)
 	{
-		norValLength = 0;
-		norValLength_PE = 0;
-		rcmValLength = 0;
-		rcmValLength_PE = 0;
-		minValLengthToStitch = MIN_LENGTH_TO_STITCH;
+	   	firstNormalMappedRead = new MappedRead(
+			pairedEndRead->getFirstRead(),
+			chrom);
+	    firstReverseCompMappedRead = new MappedRead(
+				pairedEndRead->getFirstReadReverseComplement(),
+				chrom);
 
-	   	segInfo_Nor1 = new Seg_Info();		
-	    segInfo_Rcm1 = new Seg_Info();
-		segInfo_Nor2 = new Seg_Info();
-		segInfo_Rcm2 = new Seg_Info();	
+		secondNormalMappedRead = new MappedRead(
+				pairedEndRead->getSecondRead(),
+				chrom);
+		secondReverseCompMappedRead = new MappedRead(
+				pairedEndRead->getSecondReadReverseComplement(),
+				chrom);
 
 		pathInfo_Nor1 = new Path();
 		pathInfo_Rcm1 = new Path();
@@ -79,71 +71,42 @@ public:
 		delete pathInfo_Nor2;
 		delete pathInfo_Rcm2;
 
-		delete segInfo_Nor1;
-		delete segInfo_Nor2;
-		delete segInfo_Rcm1;
-		delete segInfo_Rcm2;
-	}
-
-	/*
-	 * Attempt to map the paired-end read to the reference
-	 */
-	void fixPhase1_segInfo(PairedEndRead* pairedEndRead, Chromosome* chrom)
-	{
-		// Attempt to map the first read and it's reverse complement
-		normalMapMain = segInfo_Nor1->mapMain_SegInfo_preIndex(
-			pairedEndRead->getFirstRead(),
-			chrom);
-		rcmMapMain = segInfo_Rcm1->mapMain_SegInfo_preIndex(
-			pairedEndRead->getFirstReadReverseComplement(),
-			chrom);
-
-		// Attempt to map the second read and it's reverse complement
-		normalMapMain_PE = segInfo_Nor2->mapMain_SegInfo_preIndex(
-			pairedEndRead->getSecondRead(),
-			chrom);
-		rcmMapMain_PE = segInfo_Rcm2->mapMain_SegInfo_preIndex(
-			pairedEndRead->getSecondReadReverseComplement(),
-			chrom);
+		delete firstNormalMappedRead;
+		delete secondNormalMappedRead;
+		delete firstReverseCompMappedRead;
+		delete secondReverseCompMappedRead;
 	}
 
 	void fixPhase1_pathInfo()
 	{
-		if(normalMapMain)
-			pathInfo_Nor1->getPossiPathFromSeg(segInfo_Nor1);
-		if(rcmMapMain)
-			pathInfo_Rcm1->getPossiPathFromSeg(segInfo_Rcm1);
-		if(normalMapMain_PE)
-			pathInfo_Nor2->getPossiPathFromSeg(segInfo_Nor2);
-		if(rcmMapMain_PE)
-			pathInfo_Rcm2->getPossiPathFromSeg(segInfo_Rcm2);		
+		pathInfo_Nor1->getPossiPathFromSeg(firstNormalMappedRead);
+		pathInfo_Rcm1->getPossiPathFromSeg(firstReverseCompMappedRead);
+
+		pathInfo_Nor2->getPossiPathFromSeg(secondNormalMappedRead);
+		pathInfo_Rcm2->getPossiPathFromSeg(secondReverseCompMappedRead);
 	}
 
-	void fixPhase1_gapInfo(PairedEndRead* pairedEndRead, Index_Info* indexInfo)
+	void fixPhase1_gapInfo(Index_Info* indexInfo)
 	{
 		gapInfo_Nor1->fixGapInPath(
 			pathInfo_Nor1,
-			segInfo_Nor1,
-			indexInfo,
-			pairedEndRead->getFirstRead());
+			firstNormalMappedRead,
+			indexInfo);
 
 		gapInfo_Rcm1->fixGapInPath(
 			pathInfo_Rcm1,
-			segInfo_Rcm1,
-			indexInfo,
-			pairedEndRead->getFirstReadReverseComplement());
+			firstReverseCompMappedRead,
+			indexInfo);
 
 		gapInfo_Nor2->fixGapInPath(
 			pathInfo_Nor2,
-			segInfo_Nor2,
-			indexInfo,
-			pairedEndRead->getSecondRead());
+			secondNormalMappedRead,
+			indexInfo);
 
 		gapInfo_Rcm2->fixGapInPath(
 			pathInfo_Rcm2,
-			segInfo_Rcm2,
-			indexInfo,
-			pairedEndRead->getSecondReadReverseComplement());
+			secondReverseCompMappedRead,
+			indexInfo);
 	}
 };
 

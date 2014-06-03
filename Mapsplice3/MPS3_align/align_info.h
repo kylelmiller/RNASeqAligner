@@ -4,9 +4,9 @@
 #include "path.h"
 #include "pairedEndRead.h"
 #include "splice_info.h"
-#include "seg_info.h"
+#include "mappedRead.h"
 
-// FIX ME - KLM 5/30/14 THIS NEEDS TO GET REWORKED
+// FIXME - KLM 5/30/14 THIS NEEDS TO GET REWORKED
 class SpliceJunction_Alignment
 {
 public:
@@ -1441,90 +1441,52 @@ public:
 	~PE_Read_Alignment_Info()
 	{
 		for(int tmp = 0; tmp < norAlignmentInfo_PE_1.size(); tmp++)
-		{
-			delete(norAlignmentInfo_PE_1[tmp]);
-		}
+			delete norAlignmentInfo_PE_1[tmp];
+
 		for(int tmp = 0; tmp < rcmAlignmentInfo_PE_1.size(); tmp++)
-		{
-			delete(rcmAlignmentInfo_PE_1[tmp]);
-		}
+			delete rcmAlignmentInfo_PE_1[tmp];
+
 		for(int tmp = 0; tmp < norAlignmentInfo_PE_2.size(); tmp++)
-		{
-			delete(norAlignmentInfo_PE_2[tmp]);
-		}
+			delete norAlignmentInfo_PE_2[tmp];
+
 		for(int tmp = 0; tmp < rcmAlignmentInfo_PE_2.size(); tmp++)
-		{
-			delete(rcmAlignmentInfo_PE_2[tmp]);
-		}
+			delete rcmAlignmentInfo_PE_2[tmp];
 	}
 
 	bool finalPairExistsBool()
 	{
-		int finalPairNum = finalAlignPair_Nor1Rcm2.size() + finalAlignPair_Nor2Rcm1.size();
-		if(finalPairNum == 0)
-		{
-			return false;
-		}
-		else
-		{
-			return true;
-		}
+		return finalAlignPair_Nor1Rcm2.size() + finalAlignPair_Nor2Rcm1.size() != 0;
 	}
 
 	bool oriPairExistsBool()
 	{
-		int oriPairNum = oriAlignPair_Nor1Rcm2.size() + oriAlignPair_Nor2Rcm1.size();
-		if(oriPairNum == 0)
-		{
-			return false;
-		}
-		else
-		{
-			return true;
-		}
+		return oriAlignPair_Nor1Rcm2.size() + oriAlignPair_Nor2Rcm1.size() != 0;
 	}
 
 	bool alignInfoExistsBool()
 	{
 		int alignInfoNum = norAlignmentInfo_PE_1.size() + rcmAlignmentInfo_PE_1.size()
 			+ norAlignmentInfo_PE_2.size() + rcmAlignmentInfo_PE_2.size();
-		if(alignInfoNum == 0)
-		{
-			return false;
-		}
-		else
-		{
-			return true;
-		}
+		return alignInfoNum != 0;
 	}
 
 	bool allAlignmentInFinalPairCompleted()
 	{
-		bool incomleteAlignmentExists = true;
-
-		for(int tmp_1 = 0; tmp_1 < finalAlignPair_Nor1Rcm2.size(); tmp_1++)
+		for(int i=0; i<finalAlignPair_Nor1Rcm2.size(); i++)
 		{
-			bool tmpBool_1 = 
-				norAlignmentInfo_PE_1[(finalAlignPair_Nor1Rcm2[tmp_1].first)]->noUnfixedHeadTailBool();
-			if(!tmpBool_1)
+			if(!norAlignmentInfo_PE_1[(finalAlignPair_Nor1Rcm2[i].first)]->noUnfixedHeadTailBool())
 				return false;
 
-			bool tmpBool_2 = 
-				rcmAlignmentInfo_PE_2[(finalAlignPair_Nor1Rcm2[tmp_1].second)]->noUnfixedHeadTailBool();
-			if(!tmpBool_2)
+			if(!rcmAlignmentInfo_PE_2[(finalAlignPair_Nor1Rcm2[i].second)]->noUnfixedHeadTailBool())
 				return false;
 		}
 
-		for(int tmp_1 = 0; tmp_1 < finalAlignPair_Nor2Rcm1.size(); tmp_1++)
+		for(int i=0; i<finalAlignPair_Nor2Rcm1.size(); i++)
 		{
-			bool tmpBool_1 = 
-				norAlignmentInfo_PE_2[(finalAlignPair_Nor2Rcm1[tmp_1].first)]->noUnfixedHeadTailBool();
-			if(!tmpBool_1)
+			if(!norAlignmentInfo_PE_2[(finalAlignPair_Nor2Rcm1[i].first)]->noUnfixedHeadTailBool())
 				return false;
 
-			bool tmpBool_2 = 
-				rcmAlignmentInfo_PE_1[(finalAlignPair_Nor2Rcm1[tmp_1].second)]->noUnfixedHeadTailBool();
-			if(!tmpBool_2)
+			if(!rcmAlignmentInfo_PE_1[(finalAlignPair_Nor2Rcm1[i].second)]->noUnfixedHeadTailBool())
 				return false;
 		}
 
@@ -1533,34 +1495,34 @@ public:
 
 	bool allUnpairedAlignmentCompleted()
 	{
-		for(int tmp = 0; tmp < norAlignmentInfo_PE_1.size(); tmp++)
+		for(int i = 0; i < norAlignmentInfo_PE_1.size(); i++)
 		{
 			bool tmpBool = 
-				norAlignmentInfo_PE_1[tmp]->noUnfixedHeadTailBool();
+				norAlignmentInfo_PE_1[i]->noUnfixedHeadTailBool();
 			if(!tmpBool)
 				return false;
 		}
 
-		for(int tmp = 0; tmp < norAlignmentInfo_PE_2.size(); tmp++)
+		for(int i = 0; i < norAlignmentInfo_PE_2.size(); i++)
 		{
 			bool tmpBool = 
-				norAlignmentInfo_PE_2[tmp]->noUnfixedHeadTailBool();
+				norAlignmentInfo_PE_2[i]->noUnfixedHeadTailBool();
 			if(!tmpBool)
 				return false;			
 		}
 
-		for(int tmp = 0; tmp < rcmAlignmentInfo_PE_1.size(); tmp++)
+		for(int i = 0; i < rcmAlignmentInfo_PE_1.size(); i++)
 		{
 			bool tmpBool = 
-				rcmAlignmentInfo_PE_1[tmp]->noUnfixedHeadTailBool();
+				rcmAlignmentInfo_PE_1[i]->noUnfixedHeadTailBool();
 			if(!tmpBool)
 				return false;
 		}
 
-		for(int tmp = 0; tmp < rcmAlignmentInfo_PE_2.size(); tmp++)
+		for(int i = 0; i < rcmAlignmentInfo_PE_2.size(); i++)
 		{
 			bool tmpBool = 
-				rcmAlignmentInfo_PE_2[tmp]->noUnfixedHeadTailBool();
+				rcmAlignmentInfo_PE_2[i]->noUnfixedHeadTailBool();
 			if(!tmpBool)
 				return false;			
 		}
@@ -1733,7 +1695,6 @@ public:
 				mapChromPosInt, (((pathInfo_nor1->finalPathVec)[tmpPath]).second)->final_jump_code, 
 				tmpMismatch, indexInfo);
 			norAlignmentInfo_PE_1.push_back(tmpAlignmentInfo);
-			//delete(tmpAlignmentInfo);
 		}
 		//cout << "pe alignInfo Nor1 ends ..." << endl;
 		for(int tmpPath = 0; tmpPath < pathInfo_rcm1->finalPathVec.size(); tmpPath++)
@@ -1746,7 +1707,6 @@ public:
 				mapChromPosInt, (((pathInfo_rcm1->finalPathVec)[tmpPath]).second)->final_jump_code, 
 				tmpMismatch, indexInfo);
 			rcmAlignmentInfo_PE_1.push_back(tmpAlignmentInfo);
-			//delete(tmpAlignmentInfo);
 		}
 		//cout << "pe alignInfo Rcm1 ends ..." << endl;
 		for(int tmpPath = 0; tmpPath < pathInfo_nor2->finalPathVec.size(); tmpPath++)
@@ -1759,7 +1719,6 @@ public:
 				mapChromPosInt, (((pathInfo_nor2->finalPathVec)[tmpPath]).second)->final_jump_code, 
 				tmpMismatch, indexInfo);
 			norAlignmentInfo_PE_2.push_back(tmpAlignmentInfo);
-			//delete(tmpAlignmentInfo);
 		}
 		//cout << "pe alignInfo Nor2 ends ..." << endl;
 		for(int tmpPath = 0; tmpPath < pathInfo_rcm2->finalPathVec.size(); tmpPath++)
@@ -1772,7 +1731,6 @@ public:
 				mapChromPosInt, (((pathInfo_rcm2->finalPathVec)[tmpPath]).second)->final_jump_code, 
 				tmpMismatch, indexInfo);
 			rcmAlignmentInfo_PE_2.push_back(tmpAlignmentInfo);
-			//delete(tmpAlignmentInfo);
 		}
 		//cout << "pe alignInfo Rcm2 ends ..." << endl;
 	}
@@ -2183,8 +2141,6 @@ public:
 					mapPos_Nor2Rcm1.erase(it);
 					mapPos_Nor2Rcm1.insert(pair<int, int> (norAlignmentInfo_PE_2[tmpNor2NO]->alignChromPos, tmp));
 				}
-				else
-				{}
 			}
 		}
 
@@ -2200,27 +2156,14 @@ public:
 			for(int tmp = 0; tmp < (oriAlignPair_Nor1Rcm2[tmpNor1Rcm2NO].second).size(); tmp++)
 			{
 				tmpRcm2NO = (oriAlignPair_Nor1Rcm2[tmpNor1Rcm2NO].second)[tmp];
-				//cout << "tmpRcm2NO = " << tmpRcm2NO << endl;
-				if(rcmAlignmentInfo_PE_2[tmpRcm2NO]->alignChromPos < currentShortestPairDifference)
-				{
-					currentBestRcm2NO = tmpRcm2NO;
-					//cout << "currentBestRcm2 = " << currentBestRcm2NO << endl;
-					currentShortestPairDifference = rcmAlignmentInfo_PE_2[tmpRcm2NO]->alignChromPos;
-				}
-				else if(rcmAlignmentInfo_PE_2[tmpRcm2NO]->alignChromPos == currentShortestPairDifference)
-				{
-					if(rcmAlignmentInfo_PE_2[tmpRcm2NO]->endMatchedPosInChr
-						< rcmAlignmentInfo_PE_2[currentBestRcm2NO]->endMatchedPosInChr)
+				if(rcmAlignmentInfo_PE_2[tmpRcm2NO]->alignChromPos < currentShortestPairDifference ||
+						(rcmAlignmentInfo_PE_2[tmpRcm2NO]->alignChromPos == currentShortestPairDifference &&
+							rcmAlignmentInfo_PE_2[tmpRcm2NO]->endMatchedPosInChr
+							< rcmAlignmentInfo_PE_2[currentBestRcm2NO]->endMatchedPosInChr))
 					{
 						currentBestRcm2NO = tmpRcm2NO;
-						//cout << "currentBestRcm2 = " << currentBestRcm2NO << endl;
 						currentShortestPairDifference = rcmAlignmentInfo_PE_2[tmpRcm2NO]->alignChromPos;
 					}
-					else
-					{}
-				}
-				else
-				{}
 			}
 			finalAlignPair_Nor1Rcm2.push_back( pair<int, int>
 				(oriAlignPair_Nor1Rcm2[tmpNor1Rcm2NO].first, currentBestRcm2NO) );
@@ -2277,13 +2220,13 @@ public:
 
 	string getTmpAlignInfo(PairedEndRead* pairedEndRead)
 	{
-		string readName_1 = pairedEndRead->getFirstRead().getName();
-		string readOriSeq_1 = pairedEndRead->getFirstRead().getSequence();
-		string readOriQualSeq_1 = pairedEndRead->getFirstRead().getQuality();
+		string readName_1 = pairedEndRead->getFirstRead()->getName();
+		string readOriSeq_1 = pairedEndRead->getFirstRead()->getSequence();
+		string readOriQualSeq_1 = pairedEndRead->getFirstRead()->getQuality();
 
-		string readName_2 = pairedEndRead->getSecondRead().getName();
-		string readOriSeq_2 = pairedEndRead->getSecondRead().getSequence();
-		string readOriQualSeq_2 = pairedEndRead->getSecondRead().getQuality();
+		string readName_2 = pairedEndRead->getSecondRead()->getName();
+		string readOriSeq_2 = pairedEndRead->getSecondRead()->getSequence();
+		string readOriQualSeq_2 = pairedEndRead->getSecondRead()->getQuality();
 
 		string tmpAlignInfoStr = "\n" + readName_1 + "\t"
 			+ Utilities::int_to_str(norAlignmentInfo_PE_1.size()) + "\t"
@@ -2362,13 +2305,13 @@ public:
 
 	string getTmpAlignInfoForFinalPair(PairedEndRead* pairedEndRead)
 	{
-		string readName_1 = pairedEndRead->getFirstRead().getName();
-		string readOriSeq_1 = pairedEndRead->getFirstRead().getSequence();
-		string readOriQualSeq_1 = pairedEndRead->getFirstRead().getQuality();
+		string readName_1 = pairedEndRead->getFirstRead()->getName();
+		string readOriSeq_1 = pairedEndRead->getFirstRead()->getSequence();
+		string readOriQualSeq_1 = pairedEndRead->getFirstRead()->getQuality();
 
-		string readName_2 = pairedEndRead->getSecondRead().getName();
-		string readOriSeq_2 = pairedEndRead->getSecondRead().getSequence();
-		string readOriQualSeq_2 = pairedEndRead->getSecondRead().getQuality();
+		string readName_2 = pairedEndRead->getSecondRead()->getName();
+		string readOriSeq_2 = pairedEndRead->getSecondRead()->getSequence();
+		string readOriQualSeq_2 = pairedEndRead->getSecondRead()->getQuality();
 
 		string tmpAlignInfoStr = "\n" + readName_1 + "\t"
 			+ Utilities::int_to_str(finalAlignPair_Nor1Rcm2.size()) + "\t"
@@ -2455,11 +2398,11 @@ public:
 
 	string getSAMformatForFinalPair_secondaryOrNot(PairedEndRead* pairedEndRead)
 	{
-		string readName_1 = pairedEndRead->getFirstRead().getName();
-		string readSeq_1 = pairedEndRead->getFirstRead().getSequence();
+		string readName_1 = pairedEndRead->getFirstRead()->getName();
+		string readSeq_1 = pairedEndRead->getFirstRead()->getSequence();
 
-		string readName_2 = pairedEndRead->getSecondRead().getName();
-		string readSeq_2 = pairedEndRead->getSecondRead().getSequence();
+		string readName_2 = pairedEndRead->getSecondRead()->getName();
+		string readSeq_2 = pairedEndRead->getSecondRead()->getSequence();
 
 		string tmpSamStr;
 
@@ -2523,13 +2466,13 @@ public:
 
 	string getSAMformatForUnpairedAlignments_secondaryOrNot(PairedEndRead* pairedEndRead)
 	{
-		string readName_1 = pairedEndRead->getFirstRead().getName();
-		string readSeq_1 = pairedEndRead->getFirstRead().getSequence();
-		string readOriQualSeq_1 = pairedEndRead->getFirstRead().getQuality();
+		string readName_1 = pairedEndRead->getFirstRead()->getName();
+		string readSeq_1 = pairedEndRead->getFirstRead()->getSequence();
+		string readOriQualSeq_1 = pairedEndRead->getFirstRead()->getQuality();
 
-		string readName_2 = pairedEndRead->getSecondRead().getName();
-		string readSeq_2 = pairedEndRead->getSecondRead().getSequence();
-		string readOriQualSeq_2 = pairedEndRead->getSecondRead().getQuality();
+		string readName_2 = pairedEndRead->getSecondRead()->getName();
+		string readSeq_2 = pairedEndRead->getSecondRead()->getSequence();
+		string readOriQualSeq_2 = pairedEndRead->getSecondRead()->getQuality();
 
 		string peAlignSamStr;
 
@@ -2600,11 +2543,11 @@ public:
 
 	string getSAMformatForBothEndsUnmapped(PairedEndRead* pairedEndRead)
 	{
-		string readName_1 = pairedEndRead->getFirstRead().getName();
-		string readSeq_1 = pairedEndRead->getFirstRead().getSequence();
+		string readName_1 = pairedEndRead->getFirstRead()->getName();
+		string readSeq_1 = pairedEndRead->getFirstRead()->getSequence();
 
-		string readName_2 = pairedEndRead->getSecondRead().getName();
-		string readSeq_2 = pairedEndRead->getSecondRead().getSequence();
+		string readName_2 = pairedEndRead->getSecondRead()->getName();
+		string readSeq_2 = pairedEndRead->getSecondRead()->getSequence();
 
 		string peAlignSamStr;
 		peAlignSamStr = readName_1 + "\t77\t*\t0\t0\t*\t*\t0\t0\t" + readSeq_1 + "\t*\tIH:i:0\tHI:i:0\n"

@@ -122,11 +122,11 @@ public:
 	 * Gets the location of a given read based on INDEX_KMER_LENGTH
 	 * nucleotides of the read starting at stop_loc_overall
 	 */
-	bool getMappedLocation(Read read, unsigned int startLocation,
+	bool getMappedLocation(Read* read, unsigned int startLocation,
 		int* mappedLength, unsigned int* indexIntervalStart,
 		unsigned int* indexIntervalEnd)
 	{
-		string stringToSearch = read.getSequence().substr(startLocation, FIRST_LEVEL_INDEX_KMER_LENGTH);
+		string stringToSearch = read->getSequence().substr(startLocation, FIRST_LEVEL_INDEX_KMER_LENGTH);
 
 		// If there is an N in our substring then return false since we can't find that
 		if (stringToSearch.find("N") != stringToSearch.npos)

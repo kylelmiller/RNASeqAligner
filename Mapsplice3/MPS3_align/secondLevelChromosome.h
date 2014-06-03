@@ -51,6 +51,14 @@ public:
 		_indexInfo = indexInfo;
 	}
 
+	/*
+	 *
+	 */
+	bool couldContainSegment(unsigned int length)
+	{
+		return length > FIRST_LEVEL_INDEX_KMER_LENGTH;
+	}
+
 	Index_Info* getIndexInfo()
 	{
 		return _indexInfo;

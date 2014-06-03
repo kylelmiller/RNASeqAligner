@@ -152,16 +152,11 @@ public:
 
 	bool allFinalJumpCodeValid()
 	{
-		bool allJumpCodeValidBool = true;
-		for(int tmp = 0; tmp < final_jump_code.size(); tmp ++)
-		{
-			if(final_jump_code[tmp].len <= 0)
-			{
-				allJumpCodeValidBool = false;
-			}
-		}
+		for(int i = 0; i<final_jump_code.size(); i++)
+			if(final_jump_code[i].len <= 0)
+				return false;
 
-		return allJumpCodeValidBool;
+		return true;
 	}
 };
 

@@ -13,7 +13,7 @@ To fix:
 
 #include "genomeScan.h"
 #include "path.h"
-#include "seg_info.h"
+#include "mappedRead.h"
 #include "index_info.h"
 #include "read.h"
 
@@ -31,9 +31,48 @@ public:
 		FixSpliceBuffer = 4;
 	}
 
-	bool fixGapInPath(Path* pathInfo, Seg_Info* segInfo, Index_Info* indexInfo, Read readSeq_inProcess)
+	/*
+	 * removing path
+	 */
+	bool fixGapInPath(MappedRead* mappedRead, Index_Info* indexInfo)
 	{
-		bool fixGapInPathBool = false;
+		Segment* longSegment = mappedRead->getFirstLongSegment();
+		if(longSegment == NULL)
+		{
+			//pathInfo->getFinalPath_extend2HeadTail(indexInfo, segInfo, readSeq_inProcess);
+			return true;
+		}
+
+		for(int i=0; i<longSegment->getAlignmentNumber();i++)
+		{
+			Splice_Info* newPathSpliceInfo = new Splice_Info();
+			Jump_Code firstJumpCode(longSegment->getLength(), "M");
+			newPathSpliceInfo->jump_code.push_back(firstJumpCode);
+
+			// this code is never hit, need to figure out what is going
+			// on with it
+			//for(int j=0; j<longSegment->)
+
+			newPathSpliceInfo->getFinalJumpCode();
+			bool allJumpCodeValidBool = newPathSpliceInfo->allFinalJumpCodeValid();
+			if(allJumpCodeValidBool)
+			{
+				//(pathInfo->PathFixedBoolVec).push_back(allJumpCodeValidBool);
+				//(pathInfo->fixedPathVec).push_back(pair <int, Splice_Info*> (tmpPathNO, newPathSpliceInfo) );
+				//(pathInfo->fixedPathMismatchVec).push_back(newPathMismatchNum);
+			}
+			else
+			{
+				//(pathInfo->PathFixedBoolVec).push_back(allJumpCodeValidBool);
+			}
+		}
+
+		//pathInfo->getFinalPath_extend2HeadTail(indexInfo, segInfo, readSeq_inProcess);
+		return true;
+	}
+
+	bool fixGapInPath(Path* pathInfo, MappedRead* mappedRead, Index_Info* indexInfo)
+	{
 		int pathVecSize = pathInfo->PathVec_seg.size();
 
 		for(int tmpPathNO = 0; tmpPathNO < pathVecSize; tmpPathNO ++)
@@ -45,7 +84,7 @@ public:
 			}
 
 			int firstSegGroupNO = (pathInfo->PathVec_seg[tmpPathNO])[0].first;
-			int firstSegLength = segInfo->getSegment(firstSegGroupNO)->getLength();
+			int firstSegLength = mappedRead->getSegment(firstSegGroupNO)->getLength();
 
 			Splice_Info* newPathSpliceInfo = new Splice_Info();
 			Jump_Code firstJumpCode(firstSegLength, "M");
@@ -64,10 +103,10 @@ public:
 				int tmpSegGroupNO_next = (pathInfo->PathVec_seg[tmpPathNO])[tmpPathSegNO+1].first;
 				int tmpSegCandiNO_next = (pathInfo->PathVec_seg[tmpPathNO])[tmpPathSegNO+1].second;
 
-				int tmpRelation = segInfo->checkSegRelation(tmpSegGroupNO, tmpSegCandiNO, tmpSegGroupNO_next, tmpSegCandiNO_next);
+				int tmpRelation = mappedRead->checkSegRelation(tmpSegGroupNO, tmpSegCandiNO, tmpSegGroupNO_next, tmpSegCandiNO_next);
 
-				Segment* firstSegment = segInfo->getSegment(tmpSegGroupNO);
-				Segment* secondSegment = segInfo->getSegment(tmpSegGroupNO_next);
+				Segment* firstSegment = mappedRead->getSegment(tmpSegGroupNO);
+				Segment* secondSegment = mappedRead->getSegment(tmpSegGroupNO_next);
 
 				int tmpSegmentLocInRead_1 = firstSegment->getLocationInRead();
 				int tmpSegmentLocInRead_2 = secondSegment->getLocationInRead();
@@ -105,7 +144,7 @@ public:
 					tmpSegmentLength_2,
 					tmpSegmentMapPos_1,
 					tmpSegmentMapPos_2,
-					readSeq_inProcess.getSequence(),
+					mappedRead->getRead()->getSequence(),
 					indexInfo,
 					tmpChrNameStr,
 					&tmpMismatchNum);
@@ -136,30 +175,23 @@ public:
 			}
 		}
 
-		pathInfo->getFinalPath_extend2HeadTail(indexInfo, segInfo, readSeq_inProcess);
+		pathInfo->getFinalPath_extend2HeadTail(indexInfo, mappedRead);
 
-		fixGapInPathBool = true;
-		return fixGapInPathBool;
+		return true;
 	}
-
 
 	int extendBackInChromSeq(int readLoc, const string& readSeq, int chromLoc, const string& chromSeq, int extendBackLengthMax)
 	{
-		int tmp = 1;
-		for (tmp = 1; tmp <= extendBackLengthMax; tmp++)
-		{
-			if(readSeq.at(readLoc - tmp - 1) != chromSeq.at(chromLoc - tmp - 1))
-			{
-				return tmp - 1;
-			}
-		}
+		for (int i=0; i<extendBackLengthMax; i++)
+			if(readSeq.at(readLoc - i) != chromSeq.at(chromLoc - i))
+				return i;
+
 		return extendBackLengthMax;
 	}
 
 	bool fixDoubleAnchor_extendBack(Splice_Info* cigarInfo, int relation, int segmentLocInRead_1, int segmentLocInRead_2,
 		int segmentLength_1, int segmentLength_2, int segmentMapPos_1, int segmentMapPos_2,
-		const string& readSeq_inProcess, Index_Info* indexInfo, const string& chromName, int* mismatchNum
-		)
+		const string& readSeq_inProcess, Index_Info* indexInfo, const string& chromName, int* mismatchNum)
 	{
 		//cout << "fixDoubleAnchor_extendBack starts!" << endl;
 		bool fixDoubleAnchorBool = false;
@@ -186,7 +218,6 @@ public:
 			fixDoubleAnchorBool = fixDoubleAnchor_Match(cigarInfo, relation, segmentLocInRead_1, segmentLocInRead_2,
 				segmentLength_1, segmentLength_2, segmentMapPos_1, segmentMapPos_2, readSeq_inProcess, 
 				indexInfo, chromName, mismatchNum);
-			//return fixDoubleAnchorBool;
 		}
 		else if((relation == FIX_INSERTION_NEIGHBOUR) || (relation == FIX_INSERTION_GAP))
 		{
@@ -211,77 +242,6 @@ public:
 			cout << "error in fixDoubleAnchor ... " << endl;
 		}
 		return fixDoubleAnchorBool;
-	}
-
-	bool fixDoubleAnchor_Match_extendBack(Splice_Info* cigarInfo, int relation, int segmentLocInRead_1, int segmentLocInRead_2,
-		int segmentLength_1, int segmentLength_2, int segmentMapPos_1, int segmentMapPos_2,
-		const string& readSeq_inProcess, //Index_Info* indexInfo, 
-		Index_Info* indexInfo, const string& chromName, int* mismatchNum
-		)
-	{
-		//cout << " fixDoubleAnchor_Match starts ... " << endl;
-		bool fixDoubleAnchorBool_Match = false;
-
-		int chrNameInt = indexInfo->convertStringToInt(chromName);
-
-		
-		int extendBackNumMax = segmentLocInRead_2 - 1 - (segmentLocInRead_1 + segmentLength_1) + 1;
-		int extendBackNum = extendBackInChromSeq(segmentLocInRead_2, readSeq_inProcess, 
-			segmentMapPos_2, indexInfo->chromStr[chrNameInt], extendBackNumMax);
-		
-
-		int subSeqLengthInProcess = segmentLocInRead_2 - 1 - (segmentLocInRead_1 + segmentLength_1) + 1
-			- extendBackNum;
-		
-
-		if(subSeqLengthInProcess < 2)
-		{
-			(*mismatchNum) = subSeqLengthInProcess;
-			
-			Jump_Code matchJumpCode(//segmentLength_1 + 
-				subSeqLengthInProcess + extendBackNum + segmentLength_2, "M");
-			cigarInfo->jump_code.push_back(matchJumpCode);
-			fixDoubleAnchorBool_Match = true;
-		}
-		else
-		{
-			string readSubSeqInProcess = readSeq_inProcess.substr(segmentLocInRead_1 + segmentLength_1 - 1,
-				subSeqLengthInProcess);
-		
-			//int chrNameInt = indexInfo->convertStringToInt(chromName);
-		
-			string chromSubSeqInProcess = indexInfo->chromStr[chrNameInt].substr(segmentMapPos_1 + segmentLength_1 - 1,
-				subSeqLengthInProcess);
-
-			size_t max_mismatch = (subSeqLengthInProcess)/LengthOfSeqPerMismatchAllowed + 1;
-			size_t mismatch_bits = 0;
-			size_t comb_bits = 0;
-			//cout << "readSeqInProcess: " << endl << readSubSeqInProcess << endl;
-			//cout << "chromSeqInProcess: " << endl << chromSubSeqInProcess << endl;
-
-			bool scoreStringBool = Utilities::scoreString(readSubSeqInProcess, chromSubSeqInProcess, max_mismatch, mismatch_bits, comb_bits);// need to debug
-			
-			//cout << "scoreStringBool: " << scoreStringBool << endl;
-			if(scoreStringBool)
-			{
-				(*mismatchNum) = mismatch_bits;
-				Jump_Code matchJumpCode(//segmentLength_1 + 
-					subSeqLengthInProcess + segmentLength_2, "M");
-				cigarInfo->jump_code.push_back(matchJumpCode);
-			}
-			else // score string failed, insert sudo-match jump code
-			{
-				//cout << " score_string failed !" << endl;
-				//Jump_Code firstMatchJumpCode(segmentLength_1, "M");
-				Jump_Code midMatchJumpCode(subSeqLengthInProcess, "m");
-				Jump_Code secondMatchJumpCode(segmentLength_2, "M");	
-				//cigarInfo->jump_code.push_back(firstMatchJumpCode);
-				cigarInfo->jump_code.push_back(midMatchJumpCode);
-				cigarInfo->jump_code.push_back(secondMatchJumpCode);			
-			}
-			fixDoubleAnchorBool_Match = scoreStringBool;
-		}
-		return fixDoubleAnchorBool_Match;
 	}
 
 	bool fixDoubleAnchor_Match(Splice_Info* cigarInfo, int relation, int segmentLocInRead_1, int segmentLocInRead_2,
@@ -438,7 +398,7 @@ public:
 				cigarInfo->jump_code.push_back(midMatchJumpCode);
 				cigarInfo->jump_code.push_back(secondMatchJumpCode);				
 			}	
-			delete(genome_scan);
+			delete genome_scan;
 			fixDoubleAnchorBool_Insertion = insertion_fixed;
 		}	
 		return fixDoubleAnchorBool_Insertion;
@@ -513,7 +473,7 @@ public:
 				cigarInfo->jump_code.push_back(midMatchJumpCode);
 				cigarInfo->jump_code.push_back(secondMatchJumpCode);				
 			}
-			delete(genome_scan);
+			delete genome_scan;
 			fixDoubleAnchorBool_Deletion = deletion_fixed;
 		}
 		return fixDoubleAnchorBool_Deletion;
@@ -599,7 +559,7 @@ public:
 			cigarInfo->jump_code.push_back(midMatchJumpCode);
 			cigarInfo->jump_code.push_back(secondMatchJumpCode);	
 		}
-		delete(genome_scan);
+		delete genome_scan;
 		fixDoubleAnchorBool_Splice = splice_fixed;
 		return fixDoubleAnchorBool_Splice;
 	}

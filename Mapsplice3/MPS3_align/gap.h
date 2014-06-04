@@ -32,7 +32,7 @@ public:
 	}
 
 	/*
-	 * removing path
+	 * FIXME - KLM 6/4/14 removing path
 	 */
 	bool fixGapInPath(MappedRead* mappedRead, Index_Info* indexInfo)
 	{
@@ -116,10 +116,10 @@ public:
 				unsigned int tmpSegmentMapPosInWholeGenome_2 = secondSegment->getAlignmentLocation(tmpSegCandiNO_next);
 
 				unsigned int tmpChrNameInt, tmpChrPosInt;
-				indexInfo->getChrLocation(tmpSegmentMapPosInWholeGenome_1, &tmpChrNameInt, &tmpChrPosInt);
+				indexInfo->getChromosomeLocation(tmpSegmentMapPosInWholeGenome_1, &tmpChrNameInt, &tmpChrPosInt);
 				string tmpChrNameStr_1 = indexInfo->chrNameStr[tmpChrNameInt];
 				int tmpSegmentMapPos_1 = tmpChrPosInt;
-				indexInfo->getChrLocation(tmpSegmentMapPosInWholeGenome_2, &tmpChrNameInt, &tmpChrPosInt);
+				indexInfo->getChromosomeLocation(tmpSegmentMapPosInWholeGenome_2, &tmpChrNameInt, &tmpChrPosInt);
 				string tmpChrNameStr_2 = indexInfo->chrNameStr[tmpChrNameInt];
 				int tmpSegmentMapPos_2 = tmpChrPosInt;
 				

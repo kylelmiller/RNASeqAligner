@@ -18,7 +18,7 @@
 #include "sam2junc.h"
 #include "fixPhase1.h"
 #include "pairedEndRead.h"
-#include "chromosome.h"
+#include "referenceGenome.h"
 #include "align_info.h"
 
 #define PreIndexSize 268435456
@@ -193,51 +193,34 @@ int main(int argc, char**argv)
 	ifstream chrom_bit_file_ifs((indexStr + "_chrom").c_str(),ios::binary);
 	ifstream parameter_file_ifs((indexStr + "_parameter").c_str(),ios::binary);
 
-	Index_Info* indexInfo = new Index_Info(parameter_file_ifs);
-
 	log_ofs << "index: " << indexStr << endl;
-	///////////////////////////////////////
- 
-	log_ofs << "start to load whole genome" << endl;
-	char *chrom = (char*)malloc((indexInfo->indexSize) * sizeof(char));
-	chrom_bit_file_ifs.read((char*)chrom, (indexInfo->indexSize) * sizeof(char)); 
+	log_ofs << "start to load whole genome and every chromosome" << endl;
 
-	indexInfo->chromString = chrom;
-	log_ofs << "chromSize = " <<(indexInfo->chromString).size() << endl;
+	Index_Info* indexInfo = new Index_Info(parameter_file_ifs, chrom_bit_file_ifs);
+
+	log_ofs << "chromSize = " << indexInfo->getSize() << endl;
 	
-	log_ofs << "start to load every chromosome" << endl;
-
-	(indexInfo->chromStr).push_back((indexInfo->chromString).substr(0, (indexInfo->chrEndPosInGenome)[0]+1));
-	(indexInfo->chromLength).push_back(((indexInfo->chrEndPosInGenome)[0]+1));
-	for(int tmp = 1; tmp < indexInfo->chromNum; tmp++)
-	{
-		(indexInfo->chromStr).push_back((indexInfo->chromString).substr((indexInfo->chrEndPosInGenome)[tmp-1]+2, 
-			(indexInfo->chrEndPosInGenome)[tmp]-(indexInfo->chrEndPosInGenome)[tmp-1]-1));	
-		(indexInfo->chromLength).push_back(((indexInfo->chrEndPosInGenome)[tmp]-(indexInfo->chrEndPosInGenome)[tmp-1]-1));
-	}	
-
 	log_ofs << "start to load SA" << endl;
-    unsigned int *sa = (unsigned int*)malloc((indexInfo->indexSize) * sizeof(unsigned int));
-    SA_file_ifs.read((char*)sa, (indexInfo->indexSize) * sizeof(unsigned int));
+    unsigned int *sa = (unsigned int*)malloc((indexInfo->getSize()) * sizeof(unsigned int));
+    SA_file_ifs.read((char*)sa, (indexInfo->getSize()) * sizeof(unsigned int));
 
 	log_ofs << "start to load lcpCompress" << endl;
-	BYTE *lcpCompress = (BYTE*)malloc((indexInfo->indexSize) * sizeof(BYTE));
-	lcpCompress_file_ifs.read((char*)lcpCompress, (indexInfo->indexSize) * sizeof(BYTE));	
+	BYTE *lcpCompress = (BYTE*)malloc((indexInfo->getSize()) * sizeof(BYTE));
+	lcpCompress_file_ifs.read((char*)lcpCompress, (indexInfo->getSize()) * sizeof(BYTE));
 
 	log_ofs << "start to load childTab " << endl;
-	unsigned int *childTab = (unsigned int*)malloc((indexInfo->indexSize) * sizeof(unsigned int));
-	childTab_file_ifs.read((char*)childTab, (indexInfo->indexSize) * sizeof(unsigned int));
+	unsigned int *childTab = (unsigned int*)malloc((indexInfo->getSize()) * sizeof(unsigned int));
+	childTab_file_ifs.read((char*)childTab, (indexInfo->getSize()) * sizeof(unsigned int));
 
 	log_ofs << "start to load detChild" << endl;
-	BYTE *verifyChild = (BYTE*)malloc((indexInfo->indexSize) * sizeof(BYTE));
-	verifyChild_file_ifs.read((char*)verifyChild, (indexInfo->indexSize) * sizeof(BYTE));
+	BYTE *verifyChild = (BYTE*)malloc((indexInfo->getSize()) * sizeof(BYTE));
+	verifyChild_file_ifs.read((char*)verifyChild, (indexInfo->getSize()) * sizeof(BYTE));
 	
-	Chromosome* alignmentChromosome = new Chromosome(
+	ReferenceGenome* alignmentChromosome = new ReferenceGenome(
 		sa,
 		lcpCompress,
 		childTab,
 		verifyChild,
-		chrom,
 		indexInfo,
 		preIndexMapLengthArray,
 		preIndexIntervalStartArray,
@@ -409,9 +392,6 @@ int main(int argc, char**argv)
 			PE_Read_Alignment_Info* peAlignInfo = new PE_Read_Alignment_Info(
 				fixPhase1Info->pathInfo_Nor1, fixPhase1Info->pathInfo_Rcm1, 
 				fixPhase1Info->pathInfo_Nor2, fixPhase1Info->pathInfo_Rcm2, indexInfo);
-
-			//peAlignInfo->pairingAlignment();
-			//peAlignInfo->chooseBestAlignment();
 
 			peAlignInfo->chooseBestAlignment_selectRandomOneIfMulti();
 
@@ -613,24 +593,25 @@ int main(int argc, char**argv)
 	cout << endl << "[" << asctime(local) << "... start to load 2nd level index ......" << endl << endl; 
 	log_ofs << endl << "[" << asctime(local) << "... load 2nd level index starts ......" << endl << endl; 
 
-	vector<SecondLevelChromosome*> secondLevelChromVector;
+	vector<SecondLevelReferenceGenome*> secondLevelChromVector;
 
 	if(load2ndLevelIndexBool)
 	{
 		log_ofs << "start to load second-level index ..." << endl;
 		
 		int secondLevelIndexNO = 0;
-		for(int tmpChrNO = 0; tmpChrNO < indexInfo->chromNum; tmpChrNO ++)
+
+		for (vector<Chromosome*>::iterator it = indexInfo->getChromosomes().begin(); it != indexInfo->getChromosomes().end(); ++it)
 		{
-			for(int tmpSecondLevelIndexNO = 1; tmpSecondLevelIndexNO <= (indexInfo->secondLevelIndexPartsNum)[tmpChrNO]; tmpSecondLevelIndexNO ++)
+			for(int secondLevelIndexNumber = 1; secondLevelIndexNumber <= (*it)->getPartNumber(); secondLevelIndexNumber++)
 			{
 				char tmpFileNumChar[4];
-				sprintf(tmpFileNumChar, "%d", tmpSecondLevelIndexNO);
+				sprintf(tmpFileNumChar, "%d", secondLevelIndexNumber);
 				string tmpFileNumStr = tmpFileNumChar;
 				
 				string inputIndexFileStr = secondLevelIndexStr +
 					"/" +
-					indexInfo->chrNameStr[tmpChrNO] +
+					(*it)->getName() +
 					"/"	+
 					tmpFileNumStr +
 					"/";
@@ -642,14 +623,14 @@ int main(int argc, char**argv)
 				ifstream secondLevelChildTab_file_ifs((inputIndexFileStr + "childTab").c_str(), ios::binary);
 				ifstream secondLevelDetChild_file_ifs((inputIndexFileStr + "detChild").c_str(), ios::binary);
 
-				int sizeOfIndex = indexInfo->secondLevelIndexNormalSize + 1;
+				int sizeOfIndex = indexInfo->getSecondLevelIndexNormalSize() + 1;
 				char* tmpSecondLevelChrom = (char*)malloc(sizeOfIndex * sizeof(char));
 				for(int tmpMallocSpace = 0; tmpMallocSpace < sizeOfIndex; tmpMallocSpace++)
 					tmpSecondLevelChrom[tmpMallocSpace] = '0';
 
 				secondLevelChrom_file_ifs.read((char*)tmpSecondLevelChrom, sizeOfIndex * sizeof(char));
 				if(tmpSecondLevelChrom[sizeOfIndex-1] != 'X')
-					(indexInfo->invalidSecondLevelIndexNOset).insert(secondLevelIndexNO + 1);
+					(indexInfo->getInvalidSecondLevelIndexNOset()).insert(secondLevelIndexNO + 1);
 
 				bool No_ATGC_Bool = true;
 				for(int tmpMallocSpace = 0; tmpMallocSpace < sizeOfIndex; tmpMallocSpace++)
@@ -663,7 +644,7 @@ int main(int argc, char**argv)
 				}
 
 				if(No_ATGC_Bool)
-					(indexInfo->invalidSecondLevelIndexNOset).insert(secondLevelIndexNO + 1);
+					(indexInfo->getInvalidSecondLevelIndexNOset()).insert(secondLevelIndexNO + 1);
 
 				unsigned int* tmpSecondLevelSa = (unsigned int*)malloc(sizeOfIndex * sizeof(unsigned int));
 				secondLevelSA_file_ifs.read((char*)tmpSecondLevelSa, sizeOfIndex * sizeof(unsigned int));
@@ -677,7 +658,7 @@ int main(int argc, char**argv)
 				BYTE* tmpSecondLevelDetChild = (BYTE*)malloc(sizeOfIndex * sizeof(BYTE));
 				secondLevelDetChild_file_ifs.read((char*)tmpSecondLevelDetChild, sizeOfIndex * sizeof(BYTE));
 
-				secondLevelChromVector.push_back(new SecondLevelChromosome(
+				secondLevelChromVector.push_back(new SecondLevelReferenceGenome(
 					tmpSecondLevelChrom,
 					tmpSecondLevelSa,
 					tmpSecondLevelLcpCompress,
@@ -695,7 +676,7 @@ int main(int argc, char**argv)
 
 			} // for(int tmpSecondLevelIndexNO = 1; tmpSecondLevelIndexNO <= (indexInfo->secondLevelIndexPartsNum)[tmpChrNO]; tmpSecondLevelIndexNO ++)
 
-			log_ofs << "finish loading 2nd-level index of " << indexInfo->chrNameStr[tmpChrNO] << endl;
+			log_ofs << "finish loading 2nd-level index of " << (*it)->getName() << endl;
 
 		} // for(int tmpChrNO = 0; tmpChrNO < indexInfo->chromNum; tmpChrNO ++)
 
@@ -1006,7 +987,7 @@ int main(int argc, char**argv)
 		string spliceStartPosString;
 		string spliceEndPosString;
 
-		SJ->initiateSJintHash(indexInfo->chromNum);
+		SJ->initiateSJintHash(indexInfo->getNumberOfChromosomes());
 
 		fgets(entry, sizeof(entry), fp_spliceJunction);
 		while(!feof(fp_spliceJunction))
@@ -1959,7 +1940,7 @@ void fixOneEndReadForward(Read* read, Read* incompleteEndRead, PE_Read_Alignment
 		mapPosIntervalStart = alignmentInfo->alignChromPos;
 		mapPosIntervalEnd = alignmentInfo->getEndMatchedPosInChr() + READ_ALIGN_AREA_LENGTH;
 
-		SecondLevelChromosome* secondLevelChromosome =
+		SecondLevelReferenceGenome* secondLevelChromosome =
 			secondLevelChromosomeList->getSecondLevelChromosome(
 					alignmentInfo->alignChromName,
 					alignmentInfo->alignChromPos);

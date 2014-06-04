@@ -5,8 +5,8 @@
  * includes the second level of the: Suffix Array,
  * LCP array, child tables and the reference
  ****************/
-#ifndef __SECONDLEVELCHROMOSOME_H_INCLUDED__
-#define __SECONDLEVELCHROMOSOME_H_INCLUDED__
+#ifndef __SECOND_LEVEL_REFERENCE_GENOME_H_INCLUDED__
+#define __SECOND_LEVEL_REFERENCE_GENOME_H_INCLUDED__
 
 #include <vector>
 
@@ -14,7 +14,7 @@
 
 using namespace std;
 
-class SecondLevelChromosome
+class SecondLevelReferenceGenome
 {
 private:
 	char* _secondLevelChrom;
@@ -35,7 +35,7 @@ private:
 	}
 
 public:
-	SecondLevelChromosome(
+	SecondLevelReferenceGenome(
 		char* secondLevelChrom,
 		unsigned int* secondLevelSa,
 		BYTE* secondLevelLcp,
@@ -204,25 +204,32 @@ public:
 			*interval_end = end;
 	}
 };
-Index_Info* SecondLevelChromosome::_indexInfo = NULL;
+Index_Info* SecondLevelReferenceGenome::_indexInfo = NULL;
 
 class SecondLevelChromosomeList
 {
 private:
-	vector<SecondLevelChromosome*> _chroms;
+	vector<SecondLevelReferenceGenome*> _secondLevelReferenceGenome;
 	Index_Info* _indexInfo;
 
 public:
-	SecondLevelChromosomeList(vector<SecondLevelChromosome*> chroms, Index_Info* indexInfo)
+	SecondLevelChromosomeList(vector<SecondLevelReferenceGenome*> secondLevelReferenceGenome, Index_Info* indexInfo)
 	{
-		_chroms = chroms;
+		_secondLevelReferenceGenome = secondLevelReferenceGenome;
 		_indexInfo = indexInfo;
+	}
+
+	~SecondLevelChromosomeList()
+	{
+		for (vector<SecondLevelReferenceGenome*>::iterator it = _secondLevelReferenceGenome.begin(); it != _secondLevelReferenceGenome.end(); ++it)
+			delete *it;
+		_secondLevelReferenceGenome.clear();
 	}
 
 	/*
 	 * Gets the second level index information based on a given alignment
 	 */
-	SecondLevelChromosome* getSecondLevelChromosome(string chromosomeName, int chromosomePosition)
+	SecondLevelReferenceGenome* getSecondLevelChromosome(string chromosomeName, int chromosomePosition)
 	{
 		int chrNameInt = _indexInfo->convertStringToInt(chromosomeName);
 
@@ -230,11 +237,9 @@ public:
 		int secondLevelIndexNum = _indexInfo->getSecondLevelIndexFromChrAndPos(chrNameInt, chromosomePosition);
 		int chrPosStartIn2ndLevelIndex = _indexInfo->getChrPosFromSecondLevelIndexPos(chrNameInt, secondLevelIndexNum, 1);
 
-		if(_indexInfo->invalidSecondLevelIndexNOset.find(secondLevelIndexNum)
-			!= _indexInfo->invalidSecondLevelIndexNOset.end())
-			return NULL;
-
-		return _chroms[secondLevelIndexNum];
+		return secondLevelIndexNum < _secondLevelReferenceGenome.size()
+			? _secondLevelReferenceGenome[secondLevelIndexNum]
+			: NULL;
 	}
 };
 

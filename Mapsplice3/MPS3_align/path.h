@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "secondLevelChromosome.h"
-#include "chromosome.h"
+#include "secondLevelReferenceGenome.h"
+#include "referenceGenome.h"
 #include "segment.h"
 #include "splice_info.h"
 #include "mappedRead.h"
@@ -73,7 +73,7 @@ public:
 
 			unsigned int PathMapPos = currentSegment->getAlignmentLocation(tmpPath1stSegCandiNO);
 			unsigned int tmpChrNameInt, tmpChrPosInt;
-			indexInfo->getChrLocation(PathMapPos, &tmpChrNameInt, &tmpChrPosInt);
+			indexInfo->getChromosomeLocation(PathMapPos, &tmpChrNameInt, &tmpChrPosInt);
 
 			int tmpPathFinalMapPos = tmpChrPosInt;
 			int tmpPathFinalMapChr = tmpChrNameInt;

@@ -197,10 +197,16 @@ public:
 	void insert2StringHash(int chrInt,
 		int spliceStartPos, int spliceEndPos, Index_Info* indexInfo)
 	{
+		/* FIXME - THIS CURRENTLY ISN'T BEING USED.
+		 * THIS NEEDS TO BE SWITCH OVER TO USING OBJECTS RATHER THAN
+		 * INDEX VALUES. KLM 6/4/14
 		string anchorString_doner = (indexInfo->chromStr)[chrInt].substr(
 			spliceStartPos - anchorStringLength, anchorStringLength);
 		string anchorString_acceptor = (indexInfo->chromStr)[chrInt].substr(
 			spliceEndPos - 1, anchorStringLength);
+		*/
+		string anchorString_doner = "";
+		string anchorString_acceptor = "";
 
 		//insert to spliceJunctionNormal
 		SplicePosHashIter foundPosHashIter;

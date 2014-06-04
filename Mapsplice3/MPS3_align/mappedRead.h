@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "secondLevelChromosome.h"
-#include "chromosome.h"
+#include "secondLevelReferenceGenome.h"
+#include "referenceGenome.h"
 #include "segment.h"
 #include "read.h"
 
@@ -43,7 +43,7 @@ private:
 		_segments.push_back(new Segment(length, locationInRead, alignmentNumber));
 	}
 
-	void mapRead(Chromosome* chrom)
+	void mapRead(ReferenceGenome* reference)
 	{
 		unsigned int currentStartLocation = 0;
 		unsigned int suffixArrayRange = 0;
@@ -52,7 +52,7 @@ private:
 
 		// We will continue to attempt to map as long as there is a segment left
 		// that meets our minimum segment length
-		while (_read->getLength() > currentStartLocation && chrom->couldContainSegment(_read->getLength() - currentStartLocation))
+		while (_read->getLength() > currentStartLocation && reference->couldContainSegment(_read->getLength() - currentStartLocation))
 		{
 			/////   K-mer search  /////
 			int KmerMappedLength;
@@ -61,7 +61,7 @@ private:
 
 	   	 	// If we don't find a match then skip 1 nucleotide, create
 	   	 	// a new segment and attempt to match another 14 nucleotides
-	   	 	if(!chrom->getMappedLocation(
+	   	 	if(!reference->getMappedLocation(
 				_read,
 				currentStartLocation,
 				&KmerMappedLength,
@@ -81,12 +81,12 @@ private:
 
    	 		unsigned int walkLimit = interval_begin == interval_end
 				? _read->getLength() - currentStartLocation
-				: min(chrom->getLcp(interval_begin, interval_end), _read->getLength() - currentStartLocation);
+				: min(reference->getLcp(interval_begin, interval_end), _read->getLength() - currentStartLocation);
 
 			unsigned int walkSteps;
 			for(walkSteps=0;
 				walkSteps < walkLimit &&
-				_read->getSequence()[currentStartLocation + walkSteps] == chrom->getReference()[chrom->getSuffixArray()[interval_begin] + walkSteps];
+				_read->getSequence()[currentStartLocation + walkSteps] == reference->getReference()[reference->getSuffixArray()[interval_begin] + walkSteps];
 				walkSteps++)
 			{
 			}
@@ -98,7 +98,7 @@ private:
 
 			Segment* segment = getCurrentSegment();
 			for (unsigned int i=0; i < min(suffixArrayRange, (unsigned int)CANDALILOC); i++)
-				segment->setAlignmentLocation(chrom->getSuffixArray()[interval_begin + i] + 1, i);
+				segment->setAlignmentLocation(reference->getSuffixArray()[interval_begin + i] + 1, i);
 
 			// if read-align failed at some location, then restart from that location
 			localRead += walkSteps;
@@ -117,7 +117,7 @@ private:
 	 * FIXME - 5/28/14 KLM
 	 * This will take the place of mapMainSecondLevel_compressedIndex
 	 */
-	bool mapRead(SecondLevelChromosome* secondLevelChromosome)
+	bool mapRead(SecondLevelReferenceGenome* reference)
 	{
 		unsigned int stop_loc = 0; // location in one segment for iterations
 		unsigned int stop_loc_overall = 0; //location in the whole read for iterations
@@ -152,11 +152,11 @@ private:
 	   	 	}
 	   	 	unsigned int lcp_length = 0;
 	   	 	unsigned int start = 0;
-	   	 	unsigned int end = secondLevelChromosome->getIndexInfo()->indexSize - 1;
+	   	 	unsigned int end = reference->getIndexInfo()->getSize() - 1;
 	   	 	unsigned int minimum;
 	   	 	unsigned int walkSteps = 0;
 
-	   	 	secondLevelChromosome->getFirstInterval(*read_local, &interval_begin, &interval_end);
+	   	 	reference->getFirstInterval(*read_local, &interval_begin, &interval_end);
 
 	   	 	segment_align_SArange[0] = interval_begin;
 	   	 	segment_align_SArange[1] = interval_end;
@@ -167,14 +167,14 @@ private:
 				if(interval_begin != interval_end)
 				{
 					minimum = min(
-						secondLevelChromosome->getLcpLength(interval_begin, interval_end),
+						reference->getLcpLength(interval_begin, interval_end),
 						_read->getLength() - stop_loc_overall);
 
 					unsigned int loc_pos;
 	            	for(loc_pos = 0; loc_pos < minimum - walkSteps; loc_pos++)
 	            	{
 	            		queryFound = (*(read_local+walkSteps+loc_pos) ==
-							*(secondLevelChromosome->getReference() + secondLevelChromosome->getSuffixArray()[interval_begin]+walkSteps+loc_pos));
+							*(reference->getReference() + reference->getSuffixArray()[interval_begin]+walkSteps+loc_pos));
 
 	            		if (!queryFound)
 	            			break;
@@ -202,7 +202,7 @@ private:
 
 					unsigned int interval_begin_ori = interval_begin;
 					unsigned int interval_end_ori = interval_end;
-					secondLevelChromosome->getInterval(
+					reference->getInterval(
 						start,
 						end,
 						walkSteps,
@@ -232,8 +232,8 @@ private:
 	            	for(loc_pos = 0; loc_pos < minimum - walkSteps; loc_pos++)
 	            	{
 	            		queryFound = (*(read_local+walkSteps+loc_pos) ==
-							*(secondLevelChromosome->getReference() +
-									secondLevelChromosome->getSuffixArray()[interval_begin]+walkSteps+loc_pos));
+							*(reference->getReference() +
+									reference->getSuffixArray()[interval_begin]+walkSteps+loc_pos));
 
 	            		if (!queryFound)
 	            			break;
@@ -265,7 +265,7 @@ private:
 				Segment* segment = getCurrentSegment();
 
 				for (unsigned int i=0; i < min(segment_align_rangeNum, (unsigned int)CANDALILOC); i++)
-					segment->setAlignmentLocation(secondLevelChromosome->getSuffixArray()[segment_align_SArange[0] + i] + 1, i);
+					segment->setAlignmentLocation(reference->getSuffixArray()[segment_align_SArange[0] + i] + 1, i);
 				break;
 			}
 			else
@@ -279,7 +279,7 @@ private:
 				Segment* segment = getCurrentSegment();
 
 				for (unsigned int i=0; i<min(segment_align_rangeNum, (unsigned int)CANDALILOC); i++)
-					segment->setAlignmentLocation(secondLevelChromosome->getSuffixArray()[segment_align_SArange[0] + i] + 1,i);
+					segment->setAlignmentLocation(reference->getSuffixArray()[segment_align_SArange[0] + i] + 1,i);
 
 				// if read-align failed at some location, then restart from that location
 				unsigned int stop_loc_overall_ori = stop_loc_overall;
@@ -319,14 +319,14 @@ public:
 	}
 	// END OF METHODS TO DELETE
 
-	MappedRead(Read* read, Chromosome* chrom)
+	MappedRead(Read* read, ReferenceGenome* chrom)
 	{
 		_longSegMinLength = 20;
 		_read = new Read(read);
 		mapRead(chrom);
 	}
 
-	MappedRead(Read* read, SecondLevelChromosome* secondLevelChromosome)
+	MappedRead(Read* read, SecondLevelReferenceGenome* secondLevelChromosome)
 	{
 		_longSegMinLength = 20;
 		_read = new Read(read);

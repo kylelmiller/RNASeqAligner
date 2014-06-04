@@ -9,7 +9,7 @@
 #include "mappedRead.h"
 #include "path.h"
 #include "gap.h"
-#include "chromosome.h"
+#include "referenceGenome.h"
 
 using namespace std;
 
@@ -32,7 +32,7 @@ public:
 	Gap* gapInfo_Nor2;
 	Gap* gapInfo_Rcm2;
 
-	FixPhase1Info(PairedEndRead* pairedEndRead, Chromosome* chrom)
+	FixPhase1Info(PairedEndRead* pairedEndRead, ReferenceGenome* chrom)
 	{
 	   	firstNormalMappedRead = new MappedRead(
 			pairedEndRead->getFirstRead(),

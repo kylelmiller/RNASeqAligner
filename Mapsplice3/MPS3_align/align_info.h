@@ -74,52 +74,20 @@ public:
 	Alignment_Info()
 	{}
 
-	int unfixedHeadLength()
+
+	bool unfixedHeadExists()
 	{
-		return cigarStringJumpCode[0].len;
+		return cigarStringJumpCode.size() != 0 && cigarStringJumpCode[0].type == "S";
 	}
 
-	int unfixedTailLength()
+	bool unfixedTailExists()
 	{
-		int jumpCodeNum = cigarStringJumpCode.size();
-		return cigarStringJumpCode[jumpCodeNum - 1].len;
-	}
-	bool unfixedHeadExistsBool()
-	{
-		int jumpCodeNum = cigarStringJumpCode.size();
-		if(jumpCodeNum < 0)
-		{
-			return true;
-		}
-
-		bool unfixedHeadBool = (cigarStringJumpCode[0].type == "S");
-		return unfixedHeadBool;
+		return cigarStringJumpCode.size() != 0 && cigarStringJumpCode.back().type == "S";
 	}
 
-	bool unfixedTailExistsBool()
+	bool unfixedHeadAndTailExists()
 	{
-		int jumpCodeNum = cigarStringJumpCode.size();
-		if(jumpCodeNum < 0)
-		{
-			return true;
-		}
-
-		bool unfixedHeadBool = (cigarStringJumpCode[jumpCodeNum-1].type == "S");
-		return unfixedHeadBool;		
-	}
-
-	bool noUnfixedHeadTailBool()
-	{
-		int jumpCodeNum = cigarStringJumpCode.size();
-		if(jumpCodeNum < 0)
-		{
-			return false;
-		}
-
-		bool unfixedHeadBool = (cigarStringJumpCode[0].type == "S");
-		bool unfixedTailBool = (cigarStringJumpCode[jumpCodeNum - 1].type == "S");
-
-		return  !unfixedHeadBool && !unfixedTailBool;
+		return unfixedHeadExists() && unfixedTailExists();
 	}
 
 	Alignment_Info(string alignDir, const string& mapChromName, 
@@ -1558,12 +1526,7 @@ public:
 		{
 			int tmpMappedLength = oriAlignPairNew_mappedLength_Nor1Rcm2[tmp];
 			int tmpMismatchNum = oriAlignPairNew_mismatchNum_Nor1Rcm2[tmp];
-			//int tmpPairDistance = oriAlignPairNew_pairDistance_Nor1Rcm2[tmp];
-			//if(tmpPairDistance > 500)
-			//	tmpPairDistance_score = 0.1;
-			//else
-			//	tmpPairDistance_score = 0;
-			double tmpScore = tmpMappedLength - tmpMismatchNum;// - tmpPairDistance_score;
+			double tmpScore = tmpMappedLength - tmpMismatchNum;
 
 			oriAlignPairNew_score_Nor1Rcm2.push_back(tmpScore);
 		}
@@ -1572,12 +1535,7 @@ public:
 		{
 			int tmpMappedLength = oriAlignPairNew_mappedLength_Nor2Rcm1[tmp];
 			int tmpMismatchNum = oriAlignPairNew_mismatchNum_Nor2Rcm1[tmp];
-			//int tmpPairDistance = oriAlignPairNew_pairDistance_Nor2Rcm1[tmp];
-			//if(tmpPairDistance > 500)
-			//	tmpPairDistance_score = 0.1;
-			//else
-			//	tmpPairDistance_score = 0;
-			double tmpScore = tmpMappedLength - tmpMismatchNum;// - tmpPairDistance_score;
+			double tmpScore = tmpMappedLength - tmpMismatchNum;
 
 			oriAlignPairNew_score_Nor2Rcm1.push_back(tmpScore);
 		}
@@ -1912,19 +1870,19 @@ public:
 	{
 		for(int i=0; i<finalAlignPair_Nor1Rcm2.size(); i++)
 		{
-			if(!norAlignmentInfo_PE_1[(finalAlignPair_Nor1Rcm2[i].first)]->noUnfixedHeadTailBool())
+			if(norAlignmentInfo_PE_1[(finalAlignPair_Nor1Rcm2[i].first)]->unfixedHeadAndTailExists())
 				return false;
 
-			if(!rcmAlignmentInfo_PE_2[(finalAlignPair_Nor1Rcm2[i].second)]->noUnfixedHeadTailBool())
+			if(rcmAlignmentInfo_PE_2[(finalAlignPair_Nor1Rcm2[i].second)]->unfixedHeadAndTailExists())
 				return false;
 		}
 
 		for(int i=0; i<finalAlignPair_Nor2Rcm1.size(); i++)
 		{
-			if(!norAlignmentInfo_PE_2[(finalAlignPair_Nor2Rcm1[i].first)]->noUnfixedHeadTailBool())
+			if(norAlignmentInfo_PE_2[(finalAlignPair_Nor2Rcm1[i].first)]->unfixedHeadAndTailExists())
 				return false;
 
-			if(!rcmAlignmentInfo_PE_1[(finalAlignPair_Nor2Rcm1[i].second)]->noUnfixedHeadTailBool())
+			if(rcmAlignmentInfo_PE_1[(finalAlignPair_Nor2Rcm1[i].second)]->unfixedHeadAndTailExists())
 				return false;
 		}
 
@@ -1934,36 +1892,20 @@ public:
 	bool allUnpairedAlignmentCompleted()
 	{
 		for(int i = 0; i < norAlignmentInfo_PE_1.size(); i++)
-		{
-			bool tmpBool = 
-				norAlignmentInfo_PE_1[i]->noUnfixedHeadTailBool();
-			if(!tmpBool)
+			if(norAlignmentInfo_PE_1[i]->unfixedHeadAndTailExists())
 				return false;
-		}
 
 		for(int i = 0; i < norAlignmentInfo_PE_2.size(); i++)
-		{
-			bool tmpBool = 
-				norAlignmentInfo_PE_2[i]->noUnfixedHeadTailBool();
-			if(!tmpBool)
-				return false;			
-		}
+			if(norAlignmentInfo_PE_2[i]->unfixedHeadAndTailExists())
+				return false;
 
 		for(int i = 0; i < rcmAlignmentInfo_PE_1.size(); i++)
-		{
-			bool tmpBool = 
-				rcmAlignmentInfo_PE_1[i]->noUnfixedHeadTailBool();
-			if(!tmpBool)
+			if(rcmAlignmentInfo_PE_1[i]->unfixedHeadAndTailExists())
 				return false;
-		}
 
 		for(int i = 0; i < rcmAlignmentInfo_PE_2.size(); i++)
-		{
-			bool tmpBool = 
-				rcmAlignmentInfo_PE_2[i]->noUnfixedHeadTailBool();
-			if(!tmpBool)
-				return false;			
-		}
+			if(rcmAlignmentInfo_PE_2[i]->unfixedHeadAndTailExists())
+				return false;
 
 		return true;
 	}
@@ -2733,7 +2675,7 @@ public:
 					else if(
 						(tmpAlignInfo_1->alignChromPos <= tmpAlignInfo_2->alignChromPos)
 							&&(tmpAlignInfo_1->endMatchedPosInChr > tmpAlignInfo_2->endMatchedPosInChr)
-							&&(tmpAlignInfo_2->unfixedTailExistsBool()) // pe_2 read has unfixed tail
+							&&(tmpAlignInfo_2->unfixedTailExists()) // pe_2 read has unfixed tail
 							 )
 					{
 						//cout << "type 3" << endl;
@@ -2757,7 +2699,7 @@ public:
 					else if (
 						(tmpAlignInfo_1->alignChromPos > tmpAlignInfo_2->alignChromPos)
 							&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr)
-							&&(tmpAlignInfo_1->unfixedHeadExistsBool()) // pe_1 read has unfixed head
+							&&(tmpAlignInfo_1->unfixedHeadExists()) // pe_1 read has unfixed head
 							)
 					{
 						//cout << "type 4" << endl;
@@ -2779,8 +2721,8 @@ public:
 						{}
 					}
 					else if (
-							(tmpAlignInfo_1->unfixedHeadExistsBool()) // pe_1 read has unfixed head
-							&&(tmpAlignInfo_2->unfixedTailExistsBool()) // pe_2 read has unfixed tail
+							(tmpAlignInfo_1->unfixedHeadExists()) // pe_1 read has unfixed head
+							&&(tmpAlignInfo_2->unfixedTailExists()) // pe_2 read has unfixed tail
 							&&(tmpAlignInfo_1->alignChromPos > tmpAlignInfo_2->alignChromPos)
 							&&(tmpAlignInfo_1->endMatchedPosInChr > tmpAlignInfo_2->endMatchedPosInChr)
 							//&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr)
@@ -2900,7 +2842,7 @@ public:
 					else if(
 						(tmpAlignInfo_1->alignChromPos <= tmpAlignInfo_2->alignChromPos)
 							&&(tmpAlignInfo_1->endMatchedPosInChr > tmpAlignInfo_2->endMatchedPosInChr)
-							&&(tmpAlignInfo_2->unfixedTailExistsBool()) // pe_2 read has unfixed tail
+							&&(tmpAlignInfo_2->unfixedTailExists()) // pe_2 read has unfixed tail
 							)
 					{
 						//cout << "type 3" << endl;
@@ -2925,7 +2867,7 @@ public:
 					else if (
 						(tmpAlignInfo_1->alignChromPos > tmpAlignInfo_2->alignChromPos)
 							&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr)
-							&&(tmpAlignInfo_1->unfixedHeadExistsBool()) // pe_1 read has unfixed head
+							&&(tmpAlignInfo_1->unfixedHeadExists()) // pe_1 read has unfixed head
 							)
 					{
 						//cout << "type 4" << endl;
@@ -2948,11 +2890,10 @@ public:
 						{}
 					}
 					else if (
-							(tmpAlignInfo_1->unfixedHeadExistsBool()) // pe_1 read has unfixed head
-							&&(tmpAlignInfo_2->unfixedTailExistsBool()) // pe_2 read has unfixed tail
+							(tmpAlignInfo_1->unfixedHeadExists()) // pe_1 read has unfixed head
+							&&(tmpAlignInfo_2->unfixedTailExists()) // pe_2 read has unfixed tail
 							&&(tmpAlignInfo_1->alignChromPos > tmpAlignInfo_2->alignChromPos)
 							&&(tmpAlignInfo_1->endMatchedPosInChr > tmpAlignInfo_2->endMatchedPosInChr)
-							//&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr)
 							&&( (tmpAlignInfo_1->endMatchedPosInChr)-(tmpAlignInfo_2->alignChromPos) < PAIR_READ_DISTANCE_MAX)							
 							)
 					{

@@ -11,19 +11,24 @@ private:
 	static const int LONG_SEGMENT_THRESHOLD = 20;
 	unsigned int _length;
 	unsigned int _locationInRead;
-	unsigned int _alignmentNumber;
-	unsigned int _alignmentLocation[CANDALILOC];
+	unsigned int _locationInReference;
+
 public:
-	Segment(unsigned int length, unsigned int locationInRead, unsigned int alignmentNumber)
+	Segment(unsigned int length, unsigned int locationInRead, unsigned int locationInReference)
 	{
 		_length = length;
 		_locationInRead = locationInRead;
-		_alignmentNumber = alignmentNumber;
+		_locationInReference = locationInReference;
 	}
 
-	bool isLong()
+	bool isConfident()
 	{
 		return getLength() >= LONG_SEGMENT_THRESHOLD;
+	}
+
+	int getConfidenceValue()
+	{
+		return _length;
 	}
 
 	/*
@@ -35,19 +40,12 @@ public:
 	}
 
 	/*
-	 * Gets the alignment location
+	 * Gets the location in the reference this segment
+	 * is mapped to
 	 */
-	unsigned int getAlignmentLocation(unsigned int index)
+	unsigned int getLocationInReference()
 	{
-		return _alignmentLocation[index];
-	}
-
-	/*
-	 * Gets the alignment number of this segment
-	 */
-	unsigned int getAlignmentNumber()
-	{
-		return _alignmentNumber;
+		return _locationInReference;
 	}
 
 	/*
@@ -74,12 +72,13 @@ public:
 		_locationInRead = value;
 	}
 
-	/*
-	 * Sets the alignment location value
-	 */
-	void setAlignmentLocation(unsigned int value, unsigned int index)
+	int distanceBetweenSegment(Segment* other)
 	{
-		_alignmentLocation[index] = value;
+		unsigned int segmentDistance = getLocationInReference() >= other->getLocationInReference()
+			? other->getLocationInReference() - getLocationInReference()
+			: getLocationInReference() - other->getLocationInReference();
+
+		return segmentDistance < 300000 ? segmentDistance : 1000000;
 	}
 };
 

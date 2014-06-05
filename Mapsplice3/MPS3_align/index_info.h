@@ -139,6 +139,34 @@ public:
 		_chromosomes.clear();
 	}
 
+	/*
+	 * FIXME - KLM 6/4/14
+	 * THIS WILL BE DELETED
+	 */
+	string getChromSequence(int index)
+	{
+		return _chromosomes[index]->getSequence();
+	}
+
+	int getChromLength(int index)
+	{
+		return _chromosomes[index]->getLength();
+	}
+
+	string getChromName(int index)
+	{
+		return _chromosomes[index]->getName();
+	}
+
+	const char* getReference()
+	{
+		return _reference.c_str();
+	}
+
+	/*
+	 * End OF DELETION
+	 */
+
 	unsigned int getSize()
 	{
 		return _chromosomes.size() == 0

@@ -85,10 +85,9 @@ public:
 	/*
 	 * Returns the reference genome
 	 */
-	char* getReference()
+	const char* getReference()
 	{
-		return NULL;
-		//return _indexInfo->;
+		return _indexInfo->getReference();
 	}
 
 	/*
@@ -109,7 +108,8 @@ public:
 	}
 
 	/*
-	 *
+	 * Returns true if we could find a mapping
+	 * based on the length of a given segment
 	 */
 	bool couldContainSegment(unsigned int length)
 	{

@@ -37,6 +37,11 @@ public:
 		return _sequence.length();
 	}
 
+	string getSequence()
+	{
+		return _sequence;
+	}
+
 	unsigned int getEndPosition()
 	{
 		return _endPosition;

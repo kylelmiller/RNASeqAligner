@@ -30,14 +30,18 @@ public:
 	}
 
 
-	static bool scoreString(const string& s1, const string& s2,
+	/*
+	 * Compares two strings against each other and determines
+	 * the number of mismatches
+	 * If the number of mismatches is within a mismatch limit then
+	 * return true, else return false
+	 */
+	static bool stringsWithinMismatchLimit(const string& s1, const string& s2,
 		size_t max_mismatch, size_t& num_mismatch, size_t& comb_bits)
 	{
+		// Strings need to be the same length
 		if (s1.length() != s2.length())
-		{
-			//cout << "different length of two strings in score_string from Double_anchored_score.h"<<endl;// <<s1 <<endl << s2 <<endl ;
 			return false;
-		}
 
 		size_t mask = ALL_BITS_ON >> (BITS_SUPPORTED - s2.length());
 
@@ -56,10 +60,7 @@ public:
 		// at this point right here you would have the sum of the top 32 bits and the bottom 32 bits, each sitting in their half of the 64 bit word
 
 		num_mismatch = ((bits & 0xFFFFFFFF00000000) >> 32) + (bits & 0x00000000FFFFFFFF);
-		if(num_mismatch <= max_mismatch)
-			return true;
-		else
-			return false;
+		return num_mismatch <= max_mismatch;
 	}
 
 };

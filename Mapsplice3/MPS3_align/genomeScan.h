@@ -12,11 +12,11 @@ using namespace std;
 class GenomeScan{
 public:
 
-	bool Double_anchored_score(string tobe_fixed_str, string doner_str, string acceptor_str, size_t& prefix_length, size_t max_mismatch, size_t& comb_bits, bool do_noncanonical, string& flank_seq, size_t& msimatch_num);
+	bool doubleAnchoredWithinMismatchLimit(string tobe_fixed_str, string doner_str, string acceptor_str, size_t& prefix_length, size_t max_mismatch, size_t& comb_bits, bool do_noncanonical, string& flank_seq, size_t& msimatch_num);
 
-	bool Double_anchored_score_least_mis(string tobe_fixed_str, string doner_str, string acceptor_str, size_t& prefix_length, size_t max_mismatch, size_t& comb_bits, bool do_noncanonical, size_t& mismatch_num);
+	bool doubleAnchoredLeastMisWithinMismatchLimit(string tobe_fixed_str, string doner_str, string acceptor_str, size_t& prefix_length, size_t max_mismatch, size_t& comb_bits, bool do_noncanonical, size_t& mismatch_num);
 
-	bool Double_anchored_score_ins(string tobe_fixed_str, string chrom_seq, size_t max_mismatch, size_t& prefix_length, size_t& comb_bits, size_t& num_mismatch);
+	bool doubleAnchorInsertionWithinMismatchLimit(string tobe_fixed_str, string chrom_seq, size_t max_mismatch, size_t& prefix_length, size_t& comb_bits, size_t& num_mismatch);
 
 private:
 	/*
@@ -616,7 +616,9 @@ GenomeScan::FlankString(size_t matched_flank, bool bad)
 }
 
 bool
-GenomeScan::Double_anchored_score(string tobe_fixed_str, string doner_str, string acceptor_str, size_t& prefix_length, size_t max_mismatch, size_t& comb_bits, bool do_noncanonical, string& flank_seq, size_t& msimatch_num)
+GenomeScan::doubleAnchoredWithinMismatchLimit(string tobe_fixed_str, string doner_str,
+	string acceptor_str, size_t& prefix_length, size_t max_mismatch, size_t& comb_bits,
+	bool do_noncanonical, string& flank_seq, size_t& msimatch_num)
 {
 	size_t tobe_fixed_len = tobe_fixed_str.length();
 
@@ -653,12 +655,6 @@ GenomeScan::Double_anchored_score(string tobe_fixed_str, string doner_str, strin
 	size_t left_mismatches = max_mismatch;
 
 	size_t score;
-
-	//if(do_noncanonical)
-
-	//	score = Fixhole_score_selective_insert_var_mask(pre_wp, comb_chrom_seq, max_loc, prim, left_mismatches, rbits, &mask);
-
-	//else
 
 	score = Fixhole_score_selective_var_mask(pre_wp, comb_chrom_seq, max_loc, prim, left_mismatches, rbits, &mask);
 
@@ -678,8 +674,6 @@ GenomeScan::Double_anchored_score(string tobe_fixed_str, string doner_str, strin
 		{
 			size_t seg1_suffix_len = tobe_fixed_len - max_loc;
 
-			//string comb_chrom_str1 = doner_str.substr(0, max_loc) + acceptor_str.substr(acceptor_str.length() - seg1_suffix_len, seg1_suffix_len);
-
 			size_t seg1_mask_prefix = mask.suffix_seg_bits_on >> seg1_suffix_len << seg1_suffix_len;
 
 			size_t seg1_mask_suffix = mask.suffix_seg_bits_on >> max_loc;
@@ -693,7 +687,9 @@ GenomeScan::Double_anchored_score(string tobe_fixed_str, string doner_str, strin
 }
 
 bool      // select longer prefix
-GenomeScan::Double_anchored_score_least_mis(string tobe_fixed_str, string doner_str, string acceptor_str, size_t& prefix_length, size_t max_mismatch, size_t& comb_bits, bool do_noncanonical, size_t& mismatch_num)
+GenomeScan::doubleAnchoredLeastMisWithinMismatchLimit(string tobe_fixed_str,
+	string doner_str, string acceptor_str, size_t& prefix_length,
+	size_t max_mismatch, size_t& comb_bits, bool do_noncanonical, size_t& mismatch_num)
 {
 
 	size_t tobe_fixed_len = tobe_fixed_str.length();
@@ -732,12 +728,6 @@ GenomeScan::Double_anchored_score_least_mis(string tobe_fixed_str, string doner_
 
 	size_t score;
 
-	//if(do_noncanonical)
-
-	//	score = Fixhole_score_selective_insert_var_mask(pre_wp, comb_chrom_seq, max_loc, prim, left_mismatches, rbits, &mask);
-
-	//else
-
 	score = Fixhole_score_selective_insert_var_mask(pre_wp, comb_chrom_seq, max_loc, prim, left_mismatches, rbits, &mask);
 
 	if(!do_noncanonical)
@@ -755,8 +745,6 @@ GenomeScan::Double_anchored_score_least_mis(string tobe_fixed_str, string doner_
 			mismatch_num = score;
 			size_t seg1_suffix_len = tobe_fixed_len - max_loc;
 
-			//string comb_chrom_str1 = doner_str.substr(0, max_loc) + acceptor_str.substr(acceptor_str.length() - seg1_suffix_len, seg1_suffix_len);
-
 			size_t seg1_mask_prefix = mask.suffix_seg_bits_on >> seg1_suffix_len << seg1_suffix_len;
 
 			size_t seg1_mask_suffix = mask.suffix_seg_bits_on >> max_loc;
@@ -770,7 +758,8 @@ GenomeScan::Double_anchored_score_least_mis(string tobe_fixed_str, string doner_
 }
 
 bool
-GenomeScan::Double_anchored_score_ins(string tobe_fixed_str, string chrom_seq, size_t max_mismatch, size_t& prefix_length, size_t& comb_bits, size_t& num_mismatch)
+GenomeScan::doubleAnchorInsertionWithinMismatchLimit(string tobe_fixed_str, string chrom_seq,
+	size_t max_mismatch, size_t& prefix_length, size_t& comb_bits, size_t& num_mismatch)
 {
 	size_t tobe_fixed_len = chrom_seq.length();
 
@@ -802,10 +791,9 @@ GenomeScan::Double_anchored_score_ins(string tobe_fixed_str, string chrom_seq, s
 
 	vector<pair<size_t, pair<char, char> > > mis_pos;
 
-	if(/*max_loc != 0 && max_loc != chrom_seq.length() && */score <= max_mismatch)
+	if(score <= max_mismatch)
 	{
-		//cout << "score: " << score << endl;
-		(num_mismatch) = score;
+		num_mismatch = score;
 		prefix_length = max_loc;
 		if (score)
 		{

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <string.h>
+#include <stdexcept>
 
 #include "utilities.h"
 
@@ -11,13 +12,19 @@ using namespace std;
 class Jump_Code
 {
 public:
-	int len; // length fo current feature
-	string type; //feature type, M/N/I/D/S
+	int _length; // length fo current feature
+	string _type; //feature type, M/N/I/D/S
 
-	Jump_Code(int _len, string _type)
+	Jump_Code()
 	{
-		len=_len;
-		type=_type;
+		_length = 0;
+		_type = "";
+	}
+
+	Jump_Code(int length, string type)
+	{
+		_length=length;
+		_type=type;
 	}
 	
 	~Jump_Code()
@@ -25,7 +32,7 @@ public:
 
 	string toString()
 	{
-		return Utilities::int_to_str(len) + type;
+		return Utilities::int_to_str(_length) + _type;
 	}
 };
 
@@ -88,42 +95,38 @@ public:
 			jump_code.push_back(anotherSpliceInfo->jump_code[tmp]);
 	}
 
+	// merges up all of the jump codes into the
+	// cigar string which will be written to the sam file
 	void getFinalJumpCode()
 	{
-		int jumpCodeSize = jump_code.size();
-		if (jumpCodeSize == 0)
+		switch(jump_code.size())
 		{
-			return;
-		}
-		else if(jumpCodeSize == 1)
-		{
-			if((jump_code[0].len <= 0)||(jump_code[0].type != "M"))
-				return;
-			else
-			{	
-				final_jump_code.push_back(jump_code[0]);
-				return;
-			}
-		}
-		else
-		{	
-			Jump_Code currentJumpCode = jump_code[0];
-			Jump_Code nextJumpCode = jump_code[1];
-			for(int tmp = 0; tmp < jump_code.size() - 1; tmp++)
-			{
-				int tmp2 = tmp+1;
-				nextJumpCode = jump_code[tmp2];
-				if(currentJumpCode.type != nextJumpCode.type)
-				{	
-					final_jump_code.push_back(currentJumpCode);
-					currentJumpCode = nextJumpCode;
-				}
+			case 0:
+				throw invalid_argument("Bad Jump Code!");
+				break;
+			case 1:
+				if(jump_code.back()._length <= 0 || jump_code.back()._type != "M")
+					throw invalid_argument("Bad Jump Code!");
 				else
+					final_jump_code.push_back(jump_code.back());
+				break;
+			default:
+				Jump_Code currentJumpCode;
+				Jump_Code nextJumpCode;
+				for(int i=1; i<jump_code.size(); i++)
 				{
-					currentJumpCode.len = currentJumpCode.len + nextJumpCode.len;
+					currentJumpCode = jump_code[i-1];
+					nextJumpCode = jump_code[i];
+
+					// if the codes are different (say S and M) then
+					// just add the current jump code and move on
+					if(currentJumpCode._type != nextJumpCode._type)
+						final_jump_code.push_back(currentJumpCode);
+					else  // Different, then add lengths and keep type
+						nextJumpCode._length += currentJumpCode._length;
 				}
-			}
-			final_jump_code.push_back(currentJumpCode);
+				final_jump_code.push_back(nextJumpCode);
+				break;
 		}
 	}
 
@@ -133,13 +136,13 @@ public:
 		int jumpCodeSize = jump_code.size();
 		for(int tmp = 0; tmp < jumpCodeSize; tmp++)
 		{
-			if((jump_code[tmp].type == "S")||(jump_code[tmp].type == "I"))
+			if((jump_code[tmp]._type == "S")||(jump_code[tmp]._type == "I"))
 			{
 				continue;
 			}
-			else if((jump_code[tmp].type == "M")||(jump_code[tmp].type == "N")||(jump_code[tmp].type == "D"))
+			else if((jump_code[tmp]._type == "M")||(jump_code[tmp]._type == "N")||(jump_code[tmp]._type == "D"))
 			{
-				tmpMapPos += jump_code[tmp].len;
+				tmpMapPos += jump_code[tmp]._length;
 			}
 			else
 			{
@@ -153,7 +156,7 @@ public:
 	bool allFinalJumpCodeValid()
 	{
 		for(int i = 0; i<final_jump_code.size(); i++)
-			if(final_jump_code[i].len <= 0)
+			if(final_jump_code[i]._length <= 0)
 				return false;
 
 		return true;

@@ -18,20 +18,16 @@ public:
 
 	SpliceJunction_Alignment(string chrName, int donerPos, int acceptorPos, Index_Info* indexInfo)
 	{
-		//cout << "chrName: " << chrName.length() << " " << chrName << endl;
 		SJchrName = chrName;
 		SJdonerEnd = donerPos;
 		SJacceptorStart = acceptorPos;
-		//cout << SJdonerEnd << " " << SJacceptorStart << endl;
 		this->getFlankString(indexInfo);
 	}
 
 	void getFlankString(Index_Info* indexInfo)
 	{
 		int chromNO = indexInfo->convertStringToInt(SJchrName);
-		//cout << "chromNO: " << chromNO << endl;
-		flankString = (indexInfo->chromStr)[chromNO].substr(SJdonerEnd, 2) + (indexInfo->chromStr)[chromNO].substr(SJacceptorStart-3, 2);
-		//cout << "flankString: " << flankString << endl;
+		flankString = indexInfo->getChromSequence(chromNO).substr(SJdonerEnd, 2) + indexInfo->getChromSequence(chromNO).substr(SJacceptorStart-3, 2);
 	}
 };
 
@@ -61,7 +57,7 @@ public:
 	string alignChromName;
 	int alignChromPos;
 	vector<Jump_Code> cigarStringJumpCode;
-	vector< pair< int, SpliceJunction_Alignment > > spliceJunctionVec; // <posInRead, SpliceJunction>
+	vector< pair< int, SpliceJunction_Alignment > > spliceJunctionVec;
 	int mismatchNum;
 	string SJstrand;
 	int mappedBaseNum;
@@ -69,20 +65,17 @@ public:
 	
 	SamFormat currentSam;
 
-	//vector< pair< int, int > > SJforCompareVec; 
-
 	Alignment_Info()
 	{}
 
-
 	bool unfixedHeadExists()
 	{
-		return cigarStringJumpCode.size() != 0 && cigarStringJumpCode[0].type == "S";
+		return cigarStringJumpCode.size() != 0 && cigarStringJumpCode[0]._type == "S";
 	}
 
 	bool unfixedTailExists()
 	{
-		return cigarStringJumpCode.size() != 0 && cigarStringJumpCode.back().type == "S";
+		return cigarStringJumpCode.size() != 0 && cigarStringJumpCode.back()._type == "S";
 	}
 
 	bool unfixedHeadAndTailExists()
@@ -147,7 +140,7 @@ public:
 		//cout << "start to get new alignInfo" << endl;
 		string newAlignDir = alignDirection;
 		string newAlignChromName = alignChromName;
-		int newAlignChromPos = alignChromPos - spliceJunctionDistance - cigarStringJumpCode[0].len;
+		int newAlignChromPos = alignChromPos - spliceJunctionDistance - cigarStringJumpCode[0]._length;
 		
 		//cout << "start to creat new jumpCode " << endl;
 		vector<Jump_Code> newCigarStringJumpCode;
@@ -156,11 +149,11 @@ public:
 		//tmpJumpCode.len = firstMatchLength; tmpJumpCode.type = "M";
 		//cout << "stop 1 " << endl;
 		newCigarStringJumpCode.push_back(*tmpJumpCode);
-		tmpJumpCode->len = spliceJunctionDistance; tmpJumpCode->type = "N";
+		tmpJumpCode->_length = spliceJunctionDistance; tmpJumpCode->_type = "N";
 		//cout << "stop 2 " << endl;
 		newCigarStringJumpCode.push_back(*tmpJumpCode);
-		tmpJumpCode->len = cigarStringJumpCode[0].len + 
-			cigarStringJumpCode[1].len - firstMatchLength; tmpJumpCode->type = "M";
+		tmpJumpCode->_length = cigarStringJumpCode[0]._length + 
+			cigarStringJumpCode[1]._length - firstMatchLength; tmpJumpCode->_type = "M";
 		//cout << "stop 3 " << endl;
 		newCigarStringJumpCode.push_back(*tmpJumpCode);
 		//cout << "stop 4 " << endl;
@@ -190,12 +183,12 @@ public:
 
 		int jumpCodeSize = cigarStringJumpCode.size();
 		int penultimateMatchLength 
-			= cigarStringJumpCode[jumpCodeSize-2].len + cigarStringJumpCode[jumpCodeSize-1].len - lastMatchLength; 
+			= cigarStringJumpCode[jumpCodeSize-2]._length + cigarStringJumpCode[jumpCodeSize-1]._length - lastMatchLength; 
 		Jump_Code* tmpJumpCode = new Jump_Code(penultimateMatchLength, "M");
 		newCigarStringJumpCode.push_back(*tmpJumpCode);
-		tmpJumpCode->len = spliceJunctionDistance; tmpJumpCode->type = "N";
+		tmpJumpCode->_length = spliceJunctionDistance; tmpJumpCode->_type = "N";
 		newCigarStringJumpCode.push_back(*tmpJumpCode);
-		tmpJumpCode->len = lastMatchLength; tmpJumpCode->type = "M";
+		tmpJumpCode->_length = lastMatchLength; tmpJumpCode->_type = "M";
 		newCigarStringJumpCode.push_back(*tmpJumpCode);
 
 		int newMismatch = mismatchNum + newMismatchToAddInTail;
@@ -232,6 +225,8 @@ public:
 		}
 	}
 
+	// FIXME - KLM 6/4/14 THIS DOES NOT BELONG HERE
+	// THIS CAN'T BE IN ALIGN_INFO
 	void jumpCodeVec2spliceJunctionVec(Index_Info* indexInfo) 
 	{
 		int tmpPosInRead = 0; 
@@ -241,38 +236,38 @@ public:
 		for(int tmp = 0; tmp < cigarStringJumpCode.size(); tmp++)
 		{
 			//cout << "JumpCode[" << tmp << "]: " << cigarStringJumpCode[tmp].len << " " << cigarStringJumpCode[tmp].type << endl;
-			if(cigarStringJumpCode[tmp].type == "S")
+			if(cigarStringJumpCode[tmp]._type == "S")
 			{
-				tmpPosInRead += cigarStringJumpCode[tmp].len;
+				tmpPosInRead += cigarStringJumpCode[tmp]._length;
 			}
-			else if (cigarStringJumpCode[tmp].type == "M")
+			else if (cigarStringJumpCode[tmp]._type == "M")
 			{
-				tmpPosInRead += cigarStringJumpCode[tmp].len;
+				tmpPosInRead += cigarStringJumpCode[tmp]._length;
 				//cout << "tmpPosInRead: " << tmpPosInRead << endl;
-				tmpDonerPosInChr += cigarStringJumpCode[tmp].len;
+				tmpDonerPosInChr += cigarStringJumpCode[tmp]._length;
 				//cout << "tmpDonerPosInChr: " << tmpDonerPosInChr << endl;
 			}
-			else if (cigarStringJumpCode[tmp].type == "N")
+			else if (cigarStringJumpCode[tmp]._type == "N")
 			{
 				//cout << "tmpDonerPosInChr: " << tmpDonerPosInChr << endl;
 
-				tmpAcceptorPosInChr = tmpDonerPosInChr + cigarStringJumpCode[tmp].len + 1;
+				tmpAcceptorPosInChr = tmpDonerPosInChr + cigarStringJumpCode[tmp]._length + 1;
 				//cout << "tmpAcceptorPosInChr: " << tmpAcceptorPosInChr << endl;
 				SpliceJunction_Alignment* tmpSJ = 
 					new SpliceJunction_Alignment(alignChromName, tmpDonerPosInChr, tmpAcceptorPosInChr, indexInfo);
 				//cout << "tmpPosInRead: " << tmpPosInRead << endl;
 				//tmpSJ
 				spliceJunctionVec.push_back(pair <int, SpliceJunction_Alignment> (tmpPosInRead+1, (*tmpSJ)));
-				tmpDonerPosInChr += cigarStringJumpCode[tmp].len;
+				tmpDonerPosInChr += cigarStringJumpCode[tmp]._length;
 			}
-			else if (cigarStringJumpCode[tmp].type == "I")
+			else if (cigarStringJumpCode[tmp]._type == "I")
 			{
-				tmpPosInRead += cigarStringJumpCode[tmp].len;
+				tmpPosInRead += cigarStringJumpCode[tmp]._length;
 				//tmpDonerPosInChr += cigarStringJumpCode[tmp].len;
 			}
-			else if (cigarStringJumpCode[tmp].type == "D")
+			else if (cigarStringJumpCode[tmp]._type == "D")
 			{
-				tmpDonerPosInChr += cigarStringJumpCode[tmp].len;
+				tmpDonerPosInChr += cigarStringJumpCode[tmp]._length;
 			}
 			else
 			{
@@ -341,9 +336,9 @@ public:
 		int pos = 0;
 		for(int tmp = 0; tmp < cigarStringJumpCode.size(); tmp++)
 		{
-			if ((cigarStringJumpCode[tmp].type == "M")||(cigarStringJumpCode[tmp].type == "I"))
+			if ((cigarStringJumpCode[tmp]._type == "M")||(cigarStringJumpCode[tmp]._type == "I"))
 			{
-				pos += cigarStringJumpCode[tmp].len;
+				pos += cigarStringJumpCode[tmp]._length;
 			}
 			else
 			{
@@ -360,17 +355,17 @@ public:
 		//int tmpJumpCodeLength = 0;
 		for(int tmp = 0; tmp < cigarStringJumpCode.size(); tmp++)
 		{
-			if ((cigarStringJumpCode[tmp].type == "S")||(cigarStringJumpCode[tmp].type == "I"))
+			if ((cigarStringJumpCode[tmp]._type == "S")||(cigarStringJumpCode[tmp]._type == "I"))
 			{
 				continue;
 			}
-			else if ((cigarStringJumpCode[tmp].type == "M")||(cigarStringJumpCode[tmp].type == "N")||(cigarStringJumpCode[tmp].type == "D"))
+			else if ((cigarStringJumpCode[tmp]._type == "M")||(cigarStringJumpCode[tmp]._type == "N")||(cigarStringJumpCode[tmp]._type == "D"))
 			{
-				pos += cigarStringJumpCode[tmp].len;
+				pos += cigarStringJumpCode[tmp]._length;
 			}
 			else
 			{
-				cout << "error, unexpected jumpCodeType: " << cigarStringJumpCode[tmp].type << endl;
+				cout << "error, unexpected jumpCodeType: " << cigarStringJumpCode[tmp]._type << endl;
 			}
 		}
 
@@ -1543,22 +1538,16 @@ public:
 
 	void chooseBestAlignment_selectRandomOneIfMulti()
 	{
-		//cout << "start pairing ..." << endl;
 		this->pairingAlignment2OriPair();
-		//cout << "start oriAlignPair2oriAlignPairNew ..." << endl;
 		this->oriAlignPair2oriAlignPairNew();
-		//cout << "start getScoreForEachPair_mapLen_mis_peDis ..." << endl;
 		this->getScoreForEachPair_mapLen_mis_peDis();
-		//cout << "start oriAlignPair2finalPair ..." << endl;
 
-		int selectedBestAlignmentNO = 0;// = 0;
-		bool selectedBestAlignment_Nor1Rcm2 = true;// = true;
+		int selectedBestAlignmentNO = 0;
+		bool selectedBestAlignment_Nor1Rcm2 = true;
 		double tmpBestScore = 0;
 
 		if(oriAlignPair_Nor1Rcm2_new.size() + oriAlignPair_Nor2Rcm1_new.size() == 0)
-		{
 			return;
-		}
 
 		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp ++)
 		{
@@ -1590,103 +1579,6 @@ public:
 		{
 			finalAlignPair_Nor2Rcm1.push_back(oriAlignPair_Nor2Rcm1_new[selectedBestAlignmentNO]);
 		}
-	}
-
-	void chooseBestAlignment_selectAllIfMultiBest()
-	{
-		this->pairingAlignment2OriPair();
-		//this->pairingAlignment();
-
-		//cout << "***************" << endl;
-		//cout << this->printOutPairingResults() << endl;
-		//cout << "***************" << endl;
-
-		this->oriAlignPair2oriAlignPairNew();
-		this->getScoreForEachPair_mapLen_mis_peDis();
-		
-		if(oriAlignPair_Nor1Rcm2_new.size() + oriAlignPair_Nor2Rcm1_new.size() == 0)
-		{
-			return;
-		}
-		double DifferenceMin = 0.0001;
-
-		double tmpBestScore = 0.0;
-		int selectedBestAlignmentNO = 0;// = 0;
-		bool selectedBestAlignment_Nor1Rcm2 = true;// = true;
-		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp ++)
-		{
-			double tmpScore = oriAlignPairNew_score_Nor1Rcm2[tmp];
-			if(tmpScore > tmpBestScore)
-			{
-				tmpBestScore = tmpScore;
-				selectedBestAlignmentNO = tmp;
-				selectedBestAlignment_Nor1Rcm2 = true;
-			}
-		}
-		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp ++)
-		{
-			double tmpScore = oriAlignPairNew_score_Nor2Rcm1[tmp];
-			if(tmpScore > tmpBestScore)
-			{
-				tmpBestScore = tmpScore;
-				selectedBestAlignmentNO = tmp;
-				selectedBestAlignment_Nor1Rcm2 = false;
-			}
-		}
-
-		if(selectedBestAlignment_Nor1Rcm2)
-		{
-			for(int tmp = selectedBestAlignmentNO; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp ++)
-			{
-				double tmpScore = oriAlignPairNew_score_Nor1Rcm2[tmp]; 
-				if(fabs(tmpBestScore - tmpScore) < DifferenceMin)
-				{
-					finalAlignPair_Nor1Rcm2.push_back(oriAlignPair_Nor1Rcm2_new[tmp]);					
-				}
-			}
-			for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp ++)
-			{
-				double tmpScore = oriAlignPairNew_score_Nor2Rcm1[tmp];
-				if(fabs(tmpBestScore - tmpScore) < DifferenceMin)
-				{
-					finalAlignPair_Nor2Rcm1.push_back(oriAlignPair_Nor2Rcm1_new[tmp]);
-				}
-			}
-		}
-		else
-		{
-			for(int tmp = selectedBestAlignmentNO; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp ++)
-			{
-				double tmpScore = oriAlignPairNew_score_Nor2Rcm1[tmp];
-				if(fabs(tmpBestScore - tmpScore) < DifferenceMin)
-				{
-					finalAlignPair_Nor2Rcm1.push_back(oriAlignPair_Nor2Rcm1_new[tmp]);
-				}
-			}
-		}
-
-	}
-
-	// printout pairing information for debugging 
-	string printOutPairingResults()
-	{
-		string pairingResults;
-		pairingResults = "pairing results information:\n";
-		pairingResults += "Nor1Rcm2 pair:\n";
-		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2_new.size(); tmp++)
-		{
-			pairingResults = "Pair " + Utilities::int_to_str(tmp + 1) + ": ";
-			pairingResults = pairingResults + Utilities::int_to_str(oriAlignPair_Nor1Rcm2_new[tmp].first)
-				+ ", " + Utilities::int_to_str(oriAlignPair_Nor1Rcm2_new[tmp].second) + "\n";
-		}  
-		pairingResults += "Nor2Rcm1 pair:\n";
-		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1_new.size(); tmp++)
-		{
-			pairingResults = "Pair " + Utilities::int_to_str(tmp + 1) + ": ";
-			pairingResults = pairingResults + Utilities::int_to_str(oriAlignPair_Nor2Rcm1_new[tmp].first)
-				+ ", " + Utilities::int_to_str(oriAlignPair_Nor2Rcm1_new[tmp].second) + "\n";
-		}  	
-		return pairingResults;
 	}
 
 	bool betterNewOtherEndAlignInfoBool(
@@ -2010,7 +1902,7 @@ public:
 				int mapChromPosInt = (((newPathInfo->finalPathVec)[tmpPath]).first).second;
 				int tmpMismatch = 0;
 
-				Alignment_Info* tmpAlignmentInfo = new Alignment_Info("-", indexInfo->chrNameStr[mapChromNameInt],
+				Alignment_Info* tmpAlignmentInfo = new Alignment_Info("-", indexInfo->getChromName(mapChromNameInt),
 					mapChromPosInt, (((newPathInfo->finalPathVec)[tmpPath]).second)->final_jump_code,
 					tmpMismatch, indexInfo);
 				rcmAlignmentInfo_PE_2.push_back(tmpAlignmentInfo);
@@ -2024,7 +1916,7 @@ public:
 				int mapChromPosInt = (((newPathInfo->finalPathVec)[tmpPath]).first).second;
 				int tmpMismatch = 0;
 
-				Alignment_Info* tmpAlignmentInfo = new Alignment_Info("+", indexInfo->chrNameStr[mapChromNameInt],
+				Alignment_Info* tmpAlignmentInfo = new Alignment_Info("+", indexInfo->getChromName(mapChromNameInt),
 					mapChromPosInt, (((newPathInfo->finalPathVec)[tmpPath]).second)->final_jump_code,
 					tmpMismatch, indexInfo);
 				norAlignmentInfo_PE_2.push_back(tmpAlignmentInfo);
@@ -2038,7 +1930,7 @@ public:
 				int mapChromPosInt = (((newPathInfo->finalPathVec)[tmpPath]).first).second;
 				int tmpMismatch = 0;
 
-				Alignment_Info* tmpAlignmentInfo = new Alignment_Info("-", indexInfo->chrNameStr[mapChromNameInt],
+				Alignment_Info* tmpAlignmentInfo = new Alignment_Info("-", indexInfo->getChromName(mapChromNameInt),
 					mapChromPosInt, (((newPathInfo->finalPathVec)[tmpPath]).second)->final_jump_code,
 					tmpMismatch, indexInfo);
 				rcmAlignmentInfo_PE_1.push_back(tmpAlignmentInfo);
@@ -2052,7 +1944,7 @@ public:
 				int mapChromPosInt = (((newPathInfo->finalPathVec)[tmpPath]).first).second;
 				int tmpMismatch = 0;
 
-				Alignment_Info* tmpAlignmentInfo = new Alignment_Info("+", indexInfo->chrNameStr[mapChromNameInt],
+				Alignment_Info* tmpAlignmentInfo = new Alignment_Info("+", indexInfo->getChromName(mapChromNameInt),
 					mapChromPosInt, (((newPathInfo->finalPathVec)[tmpPath]).second)->final_jump_code, 
 					tmpMismatch, indexInfo);
 				norAlignmentInfo_PE_1.push_back(tmpAlignmentInfo);
@@ -2064,55 +1956,57 @@ public:
 	PE_Read_Alignment_Info(Path* pathInfo_nor1, Path* pathInfo_rcm1, 
 			Path* pathInfo_nor2, Path* pathInfo_rcm2, Index_Info* indexInfo)
 	{
-		//cout << "start PE_Read_Alignment_Info " << endl;
+		// The final paths were found in the gap calls
+		// now we loop of the final path of each of the types of mappings
+		// This shouldn't know about different types of mappings though
+		// it should just know about segments and where they are mapped
 		for(int tmpPath = 0; tmpPath < pathInfo_nor1->finalPathVec.size(); tmpPath++)
 		{
 			int mapChromNameInt = (((pathInfo_nor1->finalPathVec)[tmpPath]).first).first;
 			int mapChromPosInt = (((pathInfo_nor1->finalPathVec)[tmpPath]).first).second;
 			int tmpMismatch = (pathInfo_nor1->fixedPathMismatchVec)[tmpPath];
 
-			Alignment_Info* tmpAlignmentInfo = new Alignment_Info("+", indexInfo->chrNameStr[mapChromNameInt], 
+			Alignment_Info* tmpAlignmentInfo = new Alignment_Info("+", indexInfo->getChromName(mapChromNameInt),
 				mapChromPosInt, (((pathInfo_nor1->finalPathVec)[tmpPath]).second)->final_jump_code, 
 				tmpMismatch, indexInfo);
 			norAlignmentInfo_PE_1.push_back(tmpAlignmentInfo);
 		}
-		//cout << "pe alignInfo Nor1 ends ..." << endl;
+
 		for(int tmpPath = 0; tmpPath < pathInfo_rcm1->finalPathVec.size(); tmpPath++)
 		{
 			int mapChromNameInt = (((pathInfo_rcm1->finalPathVec)[tmpPath]).first).first;
 			int mapChromPosInt = (((pathInfo_rcm1->finalPathVec)[tmpPath]).first).second;
 			int tmpMismatch = (pathInfo_rcm1->fixedPathMismatchVec)[tmpPath];
 
-			Alignment_Info* tmpAlignmentInfo = new Alignment_Info("-", indexInfo->chrNameStr[mapChromNameInt], 
+			Alignment_Info* tmpAlignmentInfo = new Alignment_Info("-", indexInfo->getChromName(mapChromNameInt),
 				mapChromPosInt, (((pathInfo_rcm1->finalPathVec)[tmpPath]).second)->final_jump_code, 
 				tmpMismatch, indexInfo);
 			rcmAlignmentInfo_PE_1.push_back(tmpAlignmentInfo);
 		}
-		//cout << "pe alignInfo Rcm1 ends ..." << endl;
+
 		for(int tmpPath = 0; tmpPath < pathInfo_nor2->finalPathVec.size(); tmpPath++)
 		{
 			int mapChromNameInt = (((pathInfo_nor2->finalPathVec)[tmpPath]).first).first;
 			int mapChromPosInt = (((pathInfo_nor2->finalPathVec)[tmpPath]).first).second;
 			int tmpMismatch = (pathInfo_nor2->fixedPathMismatchVec)[tmpPath];
 
-			Alignment_Info* tmpAlignmentInfo = new Alignment_Info("+", indexInfo->chrNameStr[mapChromNameInt], 
+			Alignment_Info* tmpAlignmentInfo = new Alignment_Info("+", indexInfo->getChromName(mapChromNameInt),
 				mapChromPosInt, (((pathInfo_nor2->finalPathVec)[tmpPath]).second)->final_jump_code, 
 				tmpMismatch, indexInfo);
 			norAlignmentInfo_PE_2.push_back(tmpAlignmentInfo);
 		}
-		//cout << "pe alignInfo Nor2 ends ..." << endl;
+
 		for(int tmpPath = 0; tmpPath < pathInfo_rcm2->finalPathVec.size(); tmpPath++)
 		{
 			int mapChromNameInt = (((pathInfo_rcm2->finalPathVec)[tmpPath]).first).first;
 			int mapChromPosInt = (((pathInfo_rcm2->finalPathVec)[tmpPath]).first).second;
 			int tmpMismatch = (pathInfo_rcm2->fixedPathMismatchVec)[tmpPath];
 
-			Alignment_Info* tmpAlignmentInfo = new Alignment_Info("-", indexInfo->chrNameStr[mapChromNameInt], 
+			Alignment_Info* tmpAlignmentInfo = new Alignment_Info("-", indexInfo->getChromName(mapChromNameInt),
 				mapChromPosInt, (((pathInfo_rcm2->finalPathVec)[tmpPath]).second)->final_jump_code, 
 				tmpMismatch, indexInfo);
 			rcmAlignmentInfo_PE_2.push_back(tmpAlignmentInfo);
 		}
-		//cout << "pe alignInfo Rcm2 ends ..." << endl;
 	}
 
 	PE_Read_Alignment_Info()
@@ -2275,351 +2169,43 @@ public:
 
 	void getEndMatchPosForEveryAlignment()
 	{
-		for(int tmp = 0; tmp < norAlignmentInfo_PE_1.size(); tmp++)
-		{
-			norAlignmentInfo_PE_1[tmp]->getEndMatchedPosInChr();
-		}
-		for(int tmp = 0; tmp < rcmAlignmentInfo_PE_1.size(); tmp++)
-		{
-			rcmAlignmentInfo_PE_1[tmp]->getEndMatchedPosInChr();
-		}
-		for(int tmp = 0; tmp < norAlignmentInfo_PE_2.size(); tmp++)
-		{
-			norAlignmentInfo_PE_2[tmp]->getEndMatchedPosInChr();
-		}
-		for(int tmp = 0; tmp < rcmAlignmentInfo_PE_2.size(); tmp++)
-		{
-			rcmAlignmentInfo_PE_2[tmp]->getEndMatchedPosInChr();
-		}
+		for(int i=0; i<norAlignmentInfo_PE_1.size(); i++)
+			norAlignmentInfo_PE_1[i]->getEndMatchedPosInChr();
+
+		for(int i=0; i<rcmAlignmentInfo_PE_1.size(); i++)
+			rcmAlignmentInfo_PE_1[i]->getEndMatchedPosInChr();
+
+		for(int i=0; i<norAlignmentInfo_PE_2.size(); i++)
+			norAlignmentInfo_PE_2[i]->getEndMatchedPosInChr();
+
+		for(int i=0; i< rcmAlignmentInfo_PE_2.size(); i++)
+			rcmAlignmentInfo_PE_2[i]->getEndMatchedPosInChr();
 	}
-
-	/*void pairingAlignment() 
-	// get final PE alignment finalXXXAlignmentInfo_PE_X  
-	// from original alignment info XXXAlignmentInfo_PE_X;
-	{
-		//cout << "start to pair ... " << endl;
-		this->getEndMatchPosForEveryAlignment();
-		Alignment_Info* tmpAlignInfo_1;
-		Alignment_Info* tmpAlignInfo_2;
-		bool newEntity = false;
-		//cout << "start to pair Nor1Rcm2... " << endl;
-		for(int tmp = 0; tmp < norAlignmentInfo_PE_1.size(); tmp++) 
-		//pair norAlignmentInfo_PE_1 & rcmAlignmentInfo_PE_2
-		{
-			newEntity = true;
-			tmpAlignInfo_1 = norAlignmentInfo_PE_1[tmp];
-
-			if(tmpAlignInfo_1 -> SJstrand == "X")
-			{
-				continue;
-			}
-
-			for(int tmp2 = 0; tmp2 < rcmAlignmentInfo_PE_2.size(); tmp2++)
-			{
-
-				tmpAlignInfo_2 = rcmAlignmentInfo_PE_2[tmp2];
-				
-				if((tmpAlignInfo_2 -> SJstrand == "X")
-					||((tmpAlignInfo_1 -> SJstrand == "+")&&(tmpAlignInfo_2 -> SJstrand == "-"))
-					||((tmpAlignInfo_1 -> SJstrand == "-")&&(tmpAlignInfo_2 -> SJstrand == "+")))
-				{
-					continue;
-				}		
-
-				if((tmpAlignInfo_1->alignChromName) == (tmpAlignInfo_2->alignChromName))
-				{
-					if(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->alignChromPos)
-					{
-						if( ((tmpAlignInfo_2->alignChromPos) - (tmpAlignInfo_1->endMatchedPosInChr))< PAIR_READ_DISTANCE_MAX)
-						{
-							if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
-							{
-								vector<int> newTmpVec;
-								newTmpVec.push_back(tmp2);
-								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
-								newEntity = false;
-							}
-							else //tmp has already been in oriAlignPair_Nor1Rcm2
-							{
-								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
-							}
-						}
-						else
-						{
-							//two far away 
-						}
-					}
-					else
-					{
-						if((tmpAlignInfo_1->alignChromPos <= tmpAlignInfo_2->alignChromPos)
-							&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr))
-						{
-							//Note: In addition should check whether they cross the same SJs or not
-							if(tmpAlignInfo_1->checkOverlapPairAlignment(tmpAlignInfo_2))
-							{
-								if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
-								{
-									vector<int> newTmpVec;
-									newTmpVec.push_back(tmp2);
-									oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
-									newEntity = false;
-								}
-								else //tmp has already been in oriAlignPair_Nor1Rcm2
-								{
-									(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
-								}
-							}
-							else
-							{}
-						}
-						else 
-						{
-							// not in the correct order
-						}
-					}
-				}
-				else
-				{
-
-				}
-			}
-		}
-		//cout << "start to pair Nor2Rcm1... " << endl;
-		for(int tmp = 0; tmp < norAlignmentInfo_PE_2.size(); tmp++)
-		{
-			newEntity = true;
-			tmpAlignInfo_1 = norAlignmentInfo_PE_2[tmp];
-			
-			if(tmpAlignInfo_1 -> SJstrand == "X")
-			{
-				continue;
-			}
-
-			for(int tmp2 = 0; tmp2 < rcmAlignmentInfo_PE_1.size(); tmp2++)
-			{
-				tmpAlignInfo_2 = rcmAlignmentInfo_PE_1[tmp2];
-
-				if((tmpAlignInfo_2 -> SJstrand == "X")
-					||((tmpAlignInfo_1 -> SJstrand == "+")&&(tmpAlignInfo_2 -> SJstrand == "-"))
-					||((tmpAlignInfo_1 -> SJstrand == "-")&&(tmpAlignInfo_2 -> SJstrand == "+")))
-				{
-					continue;
-				}					
-				
-				if((tmpAlignInfo_1->alignChromName) == (tmpAlignInfo_2->alignChromName))
-				{
-					if(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->alignChromPos)
-					{
-						if(((tmpAlignInfo_2->alignChromPos) - (tmpAlignInfo_1->endMatchedPosInChr)) < 500000)
-						{
-							if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
-							{
-								vector<int> newTmpVec;
-								newTmpVec.push_back(tmp2);
-								oriAlignPair_Nor2Rcm1.push_back(pair<int, vector<int> > (tmp, newTmpVec));
-								newEntity = false;
-							}
-							else //tmp has already been in oriAlignPair_Nor1Rcm2
-							{
-								(oriAlignPair_Nor2Rcm1[oriAlignPair_Nor2Rcm1.size()-1].second).push_back(tmp2);
-								newEntity = false;
-							}
-						}
-						else
-						{
-							//two far away 
-						}
-					}
-					else
-					{
-						if((tmpAlignInfo_1->alignChromPos <= tmpAlignInfo_2->alignChromPos)
-							&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr))
-						{
-							//Note: In addition should check whether they cross the same SJs or not
-							if(tmpAlignInfo_1->checkOverlapPairAlignment(tmpAlignInfo_2))
-							{
-								if(newEntity) //tmp is not in oriAlignPair_Nor2Rcm1
-								{
-									vector<int> newTmpVec;
-									newTmpVec.push_back(tmp2);
-									oriAlignPair_Nor2Rcm1.push_back(pair<int, vector<int> > (tmp, newTmpVec));
-									newEntity = false;
-								}
-								else //tmp has already been in oriAlignPair_Nor2Rcm1
-								{
-									(oriAlignPair_Nor2Rcm1[oriAlignPair_Nor2Rcm1.size()-1].second).push_back(tmp2);
-									newEntity = false;
-								}
-							}
-							else
-							{}
-						}
-						else 
-						{
-							// not in the correct order
-						}
-					}
-				}
-				else
-				{
-
-				}
-			}
-		}
-		///////////////// 1. only one end read mapped, another one unmapped ///////////////////////
-
-		///////////////// 2. reads can be mapped under both directions //////////////////////////
-
-		///////////////// 3. reads can be mapped to different places in one direction //////////////////
-	}
-
-	void chooseBestAlignment()
-	{
-		map < int, int > mapPos_Nor1Rcm2; // <alignChormPos of Nor1[#], # in oriAlignPair_Nor1Rcm2  >
-		map < int, int > mapPos_Nor2Rcm1; // <alignChormPos of Nor2[#], # in oriAlignPair_Nor2Rcm1  >
-		map < int, int >::iterator it;
-
-		int tmpNor1NO, tmpNor2NO, tmpRcm1NO, tmpRcm2NO;
-		int tmpNor1NO_2, tmpNor2NO_2;
-
-		for(int tmp = 0; tmp < oriAlignPair_Nor1Rcm2.size(); tmp++)
-		{
-			tmpNor1NO = oriAlignPair_Nor1Rcm2[tmp].first;
-			it = mapPos_Nor1Rcm2.find(norAlignmentInfo_PE_1[tmpNor1NO]->alignChromPos);
-			if(it == mapPos_Nor1Rcm2.end())
-			{
-				mapPos_Nor1Rcm2.insert(pair<int, int> (norAlignmentInfo_PE_1[tmpNor1NO]->alignChromPos, tmp));
-			}
-			else // the same start mapping pos
-			{
-				tmpNor1NO_2 = oriAlignPair_Nor1Rcm2[it->second].first;
-				if((norAlignmentInfo_PE_1[tmpNor1NO]->endMatchedPosInChr)
-					< (norAlignmentInfo_PE_1[tmpNor1NO_2]->endMatchedPosInChr))
-				{
-					mapPos_Nor1Rcm2.erase(it);
-					mapPos_Nor1Rcm2.insert(pair<int, int> (norAlignmentInfo_PE_1[tmpNor1NO]->alignChromPos, tmp));
-				}
-				else
-				{}
-			}
-		}
-
-		for(int tmp = 0; tmp < oriAlignPair_Nor2Rcm1.size(); tmp++)
-		{
-			tmpNor2NO = oriAlignPair_Nor2Rcm1[tmp].first;
-			it = mapPos_Nor2Rcm1.find(norAlignmentInfo_PE_2[tmpNor2NO]->alignChromPos);
-			if(it == mapPos_Nor2Rcm1.end())
-			{
-				mapPos_Nor2Rcm1.insert(pair<int, int> (norAlignmentInfo_PE_2[tmpNor2NO]->alignChromPos, tmp));
-			}
-			else // the same start mapping pos
-			{
-				tmpNor2NO_2 = oriAlignPair_Nor2Rcm1[it->second].first;
-				if((norAlignmentInfo_PE_2[tmpNor2NO]->endMatchedPosInChr)
-					< (norAlignmentInfo_PE_2[tmpNor2NO_2]->endMatchedPosInChr))
-				{
-					mapPos_Nor2Rcm1.erase(it);
-					mapPos_Nor2Rcm1.insert(pair<int, int> (norAlignmentInfo_PE_2[tmpNor2NO]->alignChromPos, tmp));
-				}
-			}
-		}
-
-		int currentBestRcm2NO = 0;
-		int currentShortestPairDifference = 2147483647;
-		int tmpNor1Rcm2NO;
-		for(it = mapPos_Nor1Rcm2.begin(); it != mapPos_Nor1Rcm2.end(); it++)
-		{
-			currentShortestPairDifference = 2147483647;
-
-			tmpNor1Rcm2NO = it->second;
-			//cout << "tmpNor1Rcm2NO = " << tmpNor1Rcm2NO << endl;
-			for(int tmp = 0; tmp < (oriAlignPair_Nor1Rcm2[tmpNor1Rcm2NO].second).size(); tmp++)
-			{
-				tmpRcm2NO = (oriAlignPair_Nor1Rcm2[tmpNor1Rcm2NO].second)[tmp];
-				if(rcmAlignmentInfo_PE_2[tmpRcm2NO]->alignChromPos < currentShortestPairDifference ||
-						(rcmAlignmentInfo_PE_2[tmpRcm2NO]->alignChromPos == currentShortestPairDifference &&
-							rcmAlignmentInfo_PE_2[tmpRcm2NO]->endMatchedPosInChr
-							< rcmAlignmentInfo_PE_2[currentBestRcm2NO]->endMatchedPosInChr))
-					{
-						currentBestRcm2NO = tmpRcm2NO;
-						currentShortestPairDifference = rcmAlignmentInfo_PE_2[tmpRcm2NO]->alignChromPos;
-					}
-			}
-			finalAlignPair_Nor1Rcm2.push_back( pair<int, int>
-				(oriAlignPair_Nor1Rcm2[tmpNor1Rcm2NO].first, currentBestRcm2NO) );
-		}
-
-		int currentBestRcm1NO = 0;
-		//currentShortestPairDifference = 2147483647;
-		int tmpNor2Rcm1NO;
-		for(it = mapPos_Nor2Rcm1.begin(); it != mapPos_Nor2Rcm1.end(); it++)
-		{
-			currentShortestPairDifference = 2147483647;
-			tmpNor2Rcm1NO = it->second;
-			for(int tmp = 0; tmp < (oriAlignPair_Nor2Rcm1[tmpNor2Rcm1NO].second).size(); tmp++)
-			{
-				tmpRcm1NO = (oriAlignPair_Nor2Rcm1[tmpNor2Rcm1NO].second)[tmp];
-				if(rcmAlignmentInfo_PE_1[tmpRcm1NO]->alignChromPos < currentShortestPairDifference)
-				{
-					currentBestRcm1NO = tmpRcm1NO;
-					//cout << "currentBestRcm1 = " << currentBestRcm1NO << endl;
-					currentShortestPairDifference = rcmAlignmentInfo_PE_1[tmpRcm1NO]->alignChromPos;
-				}
-				else if(rcmAlignmentInfo_PE_1[tmpRcm1NO]->alignChromPos == currentShortestPairDifference)
-				{
-					if(rcmAlignmentInfo_PE_1[tmpRcm1NO]->endMatchedPosInChr
-						< rcmAlignmentInfo_PE_1[currentBestRcm1NO]->endMatchedPosInChr)
-					{
-						currentBestRcm1NO = tmpRcm1NO;
-						//cout << "currentBestRcm1 = " << currentBestRcm1NO << endl;
-						currentShortestPairDifference = rcmAlignmentInfo_PE_1[tmpRcm1NO]->alignChromPos;
-					}
-					else
-					{}
-				}
-				else
-				{}
-			}
-			finalAlignPair_Nor2Rcm1.push_back( pair<int, int>
-				(oriAlignPair_Nor2Rcm1[tmpNor2Rcm1NO].first, currentBestRcm1NO) );
-		}
-
-	}*/
 
 	void pairingAlignment2OriPair()
 	{
-		//cout << "start to pair ... " << endl;
 		this->getEndMatchPosForEveryAlignment();
 
 		Alignment_Info* tmpAlignInfo_1;
 		Alignment_Info* tmpAlignInfo_2;
 		bool newEntity = false;
-		//cout << "start to pair Nor1Rcm2... " << endl;
-		for(int tmp = 0; tmp < norAlignmentInfo_PE_1.size(); tmp++) 
-		//pair norAlignmentInfo_PE_1 & rcmAlignmentInfo_PE_2
-		{
-			//cout << "tmp: " << tmp << endl;
-			newEntity = true;
-			tmpAlignInfo_1 = norAlignmentInfo_PE_1[tmp];
 
-			if(tmpAlignInfo_1 -> SJstrand == "X")
-			{
-				//cout << "SJstrand_1 = X" << endl;
+		for(int i= 0; i < norAlignmentInfo_PE_1.size(); i++)
+		{
+			newEntity = true;
+			tmpAlignInfo_1 = norAlignmentInfo_PE_1[i];
+
+			if(tmpAlignInfo_1->SJstrand == "X")
 				continue;
-			}
 
 			for(int tmp2 = 0; tmp2 < rcmAlignmentInfo_PE_2.size(); tmp2++)
 			{
-				//cout << "tmp2: " << tmp2 << endl;
 				tmpAlignInfo_2 = rcmAlignmentInfo_PE_2[tmp2];
 				
 				if((tmpAlignInfo_2 -> SJstrand == "X")
 					||((tmpAlignInfo_1 -> SJstrand == "+")&&(tmpAlignInfo_2 -> SJstrand == "-"))
 					||((tmpAlignInfo_1 -> SJstrand == "-")&&(tmpAlignInfo_2 -> SJstrand == "+")))
-				{
-					//cout << "SJstrand_2 = X or conflict strand: " << tmpAlignInfo_1->SJstrand << ", " << tmpAlignInfo_2->SJstrand << endl;
 					continue;
-				}		
 
 				if((tmpAlignInfo_1->alignChromName) == (tmpAlignInfo_2->alignChromName))
 				{
@@ -2627,30 +2213,24 @@ public:
 					{
 						if( ((tmpAlignInfo_2->alignChromPos) - (tmpAlignInfo_1->endMatchedPosInChr))< PAIR_READ_DISTANCE_MAX)
 						{
-							//cout << "type 1" << endl;
-							if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
+							if(newEntity) //i is not in oriAlignPair_Nor1Rcm2
 							{
 								vector<int> newTmpVec;
 								newTmpVec.push_back(tmp2);
-								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (i, newTmpVec));
 								newEntity = false;
 							}
-							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							else //i has already been in oriAlignPair_Nor1Rcm2
 							{
 								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
 							}
-						}
-						else
-						{
-							//cout << "too far away ..." << endl;
-							//two far away 
 						}
 					}
 					else if((tmpAlignInfo_1->alignChromPos <= tmpAlignInfo_2->alignChromPos)
 							&&(tmpAlignInfo_1->endMatchedPosInChr <= tmpAlignInfo_2->endMatchedPosInChr))
 					{
 						//cout << "parts of read overlap ..." << endl;
-						//cout << "tmp: " << tmp << " tmp 2: " << tmp2 << endl;
+						//cout << "i: " << i << " i 2: " << tmp2 << endl;
 						//Note: In addition should check whether they cross the same SJs or not
 						if(tmpAlignInfo_1->checkOverlapPairAlignment_new(tmpAlignInfo_2))
 						{
@@ -2659,17 +2239,13 @@ public:
 							{
 								vector<int> newTmpVec;
 								newTmpVec.push_back(tmp2);
-								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (i, newTmpVec));
 								newEntity = false;
 							}
-							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							else //i has already been in oriAlignPair_Nor1Rcm2
 							{
 								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
 							}
-						}
-						else
-						{
-							//cout << "overlap error !" << endl;
 						}
 					}
 					else if(
@@ -2685,16 +2261,14 @@ public:
 							{
 								vector<int> newTmpVec;
 								newTmpVec.push_back(tmp2);
-								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (i, newTmpVec));
 								newEntity = false;
 							}
-							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							else //i has already been in oriAlignPair_Nor1Rcm2
 							{
 								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
 							}
 						}
-						else
-						{}
 					}
 					else if (
 						(tmpAlignInfo_1->alignChromPos > tmpAlignInfo_2->alignChromPos)
@@ -2709,16 +2283,14 @@ public:
 							{
 								vector<int> newTmpVec;
 								newTmpVec.push_back(tmp2);
-								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (i, newTmpVec));
 								newEntity = false;
 							}
-							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							else //i has already been in oriAlignPair_Nor1Rcm2
 							{
 								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
 							}
 						}
-						else
-						{}
 					}
 					else if (
 							(tmpAlignInfo_1->unfixedHeadExists()) // pe_1 read has unfixed head
@@ -2733,31 +2305,19 @@ public:
 						if(tmpAlignInfo_1->checkOverlapPairAlignment_new(tmpAlignInfo_2))
 						{
 							//cout << "overlap correct" << endl;
-							if(newEntity) //tmp is not in oriAlignPair_Nor1Rcm2
+							if(newEntity) //i is not in oriAlignPair_Nor1Rcm2
 							{
 								vector<int> newTmpVec;
 								newTmpVec.push_back(tmp2);
-								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (tmp, newTmpVec));
+								oriAlignPair_Nor1Rcm2.push_back(pair<int, vector<int> > (i, newTmpVec));
 								newEntity = false;
 							}
-							else //tmp has already been in oriAlignPair_Nor1Rcm2
+							else //i has already been in oriAlignPair_Nor1Rcm2
 							{
 								(oriAlignPair_Nor1Rcm2[oriAlignPair_Nor1Rcm2.size()-1].second).push_back(tmp2);
 							}
 						}
-						else
-						{
-							//cout << "overlap error " << endl;
-						}
 					}
-					else
-					{
-
-					}
-				}
-				else
-				{
-
 				}
 			}
 		}
@@ -2913,17 +2473,7 @@ public:
 								newEntity = false;
 							}
 						}
-						else
-						{}
 					}
-					else
-					{
-
-					}
-				}
-				else
-				{
-
 				}
 			}
 		}

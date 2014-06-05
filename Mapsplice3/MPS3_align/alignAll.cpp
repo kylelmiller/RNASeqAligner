@@ -16,7 +16,7 @@
 
 #include "spliceJunctionHash.h"
 #include "sam2junc.h"
-#include "fixPhase1.h"
+#include "pairedEndAligner.h"
 #include "pairedEndRead.h"
 #include "referenceGenome.h"
 #include "align_info.h"
@@ -216,7 +216,7 @@ int main(int argc, char**argv)
 	BYTE *verifyChild = (BYTE*)malloc((indexInfo->getSize()) * sizeof(BYTE));
 	verifyChild_file_ifs.read((char*)verifyChild, (indexInfo->getSize()) * sizeof(BYTE));
 	
-	ReferenceGenome* alignmentChromosome = new ReferenceGenome(
+	ReferenceGenome* reference = new ReferenceGenome(
 		sa,
 		lcpCompress,
 		childTab,
@@ -362,7 +362,7 @@ int main(int argc, char**argv)
     		segMap_begin = clock();
     		#endif
 
-			FixPhase1Info* fixPhase1Info = new FixPhase1Info(pairedEndReads[i], alignmentChromosome);
+			PairedEndAligner* pairedEndAligner = new PairedEndAligner(pairedEndReads[i], reference);
 
 			#ifdef CAL_TIME
 			segMap_end = clock();
@@ -371,7 +371,7 @@ int main(int argc, char**argv)
 			getPath_begin = clock();
 			#endif
 
-			fixPhase1Info->fixPhase1_pathInfo();
+			pairedEndAligner->fixPhase1_pathInfo();
 
 			#ifdef CAL_TIME
 			getPath_end = clock();
@@ -380,7 +380,7 @@ int main(int argc, char**argv)
 			fixGap_begin = clock();
 			#endif
 
-			fixPhase1Info->fixPhase1_gapInfo(indexInfo);
+			pairedEndAligner->fixPhase1_gapInfo();
 
 			#ifdef CAL_TIME
 			fixGap_end = clock();
@@ -390,8 +390,8 @@ int main(int argc, char**argv)
 			#endif
 
 			PE_Read_Alignment_Info* peAlignInfo = new PE_Read_Alignment_Info(
-				fixPhase1Info->pathInfo_Nor1, fixPhase1Info->pathInfo_Rcm1, 
-				fixPhase1Info->pathInfo_Nor2, fixPhase1Info->pathInfo_Rcm2, indexInfo);
+				pairedEndAligner->_pathInfo_Nor1, pairedEndAligner->pathInfo_Rcm1, 
+				pairedEndAligner->pathInfo_Nor2, pairedEndAligner->pathInfo_Rcm2, indexInfo);
 
 			peAlignInfo->chooseBestAlignment_selectRandomOneIfMulti();
 
@@ -460,10 +460,10 @@ int main(int argc, char**argv)
 			#endif
 
 			#ifdef DEBUG_INFO
-			fixPhase1Info->coutDebugInfo(readInfo, indexInfo);
+			pairedEndAligner->coutDebugInfo(readInfo, indexInfo);
 			#endif
 
-			delete fixPhase1Info;
+			delete pairedEndAligner;
 			delete pairedEndReads[i];
 			delete peAlignInfo;
 
@@ -537,7 +537,7 @@ int main(int argc, char**argv)
 		tmpAlignIncompletePair_ofs.close();
 	}
 
-	delete alignmentChromosome;
+	delete reference;
 	
 	#ifdef CAL_TIME
 	overall_end = clock();

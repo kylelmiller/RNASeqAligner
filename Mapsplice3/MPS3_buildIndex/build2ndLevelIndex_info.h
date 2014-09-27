@@ -132,13 +132,13 @@ public:
 	string chromString;
 	unsigned int genomeLength;
 
-	int chromNum;
+	unsigned int chromNum;
 	vector<string> chrNameStr; // size = chromNum
 	vector<int> chromLength; // size = chromNum
 	vector<string> chromStr;
 	vector<unsigned int> chrEndPosInGenome;
 
-	map<string, int> chrNameMap;
+	map<string, unsigned int> chrNameMap;
 	//map<string, int>::iterator chrNameMapIter;
 
 	int secondLevelIndexNormalSize;// = 3000000;
@@ -195,7 +195,7 @@ public:
 		int startSearchPos = 0;
 		int foundSearchPos;
 		string tmpChromNameStr;
-		for(int tmp = 0; tmp < chromNum; tmp++)
+		for(unsigned int tmp = 0; tmp < chromNum; tmp++)
 		{
 			foundSearchPos = chromNameLine.find(",", startSearchPos);
 			tmpChromNameStr = chromNameLine.substr(startSearchPos+1, foundSearchPos - 2 - startSearchPos - 1 + 1);
@@ -206,7 +206,7 @@ public:
 
 		startSearchPos = 0;
 		string tmpChromEndPosStr;
-		for(int tmp = 0; tmp < chromNum; tmp++)
+		for(unsigned int tmp = 0; tmp < chromNum; tmp++)
 		{
 			foundSearchPos = chromEndPosInGenomeLine.find(",", startSearchPos);
 			tmpChromEndPosStr = chromEndPosInGenomeLine.substr(startSearchPos, foundSearchPos - 1 - startSearchPos + 1);
@@ -221,7 +221,7 @@ public:
 
 		startSearchPos = 0;
 		string tmpChrom2ndLevelIndexNumStr;
-		for(int tmp = 0; tmp < chromNum; tmp++)
+		for(unsigned int tmp = 0; tmp < chromNum; tmp++)
 		{
 			foundSearchPos = chrom2ndLevelIndexNumLine.find(",", startSearchPos);
 			tmpChrom2ndLevelIndexNumStr = chrom2ndLevelIndexNumLine.substr(startSearchPos, foundSearchPos - 1 - startSearchPos + 1);
@@ -243,7 +243,7 @@ public:
 		string tmpChromString = genomeString.substr(0, (chrEndPosInGenome)[0]+1);
 		chromStr.push_back(tmpChromString);
 		cout << "chrom chr.1: " << tmpChromString.length() << endl; 
-		for(int tmp = 1; tmp < chromNum; tmp++)
+		for(unsigned int tmp = 1; tmp < chromNum; tmp++)
 		{	
 			tmpChromString = genomeString.substr((chrEndPosInGenome)[tmp-1]+2, 
 				(chrEndPosInGenome)[tmp]-(chrEndPosInGenome)[tmp-1]-1);	
@@ -259,7 +259,7 @@ public:
 		system(mkAll2ndLevelIndexFolderCmd.c_str());
 		cout << endl << "creat 2ndlevel index folder: " << all2ndLevelIndexFolder << endl << endl;
 
-		for(int tmpChromNum = 0; tmpChromNum < chromNum; tmpChromNum++)
+		for(unsigned int tmpChromNum = 0; tmpChromNum < chromNum; tmpChromNum++)
 		{
 			string tmp2ndLevelIndexChromFolder = output2ndLevelIndexPrefix 
 				+ "/" + chrNameStr[tmpChromNum];
@@ -288,10 +288,9 @@ public:
 
 	void generate2ndLevelIndexChrom(string output2ndLevelIndexPrefix)
 	{
-		for(int tmpChromNum = 0; tmpChromNum < chromNum; tmpChromNum++)
+		for(unsigned int tmpChromNum = 0; tmpChromNum < chromNum; tmpChromNum++)
 		{
 			cout << endl << endl << "generating chrom file, name: " << chrNameStr[tmpChromNum] << endl;
-			int tmpChromLength = chromStr[tmpChromNum].length();
 			int tmp2ndLevelIndexPartsNum = secondLevelIndexPartsNum[tmpChromNum];
 			string tmp2ndLevelIndexPrefixChrom = output2ndLevelIndexPrefix 
 				+ "/" + chrNameStr[tmpChromNum] + "/";  
@@ -330,7 +329,7 @@ public:
 
 	void generate2ndLevelIndexOriginalSize(string output2ndLevelIndexPrefix)
 	{
-		for(int tmpChromNum = 0; tmpChromNum < chromNum; tmpChromNum ++)
+		for(unsigned int tmpChromNum = 0; tmpChromNum < chromNum; tmpChromNum ++)
 		{
 			string tmp2ndLevelIndexPrefixChr = output2ndLevelIndexPrefix + "/" 
 				+ chrNameStr[tmpChromNum] + "/"; 
@@ -392,7 +391,7 @@ public:
 				}
 				//chrom[secondLevelIndexNormalSize] = 'X';
 				unsigned int *r = (unsigned int*)malloc(MAX * sizeof(unsigned int));
-				for(int tmpBaseNum = 0; tmpBaseNum < MAX; tmpBaseNum++)
+				for(unsigned int tmpBaseNum = 0; tmpBaseNum < MAX; tmpBaseNum++)
 				{
 					if(chrom[tmpBaseNum] == 'A') 
 						{r[tmpBaseNum] = 1;}
@@ -448,7 +447,7 @@ public:
 
 	void generate2ndLevelIndexCompressedSize(string output2ndLevelIndexPrefix)
 	{
-		for(int tmpChromNum = 0; tmpChromNum < chromNum; tmpChromNum ++)
+		for(unsigned int tmpChromNum = 0; tmpChromNum < chromNum; tmpChromNum ++)
 		{
 			string tmp2ndLevelIndexPrefixChr = output2ndLevelIndexPrefix + "/" 
 				+ chrNameStr[tmpChromNum] + "/"; 
@@ -586,7 +585,7 @@ public:
 
 	void buildChrNameMap()
 	{
-		for(int tmp = 0; tmp < chromNum; tmp++)
+		for(unsigned int tmp = 0; tmp < chromNum; tmp++)
 		{
 			chrNameMap.insert(pair <string, int> (chrNameStr[tmp], tmp));
 		}
@@ -625,7 +624,7 @@ public:
 		}
 		else
 		{
-			for(int tmp = 1; tmp < chrEndPosInGenome.size(); tmp++)
+			for(unsigned int tmp = 1; tmp < chrEndPosInGenome.size(); tmp++)
 			{
 				if( (locationInWholeGenome >= chrEndPosInGenome[tmp-1] + 2) 
 					&& (locationInWholeGenome <= chrEndPosInGenome[tmp]) )
@@ -664,16 +663,16 @@ public:
 		return chr_local_location;
 	}
 
-	int getChr(unsigned int locationInWholeGenome)
+	unsigned int getChr(unsigned int locationInWholeGenome)
 	{
-		int chrInt;
+		unsigned int chrInt;
 		if(locationInWholeGenome <= chrEndPosInGenome[0])
 		{
 			chrInt = 0;
 		}
 		else
 		{
-			for(int tmp = 1; tmp < chromNum; tmp++)
+			for(unsigned int tmp = 1; tmp < chromNum; tmp++)
 			{
 				if( (locationInWholeGenome >= chrEndPosInGenome[tmp-1] + 2) 
 					&& (locationInWholeGenome <= chrEndPosInGenome[tmp]) )
@@ -695,9 +694,9 @@ public:
 	{
 		
 		//omp_init_lock(&lock);
-		map<string, int>::iterator chrNameMapIter;
+		map<string, unsigned int>::iterator chrNameMapIter;
 		//omp_set_lock(&lock);
-		int chrNameInt = 1000;
+		unsigned int chrNameInt = 1000;
 		//cout << "chrName = " << chrName << endl;
 		chrNameMapIter = chrNameMap.find(chrName);
 		if(chrNameMapIter != chrNameMap.end())

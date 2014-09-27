@@ -19,8 +19,6 @@ public:
 
 	vector<string> chrNameStr; // size = chromNum
 
-	vector<int> chromLength; // size = chromNum
-
 	vector<unsigned int> chrEndPosInGenome;
 
 	map<string, int> chrNameMap;
@@ -308,10 +306,10 @@ private:
 	set<string> chrNameStrSet;
 	vector<string> chrNameStrVec;
 
-	vector<int> chromLengthVec;
+	vector<unsigned int> chromLengthVec;
 	vector<unsigned int> chrEndPosInGenomeVec;
 
-	int secondLevelIndexSize;
+	unsigned int secondLevelIndexSize;
 
 public:
 
@@ -338,7 +336,7 @@ public:
 	void printChromLength(ofstream& OutputStream)
 	{
 		//string chromLengthStr;
-		for(int tmpChr = 0; tmpChr < chromLengthVec.size(); tmpChr++)
+		for(unsigned int tmpChr = 0; tmpChr < chromLengthVec.size(); tmpChr++)
 		{
 			OutputStream << chrNameStrVec[tmpChr] << " length: " 
 				<< chromLengthVec[tmpChr] << endl; 
@@ -348,15 +346,15 @@ public:
 	void getChrEndPosVec()
 	{
 		unsigned int chrEndPosBase = 0;
-		int tmpChr = 0;
+		unsigned int tmpChr = 0;
 		for (tmpChr = 0; tmpChr < chromLengthVec.size()-1; tmpChr++)
 		{
-			chrEndPosBase += (unsigned int) chromLengthVec[tmpChr] + 1;
+			chrEndPosBase += chromLengthVec[tmpChr] + 1;
 			chrEndPosInGenomeVec.push_back(chrEndPosBase - 2);
 			//cout << "chrEndPos " << tmpChr+1 << ": " << chrEndPosBase - 2 << endl;
 		}
 		tmpChr = chromLengthVec.size()-1;
-		chrEndPosBase += (unsigned int) chromLengthVec[tmpChr] + 1;
+		chrEndPosBase += chromLengthVec[tmpChr] + 1;
 		chrEndPosInGenomeVec.push_back(chrEndPosBase - 1);
 		//cout << "chrEndPos " << tmpChr+1 << ": " << chrEndPosBase - 1 << endl;
 	}
@@ -394,7 +392,7 @@ public:
 		//cout << endl << "wholeGenomeIndexSize: " << wholeGenomeIndexSize << endl;
 		char* wholeGenomeSeqChar = (char*)malloc(wholeGenomeIndexSize * sizeof(char));
 
-		for(int tmp = 0; tmp < chrNameStrVec.size(); tmp++)
+		for(unsigned int tmp = 0; tmp < chrNameStrVec.size(); tmp++)
 		{
 			int chromBaseNum = 0;
 			int characterNum = 0;
@@ -494,7 +492,7 @@ public:
 		<< "chrom2ndLevelIndexNum:" << endl;
 		for(int tmp = 0; tmp < chromosomeNum; tmp++)
 		{
-			int tmpChrPartsNum = chromLengthVec[tmp]/secondLevelIndexSize;
+			unsigned int tmpChrPartsNum = chromLengthVec[tmp]/secondLevelIndexSize;
 			if(tmpChrPartsNum * secondLevelIndexSize == chromLengthVec[tmp])
 			{}
 			else if( (tmpChrPartsNum * secondLevelIndexSize < chromLengthVec[tmp]) 
@@ -531,7 +529,7 @@ public:
 		return OutputIndexFolderStr;
 	}
 
-	int GetMax()
+	unsigned int GetMax()
 	{
 		return chrEndPosInGenomeVec[chrNameStrVec.size()-1] + 1 + 1;
 	}

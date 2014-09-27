@@ -282,7 +282,7 @@ bool mapMainForIndexStringHash(char *read, unsigned int* sa, BYTE* lcpCompress,
 		unsigned int* child, char* chrom, int* mappedLength,
 		unsigned int* indexIntervalStart, unsigned int* indexIntervalEnd,
 		BYTE* verifyChild, int readLength, int MAX) {
-	bool mapMain = false;
+
 	unsigned int stop_loc = 0; // location in one segment for iterations
 	unsigned int read_length = readLength; //READ_LENGTH;
 	unsigned int interval_begin, interval_end;
@@ -485,15 +485,15 @@ inline bool leq(int a1, int a2, int a3, int b1, int b2, int b3)
 } // and triples
 
 // stably sort a[0..n-1] to b[0..n-1] with keys in 0..K from r
-static void radixPass(unsigned int* a, unsigned int* b, unsigned int* r, int n, int K)
+static void radixPass(unsigned int* a, unsigned int* b, unsigned int* r, unsigned int n, int K)
 {
 	// count occurrences
-	int* c = new int[K + 1]; // counter array
+	unsigned int* c = new unsigned int[K + 1]; // counter array
 
 	for (int i = 0; i <= K; i++)
 		c[i] = 0; // reset counters
 
-	for (int i = 0; i < n; i++)
+	for (unsigned int i = 0; i < n; i++)
 		c[r[a[i]]]++; // count occurrences
 
 	for (int i = 0, sum = 0; i <= K; i++) // exclusive prefix sums
@@ -503,7 +503,7 @@ static void radixPass(unsigned int* a, unsigned int* b, unsigned int* r, int n, 
 		sum += t;
 	}
 
-	for (int i = 0; i < n; i++)
+	for (unsigned int i = 0; i < n; i++)
 		b[c[r[a[i]]]++] = a[i]; // sort
 
 	delete[] c;
@@ -511,8 +511,8 @@ static void radixPass(unsigned int* a, unsigned int* b, unsigned int* r, int n, 
 
 // find the suffix array SA of T[0..n-1] in {1..K}^n
 // require T[n]=T[n+1]=T[n+2]=0, n>=2
-void suffixArray(unsigned int* T, unsigned int* SA, int n, int K) {
-	int n0 = (n + 2) / 3,
+void suffixArray(unsigned int* T, unsigned int* SA, unsigned int n, int K) {
+	unsigned int n0 = (n + 2) / 3,
 		n1 = (n + 1) / 3,
 		n2 = n / 3,
 		n02 = n0 + n2;
@@ -527,7 +527,7 @@ void suffixArray(unsigned int* T, unsigned int* SA, int n, int K) {
 	//******* Step 0: Construct sample ********
 	// generate positions of mod 1 and mod 2 suffixes
 	// the "+(n0-n1)" adds a dummy mod 1 suffix if n%3 == 1
-	for (int i = 0, j = 0; i < n + (n0 - n1); i++)
+	for (unsigned int i = 0, j = 0; i < n + (n0 - n1); i++)
 		if (i % 3 != 0)
 			R[j++] = i;
 
@@ -539,8 +539,8 @@ void suffixArray(unsigned int* T, unsigned int* SA, int n, int K) {
 
 	// find lexicographic names of triples and
 	// write them to correct places in R
-	int name = 0, c0 = -1, c1 = -1, c2 = -1;
-	for (int i = 0; i < n02; i++)
+	unsigned int name = 0, c0 = 0-1, c1 = 0-1, c2 = 0-1;
+	for (unsigned int i = 0; i < n02; i++)
 	{
 		if (T[SA12[i]] != c0 || T[SA12[i] + 1] != c1 || T[SA12[i] + 2] != c2)
 		{
@@ -568,27 +568,27 @@ void suffixArray(unsigned int* T, unsigned int* SA, int n, int K) {
 		suffixArray(R, SA12, n02, name);
 
 		// store unique names in R using the suffix array
-		for (int i = 0; i < n02; i++)
+		for (unsigned int i = 0; i < n02; i++)
 			R[SA12[i]] = i + 1;
 	}
 	else // generate the suffix array of R directly
-		for (int i = 0; i < n02; i++)
+		for (unsigned int i = 0; i < n02; i++)
 			SA12[R[i] - 1] = i;
 
 	//******* Step 2: Sort nonsample suffixes ********
 	// stably sort the mod 0 suffixes from SA12 by their first character
-	for (int i = 0, j = 0; i < n02; i++)
+	for (unsigned int i = 0, j = 0; i < n02; i++)
 		if (SA12[i] < n0)
 			R0[j++] = 3 * SA12[i];
 	radixPass(R0, SA0, T, n0, K);
 
 	//******* Step 3: Merge ********
 	// merge sorted SA0 suffixes and sorted SA12 suffixes
-	for (int p = 0, t = n0 - n1, k = 0; k < n; k++)
+	for (unsigned int p = 0, t = n0 - n1, k = 0; k < n; k++)
 	{
 		#define GetI() (SA12[t] < n0 ? SA12[t] * 3 + 1 : (SA12[t] - n0) * 3 + 2)
-		int i = GetI(); // pos of current offset 12 suffix
-		int j = SA0[p]; // pos of current offset 0 suffix
+		unsigned int i = GetI(); // pos of current offset 12 suffix
+		unsigned int j = SA0[p]; // pos of current offset 0 suffix
 		if (SA12[t] < n0 // different compares for mod 1 and mod 2 suffixes
 				? leq(T[i], R[SA12[t] + n0], T[j], R[j / 3])
 				: leq(T[i], T[i + 1], R[SA12[t] - n0 + 1], T[j], T[j + 1], R[j / 3 + n0]))
@@ -656,7 +656,6 @@ int main(int argc, char** argv) {
 	char chrFileLine[100];
 	string chrFileLineStr;
 	int lineNum = 0;
-	int tmpChromEndPosInGenome = 0;
 
 	for (vector<string>::iterator myIterator = buildIndexInfo->begin();
 			myIterator != buildIndexInfo->end(); myIterator++) {
@@ -703,7 +702,7 @@ int main(int argc, char** argv) {
 	//////generate original size index
 	/////////////////////////////////////////////////
 
-	int MAX = buildIndexInfo->GetMax();
+	unsigned int MAX = buildIndexInfo->GetMax();
 	cout << "MAX: " << MAX << endl;
 
 	ofstream SA_file_ofs(
@@ -728,8 +727,6 @@ int main(int argc, char** argv) {
 	FILE *fp = fopen(chrom_file_str.c_str(), "r");
 	unsigned int *r = (unsigned int*) malloc(MAX * sizeof(unsigned int));
 	char ch;
-	char head[100];
-	char base[Range] = { 'X', 'A', 'C', 'G', 'T', 'N' };
 	char *chrom = (char*) malloc(MAX * sizeof(char));
 
 	unsigned int chrom_base_num = 0;

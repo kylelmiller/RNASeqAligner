@@ -1,6 +1,6 @@
 all: buildWholeIndex buildAll2ndLevelIndex
 
-OPTFLAGS =  -g -O0 -rdynamic
+OPTFLAGS =  -g -O0 -rdynamic -Wall -std=c++0x
 OUTPUTDIR = bin/
 
 CFLAGS += $(OPTFLAGS)
